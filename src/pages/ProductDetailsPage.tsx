@@ -1,0 +1,336 @@
+import { useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import {
+  FiCheck,
+  FiChevronDown,
+  FiHeart,
+  FiMinus,
+  FiPlus,
+  FiShield,
+  FiShoppingBag,
+  FiStar,
+  FiTruck,
+} from 'react-icons/fi'
+import { ProductCard } from '../components/ProductCard'
+import { useShopStore } from '../store/useShopStore'
+import { products, type ShopProduct } from './ShopPage'
+
+const currency = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+})
+
+const reviews = [
+  {
+    name: 'Amara K.',
+    date: 'July 18, 2026',
+    rating: 5,
+    text: 'The cut is beautiful and it sits exactly where it should. I wore it all evening without having to adjust a thing.',
+  },
+  {
+    name: 'Maya R.',
+    date: 'July 04, 2026',
+    rating: 5,
+    text: 'Even better in person. The fabric has a lovely weight to it and the finish feels genuinely considered.',
+  },
+  {
+    name: 'Sophie T.',
+    date: 'June 21, 2026',
+    rating: 4,
+    text: 'A very polished piece. I sized up for a little more room and the fit is now perfect.',
+  },
+]
+
+// Product details combines shop data with purchasing controls and supporting content.
+export function ProductDetailsPage({ productId }: { productId: string }) {
+  const product = products.find((item) => item.id === productId) ?? products[0]
+  const availableSizes =
+    product.sizes[0] === 'One size' ? product.sizes : product.sizes
+  const [selectedSize, setSelectedSize] = useState(availableSizes[0])
+  const [quantity, setQuantity] = useState(1)
+  const [activeView, setActiveView] = useState(0)
+  const [added, setAdded] = useState(false)
+  const [buying, setBuying] = useState(false)
+  const addToCart = useShopStore((state) => state.addToCart)
+  const toggleWishlist = useShopStore((state) => state.toggleWishlist)
+  const isFavorite = useShopStore((state) =>
+    state.wishlistItems.includes(product.id),
+  )
+
+  const relatedProducts = useMemo(
+    () =>
+      products
+        .filter(
+          (item) =>
+            item.id !== product.id &&
+            (item.category === product.category || item.brand === product.brand),
+        )
+        .slice(0, 4),
+    [product],
+  )
+
+  // The current catalog has one studio image per piece; alternate crops provide
+  // useful close-up gallery views until backend media collections are connected.
+  const galleryViews = [
+    { label: 'Full view', position: 'center' },
+    { label: 'Detail view', position: '50% 25%' },
+    { label: 'Lower detail', position: '50% 75%' },
+  ]
+
+  const handleAddToCart = () => {
+    addToCart(product.id, quantity)
+    setAdded(true)
+    window.setTimeout(() => setAdded(false), 1400)
+  }
+
+  const handleBuyNow = () => {
+    addToCart(product.id, quantity)
+    setBuying(true)
+    window.setTimeout(() => setBuying(false), 1600)
+  }
+
+  return (
+    <main className="bg-canvas text-ink">
+      <section className="px-4 py-6 sm:px-7 sm:py-10 lg:px-10">
+        <div className="mx-auto max-w-[1440px]">
+          <nav aria-label="Breadcrumb" className="mb-6 text-[9px] uppercase tracking-[0.16em] text-ink/45">
+            <a href="/shop" className="hover:text-ink">Shop</a>
+            <span className="mx-2">/</span>
+            <span>{product.category}</span>
+            <span className="mx-2">/</span>
+            <span className="text-ink">{product.name}</span>
+          </nav>
+
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-12 xl:gap-16">
+            {/* Selectable image gallery becomes a thumbnail rail on larger screens. */}
+            <div className="grid gap-3 sm:grid-cols-[82px_1fr]">
+              <div className="order-2 flex gap-2 sm:order-1 sm:flex-col">
+                {galleryViews.map((view, index) => (
+                  <button
+                    key={view.label}
+                    type="button"
+                    aria-label={view.label}
+                    aria-pressed={activeView === index}
+                    onClick={() => setActiveView(index)}
+                    className={`aspect-[4/5] w-16 overflow-hidden border sm:w-full ${
+                      activeView === index ? 'border-ink' : 'border-transparent'
+                    }`}
+                  >
+                    <img
+                      src={product.image}
+                      alt=""
+                      className="size-full scale-110 object-cover"
+                      style={{ objectPosition: view.position }}
+                    />
+                  </button>
+                ))}
+              </div>
+              <motion.div
+                key={activeView}
+                className="order-1 aspect-[4/5] overflow-hidden bg-[#e8e5df] sm:order-2"
+                initial={{ opacity: 0.65 }}
+                animate={{ opacity: 1 }}
+              >
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="size-full object-cover"
+                  style={{ objectPosition: galleryViews[activeView].position }}
+                />
+              </motion.div>
+            </div>
+
+            {/* Product information remains visible while browsing the tall gallery. */}
+            <div className="lg:sticky lg:top-6 lg:self-start">
+              <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50">
+                {product.brand} · {product.category}
+              </p>
+              <div className="mt-3 flex items-start justify-between gap-4">
+                <h1 className="text-4xl leading-[1.05] sm:text-5xl">{product.name}</h1>
+                <button
+                  type="button"
+                  aria-label={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
+                  onClick={() => toggleWishlist(product.id)}
+                  className="grid size-11 shrink-0 place-items-center rounded-full border border-line"
+                >
+                  <FiHeart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+                </button>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <span className="text-lg">{currency.format(product.price)}</span>
+                {product.originalPrice && (
+                  <span className="text-sm text-ink/40 line-through">
+                    {currency.format(product.originalPrice)}
+                  </span>
+                )}
+                <a href="#reviews" className="ml-auto flex items-center gap-1.5 text-xs">
+                  <FiStar size={13} fill="currentColor" />
+                  {product.rating} ({product.reviewCount})
+                </a>
+              </div>
+
+              <p className="mt-7 max-w-full break-words border-t border-line pt-6 text-sm leading-7 text-ink/65">
+                Designed for repeat wear, with a clean silhouette and quietly
+                considered details. Finished in the Lumi studio for an easy,
+                confident fit.
+              </p>
+
+              <div className="mt-7">
+                <div className="mb-3 flex justify-between">
+                  <span className="text-[9px] font-medium uppercase tracking-[0.17em]">Select size</span>
+                  <button type="button" className="border-b border-ink text-[9px]">Size guide</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {availableSizes.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      aria-pressed={selectedSize === size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`min-h-12 min-w-14 flex-1 border px-3 text-xs sm:max-w-24 ${
+                        selectedSize === size
+                          ? 'border-ink bg-ink text-canvas'
+                          : 'border-line hover:border-ink'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-end">
+                <div>
+                  <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.17em]">Quantity</p>
+                  <div className="flex h-12 items-center border border-line">
+                    <button
+                      type="button"
+                      aria-label="Decrease quantity"
+                      onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                      className="grid size-11 place-items-center"
+                    >
+                      <FiMinus size={14} />
+                    </button>
+                    <span className="min-w-8 text-center text-xs">{quantity}</span>
+                    <button
+                      type="button"
+                      aria-label="Increase quantity"
+                      onClick={() => setQuantity((value) => Math.min(10, value + 1))}
+                      className="grid size-11 place-items-center"
+                    >
+                      <FiPlus size={14} />
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={!product.available}
+                  onClick={handleAddToCart}
+                  className="flex h-12 flex-1 items-center justify-center gap-2 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {added ? <FiCheck size={15} /> : <FiShoppingBag size={15} />}
+                  {product.available ? (added ? 'Added to cart' : 'Add to cart') : 'Out of stock'}
+                </button>
+              </div>
+              <button
+                type="button"
+                disabled={!product.available}
+                onClick={handleBuyNow}
+                className="mt-3 min-h-12 w-full border border-ink px-5 text-[9px] font-medium uppercase tracking-[0.17em] disabled:opacity-40"
+              >
+                {buying ? 'Added — checkout coming next' : 'Buy now'}
+              </button>
+
+              {/* Native disclosure controls keep delivery information accessible. */}
+              <div className="mt-7 border-t border-line">
+                <DeliveryRow icon={<FiTruck />} title="Delivery & returns">
+                  Free standard delivery over $150. Returns are accepted within
+                  30 days in their original condition.
+                </DeliveryRow>
+                <DeliveryRow icon={<FiShield />} title="Materials & care">
+                  Store away from direct light and follow the care label to keep
+                  the piece looking its best.
+                </DeliveryRow>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Reviews product={product} />
+
+      <section aria-labelledby="related-heading" className="px-4 py-14 sm:px-7 sm:py-20 lg:px-10">
+        <div className="mx-auto max-w-[1440px]">
+          <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">You may also like</p>
+          <h2 id="related-heading" className="mt-2 text-3xl sm:text-4xl">Related products</h2>
+          <div className="mt-8 grid grid-cols-1 gap-x-3 gap-y-10 min-[420px]:grid-cols-2 sm:gap-x-5 lg:grid-cols-4">
+            {relatedProducts.map((item) => (
+              <ProductCard key={item.id} product={item} />
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+function DeliveryRow({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <details className="group border-b border-line">
+      <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 text-xs">
+        <span className="text-base">{icon}</span>
+        {title}
+        <FiChevronDown className="ml-auto transition-transform group-open:rotate-180" />
+      </summary>
+      <p className="pb-5 pl-7 text-xs leading-6 text-ink/60">{children}</p>
+    </details>
+  )
+}
+
+function Reviews({ product }: { product: ShopProduct }) {
+  return (
+    <section id="reviews" aria-labelledby="reviews-heading" className="border-y border-line px-4 py-14 sm:px-7 sm:py-20 lg:px-10">
+      <div className="mx-auto grid max-w-[1440px] gap-10 lg:grid-cols-[280px_1fr] lg:gap-16">
+        <div>
+          <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">What people say</p>
+          <h2 id="reviews-heading" className="mt-2 text-3xl">Reviews</h2>
+          <div className="mt-5 flex items-end gap-3">
+            <span className="text-5xl">{product.rating}</span>
+            <span className="pb-1 text-xs text-ink/50">from {product.reviewCount} reviews</span>
+          </div>
+        </div>
+        <div>
+          {reviews.map((review) => (
+            <article key={review.name} className="border-b border-line py-6 first:pt-0">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm">{review.name}</h3>
+                  <div className="mt-1 flex gap-0.5">
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <FiStar key={index} size={11} fill={index < review.rating ? 'currentColor' : 'none'} />
+                    ))}
+                  </div>
+                </div>
+                <time className="text-[9px] text-ink/45">{review.date}</time>
+              </div>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-ink/65">{review.text}</p>
+            </article>
+          ))}
+          <button type="button" className="mt-6 border-b border-ink pb-1 text-[9px] uppercase tracking-[0.16em]">
+            Read all reviews
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}

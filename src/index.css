@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* Clash Display is self-hosted so the hero heading remains consistent offline. */
+@font-face {
+  font-family: "Clash Display";
+  src: url("/fonts/clash-display-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Allow Tailwind's dark: utilities to respond to the class set by Navbar. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Project-wide typography and color tokens. Components use names such as
+   bg-canvas and text-ink instead of repeating raw color values. */
+@theme {
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Clash Display", sans-serif;
+  --font-hero: "Clash Display", sans-serif;
+  --color-ink: #171713;
+  --color-canvas: #f8f7f3;
+  --color-line: #d8d5cd;
+}
+
+/* Dark mode swaps the same semantic tokens, so component markup stays simple. */
+.dark {
+  --color-ink: #f2efe8;
+  --color-canvas: #121210;
+  --color-line: #34332f;
+  color-scheme: dark;
+}
+
+/* Predictable sizing prevents padding and borders from changing element widths. */
+* {
+  box-sizing: border-box;
+}
+
+/* Base document behavior and typography. */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  overflow-x: clip;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Media should never force a page wider than its responsive container. */
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+/* All present and future page headings share the same display typeface. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Clash Display", sans-serif;
+  font-weight: 500;
+}
+
+/* Form controls inherit the site's typography instead of browser defaults. */
+button,
+a,
+input {
+  font: inherit;
+}
+
+/* Remove the default tap flash while preserving keyboard focus styles below. */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* A visible focus ring keeps navigation accessible for keyboard users. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 1px solid var(--color-ink);
+  outline-offset: 4px;
+}
+
+/* Match selected text to the active light or dark theme. */
+::selection {
+  background: var(--color-ink);
+  color: var(--color-canvas);
+}
+
+/* Hide the visual scrollbar on touch sliders while retaining native scrolling. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Match Swiper's testimonial pagination to the active inverse theme. */
+.testimonial-swiper .swiper-pagination-bullet {
+  width: 6px;
+  height: 6px;
+  background: var(--color-canvas);
+  opacity: 0.35;
+}
+
+.testimonial-swiper .swiper-pagination-bullet-active {
+  width: 20px;
+  border-radius: 999px;
+  opacity: 1;
+}
