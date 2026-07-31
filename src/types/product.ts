@@ -10,3 +10,14 @@ export type Product = {
   reviewCount: number
   badge?: string
 }
+
+// Shop-specific fields shared by API products and the curated local fallback.
+export type ShopProduct = Product & {
+  available: boolean
+  sizes: string[]
+  color: string
+  brand: string
+  description?: string
+  gallery?: string[]
+  source?: 'curated' | 'dummyjson'
+}

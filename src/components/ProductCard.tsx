@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { FiEye, FiHeart, FiShoppingBag, FiStar, FiX } from 'react-icons/fi'
+import {
+  FiEye,
+  FiHeart,
+  FiLayers,
+  FiShoppingBag,
+  FiStar,
+  FiX,
+} from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 import { useShopStore } from '../store/useShopStore'
 import type { Product } from '../types/product'
+import { OptimizedImage } from './OptimizedImage'
 
 type ProductCardProps = {
   product: Product
@@ -19,10 +28,15 @@ const currency = new Intl.NumberFormat('en-US', {
 export function ProductCard({ product, className = '' }: ProductCardProps) {
   const [quickViewOpen, setQuickViewOpen] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
   const addToCart = useShopStore((state) => state.addToCart)
   const toggleWishlist = useShopStore((state) => state.toggleWishlist)
   const isFavorite = useShopStore((state) =>
     state.wishlistItems.includes(product.id),
+  )
+  const toggleComparison = useShopStore((state) => state.toggleComparison)
+  const isCompared = useShopStore((state) =>
+    state.comparisonItems.includes(product.id),
   )
 
   const discount = product.originalPrice
@@ -57,15 +71,22 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
       <article className={`group min-w-0 ${className}`}>
         {/* Image area contains merchandising badges and fast product actions. */}
         <div className="relative aspect-[4/5] overflow-hidden bg-[#e8e5df]">
-          <a href={`/product/${product.id}`} aria-label={`View ${product.name}`}>
-            <img
+          {/* The skeleton disappears as soon as the product image is decoded. */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 z-10 animate-pulse bg-gradient-to-r from-ink/[0.04] via-ink/[0.09] to-ink/[0.04]" />
+          )}
+          <Link to={`/product/${product.id}`} aria-label={`View ${product.name}`}>
+            <OptimizedImage
               src={product.image}
               alt={product.name}
               loading="lazy"
               decoding="async"
-              className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+              onLoad={() => setImageLoaded(true)}
+              className={`size-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.025] ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
             />
-          </a>
+          </Link>
 
           <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
             {product.badge && (
@@ -98,6 +119,25 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
             />
           </button>
 
+          <button
+            type="button"
+            title="Compare product"
+            aria-label={
+              isCompared
+                ? `Remove ${product.name} from comparison`
+                : `Compare ${product.name}`
+            }
+            aria-pressed={isCompared}
+            onClick={() => toggleComparison(product.id)}
+            className={`absolute right-3 top-16 grid size-10 place-items-center rounded-full shadow-sm transition-all hover:scale-105 ${
+              isCompared
+                ? 'bg-ink text-canvas'
+                : 'bg-white text-[#171713]'
+            }`}
+          >
+            <FiLayers size={16} />
+          </button>
+
           {/* Actions stay visible on touch screens and reveal on hover for desktop. */}
           <div className="absolute inset-x-3 bottom-3 grid grid-cols-1 gap-2 transition-all duration-300 min-[360px]:grid-cols-2 sm:translate-y-3 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100">
             <button
@@ -127,7 +167,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
                 {product.category}
               </p>
               <h3 className="truncate text-[15px] leading-5">
-                <a href={`/product/${product.id}`}>{product.name}</a>
+                <Link to={`/product/${product.id}`}>{product.name}</Link>
               </h3>
             </div>
             <div className="shrink-0 text-right text-xs">
@@ -196,7 +236,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
                 <FiX size={20} />
               </button>
               <div className="aspect-[4/5] max-h-[70svh] bg-[#e8e5df]">
-                <img
+                <OptimizedImage
                   src={product.image}
                   alt={product.name}
                   className="size-full object-cover"

@@ -6,27 +6,28 @@ import {
   FiInstagram,
 } from 'react-icons/fi'
 import { FaPinterestP } from 'react-icons/fa'
+import { Link } from 'react-router-dom'
 
 const quickLinks = [
-  { label: 'New arrivals', href: '#new-in' },
-  { label: 'Women', href: '#women' },
-  { label: 'Men', href: '#men' },
-  { label: 'Accessories', href: '#accessories' },
-  { label: 'Journal', href: '#journal' },
+  { label: 'New arrivals', to: '/shop?sort=latest' },
+  { label: 'Women', to: '/shop?category=Women' },
+  { label: 'Men', to: '/shop?category=Men' },
+  { label: 'Accessories', to: '/shop?category=Accessories' },
+  { label: 'Journal', to: '/journal' },
 ]
 
 const policies = [
-  { label: 'Shipping & delivery', href: '#shipping' },
-  { label: 'Returns & exchanges', href: '#returns' },
-  { label: 'Privacy policy', href: '#privacy' },
-  { label: 'Terms & conditions', href: '#terms' },
-  { label: 'Accessibility', href: '#accessibility' },
+  { label: 'Shipping & delivery', to: '/policies/shipping-delivery' },
+  { label: 'Returns & exchanges', to: '/policies/returns-exchanges' },
+  { label: 'Privacy policy', to: '/policies/privacy' },
+  { label: 'Terms & conditions', to: '/policies/terms' },
+  { label: 'Accessibility', to: '/policies/accessibility' },
 ]
 
 const socialLinks = [
-  { label: 'Instagram', href: '#instagram', icon: FiInstagram },
-  { label: 'Facebook', href: '#facebook', icon: FiFacebook },
-  { label: 'Pinterest', href: '#pinterest', icon: FaPinterestP },
+  { label: 'Instagram', href: 'https://www.instagram.com/', icon: FiInstagram },
+  { label: 'Facebook', href: 'https://www.facebook.com/', icon: FiFacebook },
+  { label: 'Pinterest', href: 'https://www.pinterest.com/', icon: FaPinterestP },
 ]
 
 export function Footer() {
@@ -36,24 +37,26 @@ export function Footer() {
   // Temporary frontend state; the backend will eventually store subscribers.
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!email.trim()) return
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!normalizedEmail) return
+    localStorage.setItem('lumi-newsletter-email', normalizedEmail)
     setSubmitted(true)
     setEmail('')
   }
 
   return (
-    <footer className="bg-ink px-4 pb-6 pt-14 text-canvas sm:px-7 sm:pb-8 sm:pt-16 lg:px-10 lg:pt-20">
+    <footer id="site-footer" className="bg-ink px-4 pb-6 pt-14 text-canvas sm:px-7 sm:pb-8 sm:pt-16 lg:px-10 lg:pt-20">
       <div className="mx-auto max-w-[1440px]">
-        <div className="grid gap-10 pb-12 sm:grid-cols-2 sm:gap-x-12 lg:grid-cols-[1.2fr_0.7fr_0.8fr_1.3fr] lg:gap-10 lg:pb-16">
+        <div className="grid min-w-0 grid-cols-1 gap-9 pb-12 min-[620px]:grid-cols-2 min-[620px]:gap-x-10 min-[620px]:gap-y-12 xl:grid-cols-[1.15fr_0.7fr_0.85fr_1.3fr] xl:gap-10 xl:pb-16">
           {/* Brand and contact information remain together for quick reference. */}
-          <div>
-            <a
-              href="/"
+          <div className="min-w-0">
+            <Link
+              to="/"
               aria-label="Lumi home"
               className="font-display text-4xl tracking-[0.12em]"
             >
               LUMI
-            </a>
+            </Link>
             <p className="mt-5 max-w-xs text-sm leading-6 text-canvas/60">
               Clothes for real days, made with a little more thought.
             </p>
@@ -83,12 +86,12 @@ export function Footer() {
             <ul className="space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.to}
                     className="text-xs text-canvas/60 transition-colors hover:text-canvas"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -102,12 +105,12 @@ export function Footer() {
             <ul className="space-y-3">
               {policies.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.to}
                     className="text-xs text-canvas/60 transition-colors hover:text-canvas"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -159,6 +162,8 @@ export function Footer() {
                 <a
                   key={label}
                   href={href}
+                  target="_blank"
+                  rel="noreferrer"
                   aria-label={label}
                   className="grid size-10 place-items-center rounded-full border border-canvas/20 transition-colors hover:border-canvas hover:bg-canvas hover:text-ink"
                 >

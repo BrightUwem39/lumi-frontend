@@ -12,187 +12,11 @@ import {
   type ProductFilterProps,
 } from '../components/ProductFilters'
 import { ProductCard } from '../components/ProductCard'
-import type { Product } from '../types/product'
+import { useCatalog } from '../hooks/useCatalog'
+import type { ShopProduct } from '../types/product'
 
-export type ShopProduct = Product & {
-  available: boolean
-  sizes: string[]
-  color: string
-  brand: string
-}
+type SortOption = 'featured' | 'latest' | 'price-low' | 'price-high' | 'rating'
 
-type SortOption = 'featured' | 'price-low' | 'price-high' | 'rating'
-
-// Shared with the details route until product data moves to the backend.
-// oxlint-disable-next-line react/only-export-components
-export const products: ShopProduct[] = [
-  {
-    id: 'luna-silk-dress',
-    name: 'Luna Silk Dress',
-    category: 'Women',
-    image: '/images/products/luna-silk-dress.webp',
-    price: 189,
-    originalPrice: 240,
-    rating: 4.8,
-    reviewCount: 64,
-    badge: 'Trending',
-    available: true,
-    sizes: ['XS', 'S', 'M'],
-    color: 'White',
-    brand: 'Lumi',
-  },
-  {
-    id: 'relaxed-wool-blazer',
-    name: 'Relaxed Wool Blazer',
-    category: 'Men',
-    image: '/images/products/charcoal-wool-blazer.webp',
-    price: 245,
-    rating: 4.7,
-    reviewCount: 38,
-    badge: 'Best seller',
-    available: true,
-    sizes: ['M', 'L', 'XL'],
-    color: 'Black',
-    brand: 'Lumi',
-  },
-  {
-    id: 'crescent-leather-bag',
-    name: 'Crescent Leather Bag',
-    category: 'Accessories',
-    image: '/images/products/crescent-leather-bag.webp',
-    price: 165,
-    originalPrice: 195,
-    rating: 4.9,
-    reviewCount: 91,
-    badge: 'Best seller',
-    available: true,
-    sizes: ['One size'],
-    color: 'Brown',
-    brand: 'Lumi',
-  },
-  {
-    id: 'column-ankle-boots',
-    name: 'Column Ankle Boots',
-    category: 'Shoes',
-    image: '/images/products/column-ankle-boots.webp',
-    price: 220,
-    rating: 4.6,
-    reviewCount: 47,
-    badge: 'Limited edition',
-    available: true,
-    sizes: ['38', '39', '40'],
-    color: 'Black',
-    brand: 'Nike',
-  },
-  {
-    id: 'ivory-column-dress',
-    name: 'Ivory Column Dress',
-    category: 'Women',
-    image: '/images/products/luna-silk-dress.webp',
-    price: 148,
-    rating: 4.5,
-    reviewCount: 29,
-    badge: 'New',
-    available: true,
-    sizes: ['XS', 'S', 'M', 'L'],
-    color: 'White',
-    brand: 'Lumi',
-  },
-  {
-    id: 'evening-wool-jacket',
-    name: 'Evening Wool Jacket',
-    category: 'Men',
-    image: '/images/products/charcoal-wool-blazer.webp',
-    price: 275,
-    originalPrice: 320,
-    rating: 4.8,
-    reviewCount: 52,
-    available: true,
-    sizes: ['M', 'L', 'XL'],
-    color: 'Grey',
-    brand: 'Lumi',
-  },
-  {
-    id: 'studio-shoulder-bag',
-    name: 'Studio Shoulder Bag',
-    category: 'Accessories',
-    image: '/images/products/crescent-leather-bag.webp',
-    price: 135,
-    rating: 4.4,
-    reviewCount: 18,
-    badge: 'New',
-    available: false,
-    sizes: ['One size'],
-    color: 'Black',
-    brand: 'Adidas',
-  },
-  {
-    id: 'square-toe-boots',
-    name: 'Square-Toe Leather Boots',
-    category: 'Shoes',
-    image: '/images/products/column-ankle-boots.webp',
-    price: 198,
-    originalPrice: 235,
-    rating: 4.7,
-    reviewCount: 33,
-    available: true,
-    sizes: ['39', '40', '41'],
-    color: 'Brown',
-    brand: 'Nike',
-  },
-  {
-    id: 'draped-satin-dress',
-    name: 'Draped Satin Dress',
-    category: 'Women',
-    image: '/images/products/luna-silk-dress.webp',
-    price: 215,
-    rating: 4.9,
-    reviewCount: 76,
-    available: true,
-    sizes: ['S', 'M', 'L'],
-    color: 'Black',
-    brand: 'Lumi',
-  },
-  {
-    id: 'soft-tailored-blazer',
-    name: 'Soft-Tailored Blazer',
-    category: 'Men',
-    image: '/images/products/charcoal-wool-blazer.webp',
-    price: 185,
-    rating: 4.3,
-    reviewCount: 21,
-    available: false,
-    sizes: ['S', 'M', 'L', 'XL'],
-    color: 'Grey',
-    brand: 'Adidas',
-  },
-  {
-    id: 'mini-crescent-bag',
-    name: 'Mini Crescent Bag',
-    category: 'Accessories',
-    image: '/images/products/crescent-leather-bag.webp',
-    price: 120,
-    rating: 4.6,
-    reviewCount: 44,
-    available: true,
-    sizes: ['One size'],
-    color: 'White',
-    brand: 'Lumi',
-  },
-  {
-    id: 'everyday-ankle-boot',
-    name: 'Everyday Ankle Boot',
-    category: 'Shoes',
-    image: '/images/products/column-ankle-boots.webp',
-    price: 180,
-    rating: 4.5,
-    reviewCount: 26,
-    available: true,
-    sizes: ['38', '39', '40', '41'],
-    color: 'Black',
-    brand: 'Nike',
-  },
-]
 
 const categories = ['All', 'Women', 'Men', 'Accessories', 'Shoes']
 const sizes = ['XS', 'S', 'M', 'L', 'XL', '38', '39', '40', '41', 'One size']
@@ -202,24 +26,30 @@ const colors = [
   { name: 'Brown', hex: '#765846' },
   { name: 'Grey', hex: '#a6a5a0' },
 ]
-const brands = ['Lumi', 'Nike', 'Adidas']
-
 export function ShopPage() {
-  const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('All')
+  const { products, status: catalogStatus } = useCatalog()
+  const initialParams = new URLSearchParams(window.location.search)
+  const [query, setQuery] = useState(() => initialParams.get('search') ?? '')
+  const [category, setCategory] = useState(() => {
+    const requestedCategory = initialParams.get('category')
+    return requestedCategory && categories.includes(requestedCategory)
+      ? requestedCategory
+      : 'All'
+  })
   const [priceFilter, setPriceFilter] = useState<PriceFilter>('all')
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [selectedColors, setSelectedColors] = useState<string[]>([])
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [minRating, setMinRating] = useState(0)
   const [availability, setAvailability] =
     useState<'all' | 'in-stock' | 'out-of-stock'>('all')
-  const [sortBy, setSortBy] = useState<SortOption>('featured')
+  const [sortBy, setSortBy] = useState<SortOption>(() => {
+    const requestedSort = initialParams.get('sort')
+    return requestedSort === 'latest' ? 'latest' : 'featured'
+  })
   const [sortOpen, setSortOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [page, setPage] = useState(1)
   const productsPerPage = 6
-
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
@@ -243,8 +73,6 @@ export function ShopPage() {
         selectedSizes.some((size) => product.sizes.includes(size))
       const matchesColor =
         selectedColors.length === 0 || selectedColors.includes(product.color)
-      const matchesBrand =
-        selectedBrands.length === 0 || selectedBrands.includes(product.brand)
       const matchesAvailability =
         availability === 'all' ||
         (availability === 'in-stock' && product.available) ||
@@ -256,7 +84,6 @@ export function ShopPage() {
         matchesPrice &&
         matchesSize &&
         matchesColor &&
-        matchesBrand &&
         product.rating >= minRating &&
         matchesAvailability
       )
@@ -266,6 +93,10 @@ export function ShopPage() {
       if (sortBy === 'price-low') return a.price - b.price
       if (sortBy === 'price-high') return b.price - a.price
       if (sortBy === 'rating') return b.rating - a.rating
+      if (sortBy === 'latest') {
+        const newRank = (product: ShopProduct) => product.badge === 'New' ? 0 : 1
+        return newRank(a) - newRank(b) || products.indexOf(a) - products.indexOf(b)
+      }
       return products.indexOf(a) - products.indexOf(b)
     })
   }, [
@@ -273,8 +104,8 @@ export function ShopPage() {
     category,
     minRating,
     priceFilter,
+    products,
     query,
-    selectedBrands,
     selectedColors,
     selectedSizes,
     sortBy,
@@ -298,7 +129,6 @@ export function ShopPage() {
     minRating,
     priceFilter,
     query,
-    selectedBrands,
     selectedColors,
     selectedSizes,
     sortBy,
@@ -316,7 +146,6 @@ export function ShopPage() {
     setPriceFilter('all')
     setSelectedSizes([])
     setSelectedColors([])
-    setSelectedBrands([])
     setMinRating(0)
     setAvailability('all')
     setQuery('')
@@ -345,9 +174,6 @@ export function ShopPage() {
     colors,
     selectedColors,
     toggleColor: (value) => toggleSelection(value, setSelectedColors),
-    brands,
-    selectedBrands,
-    toggleBrand: (value) => toggleSelection(value, setSelectedBrands),
     minRating,
     setMinRating,
     availability,
@@ -357,6 +183,7 @@ export function ShopPage() {
 
   const sortOptions: { label: string; value: SortOption }[] = [
     { label: 'Featured', value: 'featured' },
+    { label: 'Latest arrivals', value: 'latest' },
     { label: 'Price: low to high', value: 'price-low' },
     { label: 'Price: high to low', value: 'price-high' },
     { label: 'Highest rated', value: 'rating' },
@@ -453,6 +280,8 @@ export function ShopPage() {
               <p className="mb-5 text-[9px] uppercase tracking-[0.16em] text-ink/50">
                 {filteredProducts.length}{' '}
                 {filteredProducts.length === 1 ? 'product' : 'products'}
+                {catalogStatus === 'loading' && ' · Updating catalog'}
+                {catalogStatus === 'fallback' && ' · Offline collection'}
               </p>
 
               {visibleProducts.length > 0 ? (

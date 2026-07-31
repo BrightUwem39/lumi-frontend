@@ -1,32 +1,40 @@
-# React + TypeScript + Vite
+# LUMI Storefront
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A responsive premium-fashion storefront built with React, TypeScript, Tailwind
+CSS, Framer Motion, Zustand, Swiper, React Router, React Icons, and Cloudinary.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Use `npm run build` and `npm run lint` before committing changes.
+
+## Cloudinary setup
+
+The storefront automatically falls back to the images in `public/images` when
+Cloudinary is not configured.
+
+1. Create a Cloudinary account and copy `.env.example` to `.env.local`.
+2. Add your cloud name:
+
+```env
+VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
+```
+
+3. Upload the current assets using these public IDs:
+
+```text
+lumi-summer-hero_ssrptu
+luna-silk-dress_hmnr1f
+charcoal-wool-blazer_pa9bga
+crescent-leather-bag_gvi7mq
+column-ankle-boots_ya5rtx
+```
+
+The shared `OptimizedImage` component then enables automatic image format and
+quality, responsive delivery widths, lazy loading, and blurred placeholders.
+The Cloudinary API secret must never be added to a Vite environment variable or
+committed to this frontend repository.

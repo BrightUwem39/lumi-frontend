@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion'
 import { FiArrowDownRight, FiArrowRight } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
+import { OptimizedImage } from './OptimizedImage'
 
 // Shared entrance style keeps the text elements moving consistently.
 const reveal = {
@@ -16,16 +18,22 @@ export function Hero() {
     >
       {/* The campaign image is content, so it has descriptive alt text.
           Object positions keep the model visible as the viewport narrows. */}
-      <motion.img
-        src="/images/lumi-summer-hero.png"
-        alt="Model wearing an ivory linen summer look beside Mediterranean architecture"
-        fetchPriority="high"
-        decoding="async"
-        className="absolute inset-0 size-full object-cover object-[68%_center] sm:object-[64%_center] lg:object-center"
+      <motion.div
+        className="absolute inset-0"
         initial={false}
         animate={{ scale: 1 }}
         transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-      />
+      >
+        <OptimizedImage
+          src="/images/lumi-summer-hero.png"
+          alt="Model wearing an ivory linen summer look beside Mediterranean architecture"
+          fetchPriority="high"
+          decoding="async"
+          eager
+          responsiveWidths={[640, 960, 1280, 1600, 1920]}
+          className="absolute inset-0 size-full object-cover object-[68%_center] sm:object-[64%_center] lg:object-center"
+        />
+      </motion.div>
 
       {/* Responsive overlays preserve text contrast without hiding the photograph. */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/15 sm:bg-gradient-to-r sm:from-black/55 sm:via-black/15 sm:to-transparent" />
@@ -79,8 +87,8 @@ export function Hero() {
             transition={{ duration: 0.65 }}
             className="mt-6 flex max-w-full flex-col gap-2.5 sm:mt-8 sm:flex-row sm:flex-wrap sm:gap-3"
           >
-            <a
-              href="/shop"
+            <Link
+              to="/shop"
               className="group flex min-h-12 w-full items-center justify-center gap-3 bg-white px-5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#171713] transition-colors hover:bg-[#171713] hover:text-white sm:w-auto sm:min-w-48 sm:px-6 sm:tracking-[0.18em]"
             >
               Shop the edit
@@ -88,9 +96,9 @@ export function Hero() {
                 size={15}
                 className="transition-transform group-hover:translate-x-1"
               />
-            </a>
-            <a
-              href="#products"
+            </Link>
+            <Link
+              to="/#products"
               className="group flex min-h-12 w-full items-center justify-center gap-3 border border-white/70 bg-black/5 px-5 text-[10px] font-medium uppercase tracking-[0.16em] text-white backdrop-blur-[2px] transition-colors hover:bg-white hover:text-[#171713] sm:w-auto sm:min-w-48 sm:px-6 sm:tracking-[0.18em]"
             >
               See what’s new
@@ -98,18 +106,22 @@ export function Hero() {
                 size={15}
                 className="transition-transform group-hover:translate-x-0.5 group-hover:translate-y-0.5"
               />
-            </a>
+            </Link>
           </motion.div>
 
           {/* Tertiary link offers a quieter path to the complete collection. */}
-          <motion.a
-            href="#summer"
+          <motion.div
             variants={reveal}
             transition={{ duration: 0.65 }}
-            className="mt-5 inline-flex max-w-full whitespace-normal border-b border-white/65 pb-1 text-[8px] font-medium uppercase leading-4 tracking-[0.12em] transition-opacity hover:opacity-60 min-[360px]:text-[9px] min-[360px]:tracking-[0.15em] sm:mt-6 sm:tracking-[0.2em]"
+            className="mt-5"
           >
-            Explore the full summer collection
-          </motion.a>
+            <Link
+              to="/shop?sort=latest"
+              className="inline-flex max-w-full whitespace-normal border-b border-white/65 pb-1 text-[8px] font-medium uppercase leading-4 tracking-[0.12em] transition-opacity hover:opacity-60 min-[360px]:text-[9px] min-[360px]:tracking-[0.15em] sm:tracking-[0.2em]"
+            >
+              Explore the full summer collection
+            </Link>
+          </motion.div>
         </motion.div>
       </div>
 

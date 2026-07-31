@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useMemo, useState } from 'react'
 import {
   FiCheck,
   FiChevronDown,
@@ -11,9 +10,12 @@ import {
   FiStar,
   FiTruck,
 } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 import { ProductCard } from '../components/ProductCard'
+import { ProductGallery } from '../components/ProductGallery'
+import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
-import { products, type ShopProduct } from './ShopPage'
+import type { ShopProduct } from '../types/product'
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -44,19 +46,41 @@ const reviews = [
 
 // Product details combines shop data with purchasing controls and supporting content.
 export function ProductDetailsPage({ productId }: { productId: string }) {
-  const product = products.find((item) => item.id === productId) ?? products[0]
+  const { products, status } = useCatalog()
+  const product = products.find((item) => item.id === productId)
+
+  if (!product) {
+    return (
+      <main className="grid min-h-[65svh] place-items-center bg-canvas px-4 text-center text-ink">
+        <div>
+          <h1 className="text-3xl">{status === 'loading' ? 'Loading product…' : 'Product not found'}</h1>
+          {status !== 'loading' && <Link to="/shop" className="mt-6 inline-flex min-h-12 items-center bg-ink px-7 text-[9px] uppercase tracking-[0.17em] text-canvas">Return to shop</Link>}
+        </div>
+      </main>
+    )
+  }
+
+  return <ProductDetailsContent product={product} products={products} />
+}
+
+function ProductDetailsContent({ product, products }: { product: ShopProduct; products: ShopProduct[] }) {
   const availableSizes =
     product.sizes[0] === 'One size' ? product.sizes : product.sizes
   const [selectedSize, setSelectedSize] = useState(availableSizes[0])
   const [quantity, setQuantity] = useState(1)
-  const [activeView, setActiveView] = useState(0)
   const [added, setAdded] = useState(false)
   const [buying, setBuying] = useState(false)
   const addToCart = useShopStore((state) => state.addToCart)
+  const addRecentlyViewed = useShopStore((state) => state.addRecentlyViewed)
   const toggleWishlist = useShopStore((state) => state.toggleWishlist)
   const isFavorite = useShopStore((state) =>
     state.wishlistItems.includes(product.id),
   )
+
+  // Recently viewed history is persisted and shown inside the search modal.
+  useEffect(() => {
+    addRecentlyViewed(product.id)
+  }, [addRecentlyViewed, product.id])
 
   const relatedProducts = useMemo(
     () =>
@@ -67,16 +91,48 @@ export function ProductDetailsPage({ productId }: { productId: string }) {
             (item.category === product.category || item.brand === product.brand),
         )
         .slice(0, 4),
-    [product],
+    [product, products],
   )
 
   // The current catalog has one studio image per piece; alternate crops provide
   // useful close-up gallery views until backend media collections are connected.
-  const galleryViews = [
-    { label: 'Full view', position: 'center' },
-    { label: 'Detail view', position: '50% 25%' },
-    { label: 'Lower detail', position: '50% 75%' },
+  const fallbackGallery = [
+    {
+      src: product.image,
+      alt: `${product.name}, full view`,
+      label: 'Full view',
+      objectPosition: 'center',
+    },
+    {
+      src: product.image,
+      alt: `${product.name}, upper detail`,
+      label: 'Upper detail',
+      objectPosition: '50% 22%',
+      imageScale: 1.28,
+    },
+    {
+      src: product.image,
+      alt: `${product.name}, fabric detail`,
+      label: 'Fabric detail',
+      objectPosition: '42% 48%',
+      imageScale: 1.55,
+    },
+    {
+      src: product.image,
+      alt: `${product.name}, lower detail`,
+      label: 'Lower detail',
+      objectPosition: '50% 78%',
+      imageScale: 1.3,
+    },
   ]
+  const galleryImages = product.gallery?.length
+    ? product.gallery.slice(0, 4).map((src, index) => ({
+        src,
+        alt: `${product.name}, view ${index + 1}`,
+        label: `View ${index + 1}`,
+        objectPosition: 'center',
+      }))
+    : fallbackGallery
 
   const handleAddToCart = () => {
     addToCart(product.id, quantity)
@@ -95,7 +151,7 @@ export function ProductDetailsPage({ productId }: { productId: string }) {
       <section className="px-4 py-6 sm:px-7 sm:py-10 lg:px-10">
         <div className="mx-auto max-w-[1440px]">
           <nav aria-label="Breadcrumb" className="mb-6 text-[9px] uppercase tracking-[0.16em] text-ink/45">
-            <a href="/shop" className="hover:text-ink">Shop</a>
+            <Link to="/shop" className="hover:text-ink">Shop</Link>
             <span className="mx-2">/</span>
             <span>{product.category}</span>
             <span className="mx-2">/</span>
@@ -103,43 +159,7 @@ export function ProductDetailsPage({ productId }: { productId: string }) {
           </nav>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-12 xl:gap-16">
-            {/* Selectable image gallery becomes a thumbnail rail on larger screens. */}
-            <div className="grid gap-3 sm:grid-cols-[82px_1fr]">
-              <div className="order-2 flex gap-2 sm:order-1 sm:flex-col">
-                {galleryViews.map((view, index) => (
-                  <button
-                    key={view.label}
-                    type="button"
-                    aria-label={view.label}
-                    aria-pressed={activeView === index}
-                    onClick={() => setActiveView(index)}
-                    className={`aspect-[4/5] w-16 overflow-hidden border sm:w-full ${
-                      activeView === index ? 'border-ink' : 'border-transparent'
-                    }`}
-                  >
-                    <img
-                      src={product.image}
-                      alt=""
-                      className="size-full scale-110 object-cover"
-                      style={{ objectPosition: view.position }}
-                    />
-                  </button>
-                ))}
-              </div>
-              <motion.div
-                key={activeView}
-                className="order-1 aspect-[4/5] overflow-hidden bg-[#e8e5df] sm:order-2"
-                initial={{ opacity: 0.65 }}
-                animate={{ opacity: 1 }}
-              >
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="size-full object-cover"
-                  style={{ objectPosition: galleryViews[activeView].position }}
-                />
-              </motion.div>
-            </div>
+            <ProductGallery images={galleryImages} productName={product.name} />
 
             {/* Product information remains visible while browsing the tall gallery. */}
             <div className="lg:sticky lg:top-6 lg:self-start">
@@ -172,9 +192,7 @@ export function ProductDetailsPage({ productId }: { productId: string }) {
               </div>
 
               <p className="mt-7 max-w-full break-words border-t border-line pt-6 text-sm leading-7 text-ink/65">
-                Designed for repeat wear, with a clean silhouette and quietly
-                considered details. Finished in the Lumi studio for an easy,
-                confident fit.
+                {product.description ?? 'Designed for repeat wear, with a clean silhouette and quietly considered details. Finished in the Lumi studio for an easy, confident fit.'}
               </p>
 
               <div className="mt-7">

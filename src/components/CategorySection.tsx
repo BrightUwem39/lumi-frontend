@@ -5,7 +5,7 @@ const categories = [
   {
     title: 'Women',
     image: '/images/products/luna-silk-dress.webp',
-    href: '#women',
+    to: '/shop?category=Women',
     itemCount: 84,
     className: 'xl:col-span-8',
     imagePosition: 'object-[center_22%]',
@@ -13,7 +13,7 @@ const categories = [
   {
     title: 'Men',
     image: '/images/products/charcoal-wool-blazer.webp',
-    href: '#men',
+    to: '/shop?category=Men',
     itemCount: 62,
     className: 'xl:col-span-4',
     imagePosition: 'object-[center_18%]',
@@ -21,7 +21,7 @@ const categories = [
   {
     title: 'Accessories',
     image: '/images/products/crescent-leather-bag.webp',
-    href: '#accessories',
+    to: '/shop?category=Accessories',
     itemCount: 38,
     className: 'xl:col-span-4',
     imagePosition: 'object-center',
@@ -29,7 +29,7 @@ const categories = [
   {
     title: 'Shoes',
     image: '/images/products/column-ankle-boots.webp',
-    href: '#shoes',
+    to: '/shop?category=Shoes',
     itemCount: 29,
     className: 'xl:col-span-4',
     imagePosition: 'object-center',
@@ -37,7 +37,7 @@ const categories = [
   {
     title: 'Bags',
     image: '/images/products/crescent-leather-bag.webp',
-    href: '#bags',
+    to: '/shop?search=bag',
     itemCount: 21,
     className: 'xl:col-span-4',
     imagePosition: 'object-[65%_center]',
@@ -45,7 +45,7 @@ const categories = [
   {
     title: 'New arrivals',
     image: '/images/lumi-summer-hero.png',
-    href: '#new-in',
+    to: '/shop?sort=latest',
     itemCount: 46,
     className: 'xl:col-span-12 xl:min-h-[430px]',
     imagePosition: 'object-[68%_center]',

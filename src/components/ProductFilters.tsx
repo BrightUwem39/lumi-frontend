@@ -19,9 +19,6 @@ export type ProductFilterProps = {
   colors: { name: string; hex: string }[]
   selectedColors: string[]
   toggleColor: (value: string) => void
-  brands: string[]
-  selectedBrands: string[]
-  toggleBrand: (value: string) => void
   minRating: number
   setMinRating: (value: number) => void
   availability: 'all' | 'in-stock' | 'out-of-stock'
@@ -50,9 +47,6 @@ export function ProductFilters({
   colors,
   selectedColors,
   toggleColor,
-  brands,
-  selectedBrands,
-  toggleBrand,
   minRating,
   setMinRating,
   availability,
@@ -155,19 +149,6 @@ export function ProductFilters({
               </button>
             )
           })}
-        </div>
-      </FilterGroup>
-
-      <FilterGroup title="Brand">
-        <div className="space-y-3">
-          {brands.map((brand) => (
-            <FilterCheckbox
-              key={brand}
-              label={brand}
-              checked={selectedBrands.includes(brand)}
-              onChange={() => toggleBrand(brand)}
-            />
-          ))}
         </div>
       </FilterGroup>
 

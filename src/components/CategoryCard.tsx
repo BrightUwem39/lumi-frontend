@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion'
 import { FiArrowUpRight } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 
 type CategoryCardProps = {
   title: string
   image: string
-  href: string
+  to: string
   itemCount?: number
   className?: string
   imagePosition?: string
@@ -14,7 +15,7 @@ type CategoryCardProps = {
 export function CategoryCard({
   title,
   image,
-  href,
+  to,
   itemCount,
   className = '',
   imagePosition = 'object-center',
@@ -28,7 +29,7 @@ export function CategoryCard({
       transition={{ duration: 0.55 }}
     >
       {/* The entire image area links to the selected category. */}
-      <a href={href} aria-label={`Explore ${title}`} className="absolute inset-0">
+      <Link to={to} aria-label={`Explore ${title}`} className="absolute inset-0">
         <img
           src={image}
           alt={`${title} collection`}
@@ -36,7 +37,7 @@ export function CategoryCard({
           decoding="async"
           className={`size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035] ${imagePosition}`}
         />
-      </a>
+      </Link>
 
       {/* Gradient protects the title and button over both light and dark photos. */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-black/10" />
@@ -53,13 +54,13 @@ export function CategoryCard({
             {title}
           </h3>
 
-          <a
-            href={href}
+          <Link
+            to={to}
             className="pointer-events-auto flex min-h-10 shrink-0 items-center gap-1.5 border border-white/70 px-3 text-[8px] font-medium uppercase tracking-[0.13em] backdrop-blur-sm transition-colors hover:bg-white hover:text-[#171713] sm:min-h-11 sm:gap-2 sm:px-4 sm:text-[9px] sm:tracking-[0.16em]"
           >
             Explore
             <FiArrowUpRight size={14} />
-          </a>
+          </Link>
         </div>
       </div>
     </motion.article>

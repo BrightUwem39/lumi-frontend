@@ -9,7 +9,10 @@ export function NewsletterSection() {
   // This frontend submission state will be replaced by the newsletter API later.
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!email.trim()) return
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!normalizedEmail) return
+    // Persistence makes the frontend-only signup remain meaningful after refresh.
+    localStorage.setItem('lumi-newsletter-email', normalizedEmail)
     setSubscribed(true)
     setEmail('')
   }

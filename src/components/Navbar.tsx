@@ -2,10 +2,10 @@ import {
   useEffect,
   useId,
   useState,
-  type FormEvent,
   type ReactNode,
 } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import {
   FiChevronDown,
   FiHeart,
@@ -18,44 +18,35 @@ import {
   FiX,
 } from 'react-icons/fi'
 import { useShopStore } from '../store/useShopStore'
+import { SearchModal } from './SearchModal'
 
 // Navigation data lives outside the component so it is not recreated on render.
 const navigation = [
-  { label: 'New in', href: '#new-in' },
-  { label: 'Collections', href: '#collections' },
-  { label: 'Journal', href: '#journal' },
+  { label: 'New in', to: '/shop?sort=latest' },
+  { label: 'Collections', to: '/shop' },
+  { label: 'Journal', to: '/journal' },
 ]
 
 const categories = [
-  { label: 'Women', href: '#women' },
-  { label: 'Men', href: '#men' },
-  { label: 'Accessories', href: '#accessories' },
-  { label: 'Shoes', href: '#shoes' },
+  { label: 'Women', to: '/shop?category=Women' },
+  { label: 'Men', to: '/shop?category=Men' },
+  { label: 'Accessories', to: '/shop?category=Accessories' },
+  { label: 'Shoes', to: '/shop?category=Shoes' },
 ]
-
-// Temporary frontend catalog data powers search until the backend is connected.
-const searchableProducts = [
-  { name: 'Sculpted Wool Coat', category: 'Women', href: '#sculpted-wool-coat' },
-  { name: 'Luna Silk Dress', category: 'Women', href: '#luna-silk-dress' },
-  { name: 'Tailored Evening Blazer', category: 'Men', href: '#evening-blazer' },
-  { name: 'Leather Crescent Bag', category: 'Accessories', href: '#crescent-bag' },
-  { name: 'Column Ankle Boots', category: 'Shoes', href: '#ankle-boots' },
-]
-
-const popularSearches = ['Women', 'Silk', 'Leather']
 
 // Shared props for cart and wishlist icons that can display a count badge.
 type CountIconProps = {
   count: number
   label: string
+  href?: string
   children: ReactNode
 }
 
 // Reusable accessible icon link with an optional item counter.
-function CountIcon({ count, label, children }: CountIconProps) {
+function CountIcon({ count, label, href = '#', children }: CountIconProps) {
   return (
-    <a
-      href="#"
+    <Link
+      to={href}
       aria-label={`${label}${count ? `, ${count} item${count === 1 ? '' : 's'}` : ''}`}
       className="relative grid size-10 place-items-center transition-opacity hover:opacity-55"
     >
@@ -65,7 +56,7 @@ function CountIcon({ count, label, children }: CountIconProps) {
           {count > 9 ? '9+' : count}
         </span>
       )}
-    </a>
+    </Link>
   )
 }
 
@@ -73,7 +64,6 @@ export function Navbar() {
   // Local UI state controls temporary interfaces such as menus and search.
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const [categoriesOpen, setCategoriesOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('lumi-theme')
@@ -84,7 +74,6 @@ export function Navbar() {
   const cartCount = useShopStore((state) => state.cartCount)
   const wishlistCount = useShopStore((state) => state.wishlistCount)
   const mobileMenuId = useId()
-  const searchId = useId()
 
   // Escape closes any open overlay for keyboard users.
   useEffect(() => {
@@ -116,73 +105,52 @@ export function Navbar() {
 
   const toggleDarkMode = () => setDarkMode((isDark) => !isDark)
 
-  // Search is currently performed locally. This can be replaced with an API
-  // request without changing the search interface.
-  const normalizedQuery = searchQuery.trim().toLowerCase()
-  const searchResults = normalizedQuery
-    ? searchableProducts.filter(
-        (product) =>
-          product.name.toLowerCase().includes(normalizedQuery) ||
-          product.category.toLowerCase().includes(normalizedQuery),
-      )
-    : []
-
-  // Pressing Enter opens the first matching product in the current prototype.
-  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const firstResult = searchResults[0]
-    if (firstResult) {
-      window.location.hash = firstResult.href
-      setSearchOpen(false)
-    }
-  }
-
   return (
     <>
       {/* The header contains the promotion bar and the responsive main navbar. */}
-      <header className="relative z-40 bg-canvas text-ink">
+      <header className="sticky top-0 z-40 bg-canvas text-ink shadow-[0_1px_0_rgba(0,0,0,0.04)]">
         {/* Shorter phone copy prevents the promotion from wrapping. */}
-        <div className="flex h-7 items-center justify-center overflow-hidden whitespace-nowrap bg-ink px-3 text-center text-[8px] font-medium uppercase tracking-[0.16em] text-canvas sm:h-8 sm:px-4 sm:text-[10px] sm:tracking-[0.24em]">
-          <span className="sm:hidden">Free shipping over $250</span>
-          <span className="hidden sm:inline">
+        <Link to="/shop" className="flex h-7 w-full min-w-0 items-center justify-center overflow-hidden whitespace-nowrap bg-ink px-3 text-center text-[8px] font-medium uppercase tracking-[0.16em] text-canvas transition-opacity hover:opacity-90 sm:h-8 sm:px-4 sm:text-[10px] sm:tracking-[0.24em]">
+          <span className="min-w-0 truncate sm:hidden">Free shipping over $250</span>
+          <span className="hidden min-w-0 truncate sm:inline">
             Complimentary shipping on orders over $250
           </span>
-        </div>
+        </Link>
 
         <div className="border-b border-line">
           <div className="relative mx-auto flex h-16 max-w-[1440px] items-center px-3 min-[360px]:px-4 sm:h-[76px] sm:px-7 lg:px-10 xl:h-[88px]">
-            {/* Keeping the menu trigger first in the DOM prevents auto margins
-                from pushing phone utility icons beyond the viewport. */}
+            {/* Phone and tablet use a deliberately minimal two-item header:
+                menu control on the left and wordmark on the right. */}
             <button
               type="button"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
               aria-controls={mobileMenuId}
               onClick={() => setMobileOpen((open) => !open)}
-              className="grid size-10 shrink-0 place-items-center min-[360px]:size-11 sm:size-10 xl:hidden"
+              className="order-1 grid size-10 shrink-0 place-items-center min-[360px]:size-11 sm:size-10 xl:hidden"
             >
               {mobileOpen ? <FiX size={21} /> : <FiMenu size={22} />}
             </button>
 
-            {/* The wordmark is hidden on phones, centered on tablets, and placed
-                first beside navigation on wide desktop screens. */}
-            <a
-              href="/"
+            {/* The wordmark remains visible at every width and returns to the
+                full desktop navigation flow at the xl breakpoint. */}
+            <Link
+              to="/"
               aria-label="Lumi home"
-              className="hidden shrink-0 font-display text-[29px] leading-none tracking-[0.14em] sm:absolute sm:left-1/2 sm:block sm:-translate-x-1/2 xl:static xl:translate-x-0 xl:text-[32px]"
+              className="order-2 ml-auto block shrink-0 font-display text-[24px] leading-none tracking-[0.14em] sm:text-[27px] xl:order-none xl:ml-0 xl:text-[32px]"
             >
               LUMI
-            </a>
+            </Link>
 
             {/* Full navigation appears at 1280px and above. */}
             <nav aria-label="Primary navigation" className="ml-10 hidden items-center gap-7 xl:flex xl:gap-9">
-              <a
-                href="#new-in"
+              <Link
+                to="/shop?sort=latest"
                 className="group relative py-3 text-[11px] font-medium uppercase tracking-[0.16em]"
               >
                 New in
                 <span className="absolute inset-x-0 bottom-1 h-px origin-left scale-x-0 bg-ink transition-transform duration-300 group-hover:scale-x-100" />
-              </a>
+              </Link>
               {/* Categories uses an animated dropdown on desktop. */}
               <div
                 className="relative"
@@ -213,56 +181,61 @@ export function Navbar() {
                       transition={{ duration: 0.2 }}
                     >
                       {categories.map((category) => (
-                        <a
+                        <Link
                           key={category.label}
-                          href={category.href}
+                          to={category.to}
+                          onClick={() => setCategoriesOpen(false)}
                           className="block px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] transition-colors hover:bg-ink hover:text-canvas"
                         >
                           {category.label}
-                        </a>
+                        </Link>
                       ))}
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
               {navigation.slice(1).map((item) => (
-                <a
+                <Link
                   key={item.label}
-                  href={item.href}
+                  to={item.to}
                   className="group relative py-3 text-[11px] font-medium uppercase tracking-[0.16em]"
                 >
                   {item.label}
                   <span className="absolute inset-x-0 bottom-1 h-px origin-left scale-x-0 bg-ink transition-transform duration-300 group-hover:scale-x-100" />
-                </a>
+                </Link>
               ))}
             </nav>
 
-            {/* Utility controls stay on the right at every breakpoint. */}
-            <div className="ml-auto flex shrink-0 items-center sm:gap-1 xl:ml-auto">
+            {/* Desktop utilities move into the drawer below 1280px. */}
+            <div className="ml-auto hidden shrink-0 items-center gap-1 xl:flex">
               <button
                 type="button"
                 aria-label="Search"
                 aria-expanded={searchOpen}
-                aria-controls={searchId}
+                aria-controls="site-search-modal"
                 onClick={() => setSearchOpen(true)}
-                className="grid size-10 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-11 sm:size-10"
+                className="grid size-10 place-items-center transition-opacity hover:opacity-55"
               >
                 <FiSearch size={19} strokeWidth={1.5} />
               </button>
-              <a
-                href="#account"
+              <Link
+                to="/profile"
                 aria-label="Account"
-                className="grid size-10 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-11 sm:size-10"
+                className="grid size-10 place-items-center transition-opacity hover:opacity-55"
               >
                 <FiUser size={19} strokeWidth={1.5} />
-              </a>
-              <span className="hidden xl:block">
-                <CountIcon count={wishlistCount} label="Wishlist">
+              </Link>
+              <span>
+                <CountIcon
+                  count={wishlistCount}
+                  label="Wishlist"
+                  href="/wishlist"
+                >
                   <FiHeart size={19} strokeWidth={1.5} />
                 </CountIcon>
               </span>
-              <span className="[&>a]:size-10 min-[360px]:[&>a]:size-11 sm:[&>a]:size-10">
-                <CountIcon count={cartCount} label="Shopping bag">
+              <span className="[&>a]:size-10">
+                <CountIcon count={cartCount} label="Shopping bag" href="/cart">
                   <FiShoppingBag size={19} strokeWidth={1.5} />
                 </CountIcon>
               </span>
@@ -271,7 +244,7 @@ export function Navbar() {
                 aria-label={`Switch to ${darkMode ? 'light' : 'dark'} mode`}
                 aria-pressed={darkMode}
                 onClick={toggleDarkMode}
-                className="hidden size-10 place-items-center transition-opacity hover:opacity-55 sm:grid"
+                className="grid size-10 place-items-center transition-opacity hover:opacity-55"
               >
                 {darkMode ? (
                   <FiSun size={19} strokeWidth={1.5} />
@@ -285,125 +258,7 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* Search uses a backdrop plus a compact animated panel. */}
-      <AnimatePresence>
-        {searchOpen && (
-          <>
-            <motion.button
-              type="button"
-              aria-label="Close search"
-              className="fixed inset-0 z-40 cursor-default bg-black/25 backdrop-blur-[2px]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSearchOpen(false)}
-            />
-            <motion.div
-              id={searchId}
-              role="search"
-              className="fixed inset-x-0 top-0 z-50 max-h-[58svh] overflow-y-auto bg-canvas px-5 py-4 text-ink shadow-xl sm:px-8 sm:py-6"
-              initial={{ y: '-100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '-100%' }}
-              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <div className="mx-auto max-w-4xl">
-                <div className="mb-3 flex items-center justify-between sm:mb-4">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.22em]">
-                    Search the collection
-                  </p>
-                  <button
-                    type="button"
-                    aria-label="Close search"
-                    onClick={() => setSearchOpen(false)}
-                    className="grid size-10 place-items-center"
-                  >
-                    <FiX size={22} />
-                  </button>
-                </div>
-                {/* Controlled input provides live filtering and Enter submission. */}
-                <form
-                  onSubmit={handleSearchSubmit}
-                  className="flex items-center border-b border-ink pb-3"
-                >
-                  <input
-                    autoFocus
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    aria-label="Search products"
-                    placeholder="What are you looking for?"
-                    className="min-w-0 flex-1 bg-transparent font-display text-xl outline-none placeholder:text-ink/35 sm:text-3xl"
-                  />
-                  <button
-                    type="submit"
-                    aria-label="Submit search"
-                    disabled={!searchResults.length}
-                    className="grid size-11 shrink-0 place-items-center disabled:cursor-not-allowed disabled:opacity-35"
-                  >
-                    <FiSearch size={24} strokeWidth={1.25} />
-                  </button>
-                </form>
-
-                {/* aria-live announces result changes without moving keyboard focus. */}
-                <div aria-live="polite" className="pt-4">
-                  {!normalizedQuery ? (
-                    <div>
-                      <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50">
-                        Popular searches
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {popularSearches.map((search) => (
-                          <button
-                            key={search}
-                            type="button"
-                            onClick={() => setSearchQuery(search)}
-                            className="border border-line px-3 py-2 text-[9px] uppercase tracking-[0.13em] transition-colors hover:bg-ink hover:text-canvas sm:px-4 sm:text-[10px]"
-                          >
-                            {search}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50">
-                        {searchResults.length}{' '}
-                        {searchResults.length === 1 ? 'result' : 'results'} for “
-                        {searchQuery.trim()}”
-                      </p>
-                      {searchResults.length > 0 ? (
-                        <div className="divide-y divide-line border-t border-line">
-                          {searchResults.map((product) => (
-                            <a
-                              key={product.name}
-                              href={product.href}
-                              onClick={() => setSearchOpen(false)}
-                              className="group flex items-center justify-between gap-4 py-2.5 sm:py-3"
-                            >
-                              <span className="font-display text-base sm:text-lg">
-                                {product.name}
-                              </span>
-                              <span className="text-[9px] uppercase tracking-[0.16em] text-ink/50 group-hover:text-ink">
-                                {product.category}
-                              </span>
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="py-3 font-display text-base text-ink/60 sm:text-lg">
-                          No products found. Try a category such as Women, Men,
-                          Accessories, or Shoes.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Mobile navigation is rendered as an off-canvas drawer with its own
           category and account shortcuts. */}
@@ -428,20 +283,36 @@ export function Navbar() {
               exit={{ x: '-100%' }}
               transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
             >
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false)
+                  setSearchOpen(true)
+                }}
+                className="mb-5 flex min-h-12 w-full items-center gap-3 border border-line px-4 text-left text-[9px] font-medium uppercase tracking-[0.16em] sm:mb-7"
+              >
+                <FiSearch size={17} />
+                Search the collection
+              </button>
+
               {/* Primary mobile links use larger touch-friendly typography. */}
               <nav className="flex flex-col" aria-label="Mobile primary navigation">
                 {navigation.map((item, index) => (
-                  <motion.a
+                  <motion.div
                     key={item.label}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="border-b border-line py-3.5 font-display text-[25px] sm:py-4 sm:text-[28px]"
+                    className="border-b border-line"
                     initial={{ opacity: 0, x: -12 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.08 + index * 0.05 }}
                   >
-                    {item.label}
-                  </motion.a>
+                    <Link
+                      to={item.to}
+                      onClick={() => setMobileOpen(false)}
+                      className="block py-3.5 font-display text-[25px] sm:py-4 sm:text-[28px]"
+                    >
+                      {item.label}
+                    </Link>
+                  </motion.div>
                 ))}
               </nav>
 
@@ -452,14 +323,14 @@ export function Navbar() {
                 </p>
                 <div className="grid grid-cols-2 gap-x-5">
                   {categories.map((category) => (
-                    <a
+                    <Link
                       key={category.label}
-                      href={category.href}
+                      to={category.to}
                       onClick={() => setMobileOpen(false)}
                       className="border-b border-line py-3 text-xs uppercase tracking-[0.12em]"
                     >
                       {category.label}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -467,24 +338,27 @@ export function Navbar() {
               {/* Account, wishlist, cart, and theme actions remain available when
                   their header icons are hidden at smaller breakpoints. */}
               <div className="mt-auto grid grid-cols-2 gap-2 pt-2 sm:gap-3">
-                <a
-                  href="#account"
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileOpen(false)}
                   className="flex min-w-0 items-center gap-2 border border-line px-3 py-3 text-[9px] font-medium uppercase tracking-[0.12em] sm:px-4 sm:text-[10px] sm:tracking-[0.16em]"
                 >
                   <FiUser size={16} /> Account
-                </a>
-                <a
-                  href="#wishlist"
+                </Link>
+                <Link
+                  to="/wishlist"
+                  onClick={() => setMobileOpen(false)}
                   className="flex min-w-0 items-center gap-2 border border-line px-3 py-3 text-[9px] font-medium uppercase tracking-[0.12em] sm:px-4 sm:text-[10px] sm:tracking-[0.16em]"
                 >
                   <FiHeart size={16} /> Wishlist
-                </a>
-                <a
-                  href="#cart"
+                </Link>
+                <Link
+                  to="/cart"
+                  onClick={() => setMobileOpen(false)}
                   className="flex min-w-0 items-center gap-2 border border-line px-3 py-3 text-[9px] font-medium uppercase tracking-[0.12em] sm:px-4 sm:text-[10px] sm:tracking-[0.16em]"
                 >
                   <FiShoppingBag size={16} /> Cart
-                </a>
+                </Link>
                 <button
                   type="button"
                   onClick={toggleDarkMode}
@@ -494,9 +368,12 @@ export function Navbar() {
                   {darkMode ? 'Light mode' : 'Dark mode'}
                 </button>
               </div>
-              <p className="pt-5 text-[9px] uppercase tracking-[0.12em] text-ink/50 sm:pt-6 sm:text-[10px] sm:tracking-[0.16em]">
-                Client services · +1 800 555 0148
-              </p>
+              <a
+                href="tel:+2348005864000"
+                className="pt-5 text-[9px] uppercase tracking-[0.12em] text-ink/50 transition-colors hover:text-ink sm:pt-6 sm:text-[10px] sm:tracking-[0.16em]"
+              >
+                Client services · +234 800 LUMI 000
+              </a>
             </motion.aside>
           </>
         )}
