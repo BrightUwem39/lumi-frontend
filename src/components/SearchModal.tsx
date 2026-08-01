@@ -141,7 +141,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="search-modal-title"
-            className="fixed inset-x-0 top-0 z-50 max-h-[92svh] overflow-y-auto bg-canvas px-4 pb-7 pt-4 text-ink shadow-2xl sm:px-7 sm:pb-10 sm:pt-6 lg:px-10"
+            className="fixed inset-x-0 top-0 z-50 max-h-[100svh] overflow-y-auto overscroll-contain bg-canvas px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 text-ink shadow-2xl min-[380px]:px-4 min-[380px]:pb-7 min-[380px]:pt-4 sm:max-h-[92svh] sm:px-7 sm:pb-10 sm:pt-6 lg:px-10"
             initial={{ y: '-100%' }}
             animate={{ y: 0 }}
             exit={{ y: '-100%' }}
@@ -185,7 +185,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search products, categories, or styles"
+                  placeholder="Search the collection"
                   aria-label="Search products"
                   className="min-w-0 flex-1 bg-transparent font-display text-lg placeholder:text-ink/30 min-[380px]:text-xl sm:text-3xl"
                 />
@@ -207,7 +207,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
                 </button>
               </form>
 
-              <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:gap-12">
+              <div className="mt-5 grid min-w-0 gap-7 min-[380px]:mt-6 min-[380px]:gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:gap-12">
                 <div className="min-w-0">
                   {/* Popular searches double as fast, touch-friendly query chips. */}
                   <SearchGroupTitle icon={<FiTrendingUp />} title="Popular searches" />
@@ -272,7 +272,7 @@ function RecentlyViewed({ products, onClose }: { products: SearchProduct[]; onCl
     <div>
       <SearchGroupTitle icon={<FiClock />} title="Recently viewed" />
       {recentlyViewed.length ? (
-        <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="mt-3 grid grid-cols-2 gap-3 min-[480px]:grid-cols-3 sm:gap-4">
           {recentlyViewed.slice(0, 3).map((product) => (
             <Link
               key={product.id}

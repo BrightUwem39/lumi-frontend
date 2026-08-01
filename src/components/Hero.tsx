@@ -41,7 +41,7 @@ export function Hero() {
 
       {/* Main campaign copy aligns to the bottom on phones and vertically
           centers on larger screens. */}
-      <div className="relative mx-auto flex min-h-[calc(100svh-92px)] max-w-[1440px] items-end px-5 pb-8 pt-20 sm:min-h-[calc(100svh-108px)] sm:items-center sm:px-8 sm:pb-14 sm:pt-14 lg:px-12 xl:min-h-[calc(100svh-120px)] xl:px-16">
+      <div className="relative mx-auto flex min-h-[calc(100svh-92px)] max-w-[1440px] items-end px-4 pb-6 pt-14 min-[380px]:px-5 min-[380px]:pb-8 sm:min-h-[calc(100svh-108px)] sm:items-center sm:px-8 sm:pb-14 sm:pt-14 lg:px-12 xl:min-h-[calc(100svh-120px)] xl:px-16">
         <motion.div
           className="w-full max-w-xl sm:max-w-lg lg:max-w-2xl"
           initial={false}
@@ -65,7 +65,7 @@ export function Hero() {
             id="hero-heading"
             variants={reveal}
             transition={{ duration: 0.75 }}
-            className="max-w-[10ch] break-words font-hero text-[clamp(2.75rem,13vw,5rem)] leading-[0.9] tracking-[-0.035em] min-[360px]:text-[clamp(3rem,13vw,5rem)] sm:text-[clamp(4.5rem,8vw,7rem)] lg:max-w-[10ch]"
+            className="max-w-[10ch] break-words font-hero text-[clamp(2.45rem,12.5vw,4rem)] leading-[0.92] tracking-[-0.035em] min-[380px]:text-[clamp(2.8rem,12vw,4.5rem)] sm:text-[clamp(4.5rem,8vw,7rem)] lg:max-w-[10ch]"
           >
             ELEVATE YOUR EVERYDAY STYLE
           </motion.h1>
@@ -74,7 +74,7 @@ export function Hero() {
           <motion.p
             variants={reveal}
             transition={{ duration: 0.65 }}
-            className="mt-5 max-w-[30ch] text-[12px] leading-5 text-white/85 sm:mt-7 sm:max-w-md sm:text-sm sm:leading-6"
+            className="mt-4 max-w-[31ch] text-[12px] leading-5 text-white/85 min-[380px]:mt-5 sm:mt-7 sm:max-w-md sm:text-sm sm:leading-6"
           >
             Discover thoughtfully crafted pieces that blend timeless design
             with modern elegance.
@@ -85,7 +85,7 @@ export function Hero() {
           <motion.div
             variants={reveal}
             transition={{ duration: 0.65 }}
-            className="mt-6 flex max-w-full flex-col gap-2.5 sm:mt-8 sm:flex-row sm:flex-wrap sm:gap-3"
+            className="mt-5 flex max-w-full flex-col gap-2 min-[380px]:mt-6 sm:mt-8 sm:flex-row sm:flex-wrap sm:gap-3"
           >
             <Link
               to="/shop"
@@ -117,7 +117,7 @@ export function Hero() {
           >
             <Link
               to="/shop?sort=latest"
-              className="inline-flex max-w-full whitespace-normal border-b border-white/65 pb-1 text-[8px] font-medium uppercase leading-4 tracking-[0.12em] transition-opacity hover:opacity-60 min-[360px]:text-[9px] min-[360px]:tracking-[0.15em] sm:tracking-[0.2em]"
+              className="hidden max-w-full whitespace-normal border-b border-white/65 pb-1 text-[9px] font-medium uppercase leading-4 tracking-[0.15em] transition-opacity hover:opacity-60 min-[420px]:inline-flex sm:tracking-[0.2em]"
             >
               Explore the full summer collection
             </Link>

@@ -191,12 +191,12 @@ export function ShopPage() {
 
   return (
     <main className="bg-canvas text-ink">
-      <header className="border-b border-line px-4 py-12 sm:px-7 sm:py-16 lg:px-10">
+      <header className="border-b border-line px-4 py-9 min-[380px]:py-10 sm:px-7 sm:py-16 lg:px-10">
         <div className="mx-auto max-w-[1440px]">
           <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50">
             Lumi collection
           </p>
-          <h1 className="text-5xl sm:text-6xl">Shop all</h1>
+          <h1 className="text-4xl min-[380px]:text-5xl sm:text-6xl">Shop all</h1>
           <p className="mt-4 max-w-[32ch] text-sm leading-6 text-ink/60 sm:max-w-lg">
             Everyday pieces, considered details, and the latest from our
             studio.
@@ -204,11 +204,11 @@ export function ShopPage() {
         </div>
       </header>
 
-      <section aria-label="Shop products" className="px-4 py-8 sm:px-7 lg:px-10 lg:py-10">
+      <section aria-label="Shop products" className="px-3 py-6 min-[380px]:px-4 min-[380px]:py-8 sm:px-7 lg:px-10 lg:py-10">
         <div className="mx-auto max-w-[1440px]">
           {/* Search, mobile filter, result count, and sort controls. */}
-          <div className="mb-8 grid gap-3 border-b border-line pb-6 sm:grid-cols-[1fr_auto_auto] sm:items-center">
-            <label className="flex min-h-12 items-center gap-3 bg-ink/[0.04] px-4">
+          <div className="mb-6 grid grid-cols-2 gap-2.5 border-b border-line pb-5 sm:mb-8 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-3 sm:pb-6">
+            <label className="col-span-2 flex min-h-12 items-center gap-3 bg-ink/[0.04] px-4 sm:col-span-1">
               <FiSearch size={17} className="shrink-0 text-ink/55" />
               <span className="sr-only">Search products</span>
               <input
@@ -269,14 +269,14 @@ export function ShopPage() {
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[250px_1fr] xl:gap-12">
+          <div className="grid min-w-0 gap-8 lg:grid-cols-[250px_minmax(0,1fr)] xl:gap-12">
             <aside className="hidden lg:block">
               <div className="sticky top-6">
                 <ProductFilters {...filterProps} />
               </div>
             </aside>
 
-            <div>
+            <div className="min-w-0">
               <p className="mb-5 text-[9px] uppercase tracking-[0.16em] text-ink/50">
                 {filteredProducts.length}{' '}
                 {filteredProducts.length === 1 ? 'product' : 'products'}
@@ -287,7 +287,7 @@ export function ShopPage() {
               {visibleProducts.length > 0 ? (
                 <motion.div
                   layout
-                  className="grid grid-cols-1 gap-x-4 gap-y-10 min-[520px]:grid-cols-2 xl:grid-cols-3"
+                className="grid grid-cols-1 gap-x-3 gap-y-8 min-[340px]:grid-cols-2 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-3"
                 >
                   {visibleProducts.map((product) => (
                     <ProductCard key={product.id} product={product} />
@@ -359,7 +359,7 @@ export function ShopPage() {
             />
             <motion.aside
               aria-label="Product filters"
-              className="fixed inset-y-0 left-0 z-[60] w-[88%] max-w-sm overflow-y-auto bg-canvas p-6 text-ink lg:hidden"
+              className="fixed inset-y-0 left-0 z-[60] w-[92%] max-w-sm overflow-y-auto overscroll-contain bg-canvas p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-ink min-[380px]:p-5 sm:w-[88%] sm:p-6 lg:hidden"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}

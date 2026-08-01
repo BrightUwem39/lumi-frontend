@@ -150,12 +150,12 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
     <main className="bg-canvas text-ink">
       <section className="px-4 py-6 sm:px-7 sm:py-10 lg:px-10">
         <div className="mx-auto max-w-[1440px]">
-          <nav aria-label="Breadcrumb" className="mb-6 text-[9px] uppercase tracking-[0.16em] text-ink/45">
+          <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap gap-x-2 gap-y-1 text-[8px] uppercase tracking-[0.12em] text-ink/45 min-[380px]:mb-6 min-[380px]:text-[9px] min-[380px]:tracking-[0.16em]">
             <Link to="/shop" className="hover:text-ink">Shop</Link>
-            <span className="mx-2">/</span>
+            <span>/</span>
             <span>{product.category}</span>
-            <span className="mx-2">/</span>
-            <span className="text-ink">{product.name}</span>
+            <span>/</span>
+            <span className="min-w-0 break-words text-ink">{product.name}</span>
           </nav>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-12 xl:gap-16">
@@ -167,7 +167,7 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
                 {product.brand} · {product.category}
               </p>
               <div className="mt-3 flex items-start justify-between gap-4">
-                <h1 className="text-4xl leading-[1.05] sm:text-5xl">{product.name}</h1>
+                <h1 className="min-w-0 break-words text-3xl leading-[1.05] min-[380px]:text-4xl sm:text-5xl">{product.name}</h1>
                 <button
                   type="button"
                   aria-label={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
@@ -283,7 +283,7 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
         <div className="mx-auto max-w-[1440px]">
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">You may also like</p>
           <h2 id="related-heading" className="mt-2 text-3xl sm:text-4xl">Related products</h2>
-          <div className="mt-8 grid grid-cols-1 gap-x-3 gap-y-10 min-[420px]:grid-cols-2 sm:gap-x-5 lg:grid-cols-4">
+          <div className="mt-8 grid grid-cols-1 gap-x-3 gap-y-8 min-[340px]:grid-cols-2 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4">
             {relatedProducts.map((item) => (
               <ProductCard key={item.id} product={item} />
             ))}

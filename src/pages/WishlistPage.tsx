@@ -38,7 +38,7 @@ export function WishlistPage() {
   }
 
   return (
-    <main className="min-h-[65svh] bg-canvas px-4 py-10 text-ink sm:px-7 sm:py-14 lg:px-10 lg:py-16">
+    <main className="min-h-[65svh] bg-canvas px-3 py-8 text-ink min-[380px]:px-4 min-[380px]:py-10 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
       <div className="mx-auto max-w-[1440px]">
         <Link
           to="/shop"
@@ -71,7 +71,7 @@ export function WishlistPage() {
           /* Cards stack on small phones and gradually expand to four columns. */
           <section
             aria-label="Saved products"
-            className="mt-8 grid grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            className="mt-7 grid grid-cols-1 gap-x-3 gap-y-8 min-[340px]:grid-cols-2 sm:mt-8 sm:gap-x-4 sm:gap-y-10 lg:grid-cols-3 xl:grid-cols-4"
           >
             {savedProducts.map((product) => (
               <article key={product.id} className="group min-w-0">
@@ -105,11 +105,11 @@ export function WishlistPage() {
                   <p className="text-[8px] uppercase tracking-[0.17em] text-ink/45">
                     {product.brand} · {product.category}
                   </p>
-                  <div className="mt-1.5 flex min-w-0 items-start justify-between gap-3">
-                    <h2 className="min-w-0 text-base leading-5">
+                  <div className="mt-1.5 flex min-w-0 flex-col gap-1 min-[520px]:flex-row min-[520px]:items-start min-[520px]:justify-between min-[520px]:gap-3">
+                    <h2 className="min-w-0 line-clamp-2 text-sm leading-5 min-[420px]:text-base">
                       <Link to={`/product/${product.id}`}>{product.name}</Link>
                     </h2>
-                    <div className="shrink-0 text-right text-xs">
+                    <div className="shrink-0 text-left text-xs min-[520px]:text-right">
                       <span>{currency.format(product.price)}</span>
                       {product.originalPrice && (
                         <span className="ml-1.5 text-ink/35 line-through">
@@ -123,7 +123,7 @@ export function WishlistPage() {
                     type="button"
                     disabled={!product.available}
                     onClick={() => moveToCart(product.id)}
-                    className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.15em] text-canvas disabled:cursor-not-allowed disabled:opacity-40"
+                    className="mt-3 flex min-h-11 w-full items-center justify-center gap-1.5 bg-ink px-2 text-[8px] font-medium uppercase tracking-[0.1em] text-canvas disabled:cursor-not-allowed disabled:opacity-40 min-[420px]:mt-4 min-[420px]:min-h-12 min-[420px]:gap-2 min-[420px]:px-4 min-[420px]:text-[9px] min-[420px]:tracking-[0.15em]"
                   >
                     <FiShoppingBag size={14} />
                     {product.available ? 'Move to cart' : 'Out of stock'}
@@ -151,7 +151,7 @@ function EmptyWishlist() {
         </p>
         <Link
           to="/shop"
-          className="mt-6 inline-flex min-h-12 items-center bg-ink px-7 text-[9px] font-medium uppercase tracking-[0.17em] text-canvas"
+          className="mt-6 inline-flex min-h-12 w-full items-center justify-center bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.14em] text-canvas min-[380px]:w-auto min-[380px]:px-7 min-[380px]:tracking-[0.17em]"
         >
           Explore products
         </Link>

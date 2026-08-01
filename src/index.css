@@ -51,6 +51,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* The React root and route shells must be allowed to shrink below their
+   content width on phones; otherwise wide controls can clip the viewport. */
+#root {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
 /* Media should never force a page wider than its responsive container. */
 img,
 video,
@@ -72,8 +80,17 @@ h6 {
 /* Form controls inherit the site's typography instead of browser defaults. */
 button,
 a,
-input {
+input,
+select,
+textarea {
   font: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  max-width: 100%;
 }
 
 /* Remove the default tap flash while preserving keyboard focus styles below. */

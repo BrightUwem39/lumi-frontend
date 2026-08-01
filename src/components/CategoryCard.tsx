@@ -22,7 +22,7 @@ export function CategoryCard({
 }: CategoryCardProps) {
   return (
     <motion.article
-      className={`group relative min-h-[340px] overflow-hidden bg-[#c8c1b7] text-white min-[420px]:min-h-[390px] sm:min-h-[440px] xl:min-h-[500px] ${className}`}
+      className={`group relative min-h-[300px] overflow-hidden bg-[#c8c1b7] text-white min-[380px]:min-h-[340px] min-[480px]:min-h-[380px] sm:min-h-[440px] xl:min-h-[500px] ${className}`}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
@@ -50,15 +50,16 @@ export function CategoryCard({
         </p>
 
         <div className="flex w-full items-center justify-between gap-3">
-          <h3 className="min-w-0 truncate text-[25px] leading-none min-[380px]:text-[28px] sm:text-4xl">
+          <h3 className="min-w-0 overflow-visible whitespace-normal text-[24px] leading-[1.05] min-[380px]:truncate min-[380px]:text-[28px] sm:text-4xl">
             {title}
           </h3>
 
           <Link
             to={to}
-            className="pointer-events-auto flex min-h-10 shrink-0 items-center gap-1.5 border border-white/70 px-3 text-[8px] font-medium uppercase tracking-[0.13em] backdrop-blur-sm transition-colors hover:bg-white hover:text-[#171713] sm:min-h-11 sm:gap-2 sm:px-4 sm:text-[9px] sm:tracking-[0.16em]"
+            aria-label={`Explore ${title}`}
+            className="pointer-events-auto grid size-10 shrink-0 place-items-center border border-white/70 text-[8px] font-medium uppercase tracking-[0.13em] backdrop-blur-sm transition-colors hover:bg-white hover:text-[#171713] min-[380px]:flex min-[380px]:w-auto min-[380px]:gap-1.5 min-[380px]:px-3 sm:min-h-11 sm:gap-2 sm:px-4 sm:text-[9px] sm:tracking-[0.16em]"
           >
-            Explore
+            <span className="hidden min-[380px]:inline">Explore</span>
             <FiArrowUpRight size={14} />
           </Link>
         </div>

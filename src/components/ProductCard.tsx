@@ -88,14 +88,14 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
             />
           </Link>
 
-          <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
+          <div className="absolute left-2 top-2 flex max-w-[calc(100%-3.5rem)] flex-col items-start gap-1 min-[420px]:left-3 min-[420px]:top-3 min-[420px]:gap-1.5">
             {product.badge && (
-              <span className="bg-ink px-2.5 py-1 text-[8px] font-medium uppercase tracking-[0.16em] text-canvas">
+              <span className="bg-ink px-2 py-1 text-[7px] font-medium uppercase tracking-[0.12em] text-canvas min-[420px]:px-2.5 min-[420px]:text-[8px] min-[420px]:tracking-[0.16em]">
                 {product.badge}
               </span>
             )}
             {discount > 0 && (
-              <span className="bg-white px-2.5 py-1 text-[8px] font-medium uppercase tracking-[0.16em] text-[#171713]">
+              <span className="bg-white px-2 py-1 text-[7px] font-medium uppercase tracking-[0.12em] text-[#171713] min-[420px]:px-2.5 min-[420px]:text-[8px] min-[420px]:tracking-[0.16em]">
                 Save {discount}%
               </span>
             )}
@@ -110,7 +110,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
             }
             aria-pressed={isFavorite}
             onClick={() => toggleWishlist(product.id)}
-            className="absolute right-3 top-3 grid size-10 place-items-center rounded-full bg-white text-[#171713] shadow-sm transition-transform hover:scale-105"
+            className="absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-white text-[#171713] shadow-sm transition-transform hover:scale-105 min-[420px]:right-3 min-[420px]:top-3 min-[420px]:size-10"
           >
             <FiHeart
               size={17}
@@ -129,7 +129,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
             }
             aria-pressed={isCompared}
             onClick={() => toggleComparison(product.id)}
-            className={`absolute right-3 top-16 grid size-10 place-items-center rounded-full shadow-sm transition-all hover:scale-105 ${
+            className={`absolute right-2 top-13 grid size-9 place-items-center rounded-full shadow-sm transition-all hover:scale-105 min-[420px]:right-3 min-[420px]:top-16 min-[420px]:size-10 ${
               isCompared
                 ? 'bg-ink text-canvas'
                 : 'bg-white text-[#171713]'
@@ -139,38 +139,39 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
           </button>
 
           {/* Actions stay visible on touch screens and reveal on hover for desktop. */}
-          <div className="absolute inset-x-3 bottom-3 grid grid-cols-1 gap-2 transition-all duration-300 min-[360px]:grid-cols-2 sm:translate-y-3 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100">
+          <div className="absolute inset-x-2 bottom-2 grid grid-cols-2 gap-1.5 transition-all duration-300 min-[420px]:inset-x-3 min-[420px]:bottom-3 min-[420px]:gap-2 sm:translate-y-3 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100">
             <button
               type="button"
               onClick={() => setQuickViewOpen(true)}
-              className="flex min-h-11 items-center justify-center gap-2 border border-white/70 bg-black/45 px-2 text-[8px] font-medium uppercase tracking-[0.12em] text-white backdrop-blur-sm transition-colors hover:bg-black/75"
+              className="flex min-h-10 min-w-0 items-center justify-center gap-1 border border-white/70 bg-black/45 px-1.5 text-[7px] font-medium uppercase tracking-[0.08em] text-white backdrop-blur-sm transition-colors hover:bg-black/75 min-[420px]:min-h-11 min-[420px]:gap-2 min-[420px]:px-2 min-[420px]:text-[8px] min-[420px]:tracking-[0.12em]"
             >
               <FiEye size={14} />
-              Quick view
+              <span className="min-[420px]:hidden">View</span>
+              <span className="hidden min-[420px]:inline">Quick view</span>
             </button>
             <button
               type="button"
               onClick={handleAddToCart}
-              className="flex min-h-11 items-center justify-center gap-2 bg-white px-2 text-[8px] font-medium uppercase tracking-[0.12em] text-[#171713] transition-colors hover:bg-[#171713] hover:text-white"
+              className="flex min-h-10 min-w-0 items-center justify-center gap-1 bg-white px-1.5 text-[7px] font-medium uppercase tracking-[0.08em] text-[#171713] transition-colors hover:bg-[#171713] hover:text-white min-[420px]:min-h-11 min-[420px]:gap-2 min-[420px]:px-2 min-[420px]:text-[8px] min-[420px]:tracking-[0.12em]"
             >
               <FiShoppingBag size={14} />
-              {justAdded ? 'Added' : 'Add to cart'}
+              {justAdded ? 'Added' : <><span className="min-[420px]:hidden">Add</span><span className="hidden min-[420px]:inline">Add to cart</span></>}
             </button>
           </div>
         </div>
 
         {/* Product details remain compact so cards work in grids and sliders. */}
-        <div className="pt-4">
-          <div className="flex items-start justify-between gap-3">
+        <div className="pt-3 min-[420px]:pt-4">
+          <div className="flex min-w-0 flex-col gap-1.5 min-[520px]:flex-row min-[520px]:items-start min-[520px]:justify-between min-[520px]:gap-3">
             <div className="min-w-0">
               <p className="mb-1 text-[8px] font-medium uppercase tracking-[0.18em] text-ink/50">
                 {product.category}
               </p>
-              <h3 className="truncate text-[15px] leading-5">
+              <h3 className="line-clamp-2 text-[14px] leading-5 min-[420px]:text-[15px]">
                 <Link to={`/product/${product.id}`}>{product.name}</Link>
               </h3>
             </div>
-            <div className="shrink-0 text-right text-xs">
+            <div className="shrink-0 text-left text-xs min-[520px]:text-right">
               <span>{currency.format(product.price)}</span>
               {product.originalPrice && (
                 <span className="ml-2 text-ink/40 line-through">
@@ -221,7 +222,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
               role="dialog"
               aria-modal="true"
               aria-labelledby={`quick-view-${product.id}`}
-              className="relative z-10 grid max-h-[92svh] w-full max-w-4xl overflow-y-auto bg-canvas text-ink sm:grid-cols-2"
+              className="relative z-10 grid max-h-[calc(100svh-1rem)] w-full max-w-4xl overflow-y-auto overscroll-contain bg-canvas text-ink sm:max-h-[92svh] sm:grid-cols-2"
               initial={{ opacity: 0, y: 18, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 18, scale: 0.98 }}
@@ -235,20 +236,20 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
               >
                 <FiX size={20} />
               </button>
-              <div className="aspect-[4/5] max-h-[70svh] bg-[#e8e5df]">
+              <div className="aspect-[4/3] max-h-[48svh] bg-[#e8e5df] sm:aspect-[4/5] sm:max-h-[70svh]">
                 <OptimizedImage
                   src={product.image}
                   alt={product.name}
                   className="size-full object-cover"
                 />
               </div>
-              <div className="flex flex-col justify-center p-6 sm:p-10">
+              <div className="flex flex-col justify-center p-5 sm:p-10">
                 <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50">
                   {product.category}
                 </p>
                 <h2
                   id={`quick-view-${product.id}`}
-                  className="mt-3 text-3xl sm:text-4xl"
+                  className="mt-2 text-2xl min-[380px]:text-3xl sm:mt-3 sm:text-4xl"
                 >
                   {product.name}
                 </h2>
@@ -260,7 +261,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
                     </span>
                   )}
                 </div>
-                <p className="mt-6 text-sm leading-6 text-ink/65">
+                <p className="mt-4 text-xs leading-5 text-ink/65 sm:mt-6 sm:text-sm sm:leading-6">
                   Thoughtfully cut and finished for everyday wear. Designed in
                   the Lumi studio with close attention to proportion, texture,
                   and comfort.
@@ -268,7 +269,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="mt-8 flex min-h-12 items-center justify-center gap-3 bg-ink px-6 text-[10px] font-medium uppercase tracking-[0.18em] text-canvas"
+                  className="mt-5 flex min-h-12 items-center justify-center gap-3 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.14em] text-canvas sm:mt-8 sm:px-6 sm:text-[10px] sm:tracking-[0.18em]"
                 >
                   <FiShoppingBag size={16} />
                   {justAdded ? 'Added to cart' : 'Add to cart'}

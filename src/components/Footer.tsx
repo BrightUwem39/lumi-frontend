@@ -45,11 +45,11 @@ export function Footer() {
   }
 
   return (
-    <footer id="site-footer" className="bg-ink px-4 pb-6 pt-14 text-canvas sm:px-7 sm:pb-8 sm:pt-16 lg:px-10 lg:pt-20">
+    <footer id="site-footer" className="bg-ink px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-11 text-canvas min-[380px]:pt-12 sm:px-7 sm:pb-8 sm:pt-16 lg:px-10 lg:pt-20">
       <div className="mx-auto max-w-[1440px]">
-        <div className="grid min-w-0 grid-cols-1 gap-9 pb-12 min-[620px]:grid-cols-2 min-[620px]:gap-x-10 min-[620px]:gap-y-12 xl:grid-cols-[1.15fr_0.7fr_0.85fr_1.3fr] xl:gap-10 xl:pb-16">
+        <div className="grid min-w-0 grid-cols-2 gap-x-6 gap-y-9 pb-10 min-[620px]:gap-x-10 min-[620px]:gap-y-12 xl:grid-cols-[1.15fr_0.7fr_0.85fr_1.3fr] xl:gap-10 xl:pb-16">
           {/* Brand and contact information remain together for quick reference. */}
-          <div className="min-w-0">
+          <div className="col-span-2 min-w-0 xl:col-span-1">
             <Link
               to="/"
               aria-label="Lumi home"
@@ -117,7 +117,7 @@ export function Footer() {
           </nav>
 
           {/* Compact footer signup offers another conversion point at page end. */}
-          <div>
+          <div className="col-span-2 xl:col-span-1">
             <h2 className="text-[10px] uppercase tracking-[0.2em]">
               Join the list
             </h2>

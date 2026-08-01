@@ -59,12 +59,12 @@ export function CommerceTools() {
         aria-hidden={footerVisible}
         tabIndex={footerVisible ? -1 : undefined}
         aria-label={`Open cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`}
-        className={`fixed right-4 z-30 flex min-h-12 items-center gap-2 rounded-full bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.13em] text-canvas shadow-xl transition-all duration-300 sm:right-6 ${
+        className={`fixed right-3 z-30 min-h-11 items-center gap-2 rounded-full bg-ink px-3 text-[9px] font-medium uppercase tracking-[0.13em] text-canvas shadow-xl transition-all duration-300 sm:right-6 sm:min-h-12 sm:px-4 ${
           comparedProducts.length ? 'bottom-24 sm:bottom-20' : 'bottom-5 sm:bottom-6'
-        } ${footerVisible ? 'pointer-events-none translate-y-4 opacity-0' : 'translate-y-0 opacity-100'}`}
+        } ${cartCount === 0 || pathname === '/' ? 'hidden sm:flex' : 'flex'} ${footerVisible ? 'pointer-events-none translate-y-4 opacity-0' : 'translate-y-0 opacity-100'}`}
       >
         <FiShoppingBag size={15} />
-        <span className="hidden min-[380px]:inline">Cart</span>
+        <span className="hidden sm:inline">Cart</span>
         <span className="grid size-5 place-items-center rounded-full bg-canvas text-[9px] text-ink">
           {cartCount > 9 ? '9+' : cartCount}
         </span>
@@ -74,12 +74,12 @@ export function CommerceTools() {
         {!footerVisible && comparedProducts.length > 0 && (
           <motion.aside
             aria-label="Product comparison"
-            className="fixed inset-x-2 bottom-2 z-30 mx-auto flex max-w-2xl items-center gap-3 border border-line bg-canvas p-3 text-ink shadow-2xl sm:inset-x-6 sm:bottom-4 sm:px-4"
+            className="fixed inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-2xl items-center gap-2 border border-line bg-canvas p-2.5 text-ink shadow-2xl min-[380px]:gap-3 min-[380px]:p-3 sm:inset-x-6 sm:bottom-4 sm:px-4"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-canvas">
+            <span className="hidden size-9 shrink-0 place-items-center rounded-full bg-ink text-canvas min-[380px]:grid">
               <FiLayers size={15} />
             </span>
             <div className="min-w-0 flex-1">

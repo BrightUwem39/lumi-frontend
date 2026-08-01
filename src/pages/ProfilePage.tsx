@@ -64,12 +64,27 @@ export function ProfilePage() {
           </h1>
         </div>
 
-        <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
-          {/* Account navigation scrolls horizontally on mobile and becomes a
-              vertical sidebar once there is enough room. */}
+        <div className="mt-5 grid min-w-0 gap-7 sm:mt-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
+          {/* A compact native selector avoids clipped horizontal tabs on phones.
+              The full account navigation becomes a sidebar on desktop. */}
+          <label className="block lg:hidden">
+            <span className="mb-2 block text-[8px] font-medium uppercase tracking-[0.16em] text-ink/45">
+              Account section
+            </span>
+            <select
+              aria-label="Account section"
+              value={activeTab}
+              onChange={(event) => setActiveTab(event.target.value as ProfileTab)}
+              className="min-h-12 w-full border border-line bg-canvas px-4 text-[10px] font-medium uppercase tracking-[0.13em] text-ink"
+            >
+              {accountTabs.map((tab) => (
+                <option key={tab.id} value={tab.id}>{tab.label}</option>
+              ))}
+            </select>
+          </label>
           <nav
             aria-label="Account sections"
-            className="no-scrollbar flex min-w-0 gap-2 overflow-x-auto border-b border-line pb-3 lg:sticky lg:top-6 lg:block lg:self-start lg:overflow-visible lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6"
+            className="hidden min-w-0 lg:sticky lg:top-6 lg:block lg:self-start lg:border-r lg:pr-6"
           >
             {accountTabs.map((tab) => {
               const selected = activeTab === tab.id
@@ -79,7 +94,7 @@ export function ProfilePage() {
                   type="button"
                   aria-current={selected ? 'page' : undefined}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex min-h-11 shrink-0 items-center gap-3 px-4 text-left text-[9px] font-medium uppercase tracking-[0.13em] transition-colors lg:mb-1 lg:w-full ${
+                  className={`mb-1 flex min-h-11 w-full items-center gap-3 px-4 text-left text-[9px] font-medium uppercase tracking-[0.13em] transition-colors ${
                     selected
                       ? 'bg-ink text-canvas'
                       : 'hover:bg-ink/[0.05]'

@@ -57,10 +57,10 @@ export function CategorySection() {
     <section
       id="categories"
       aria-labelledby="categories-heading"
-      className="bg-canvas px-4 pb-16 pt-6 text-ink sm:px-7 sm:pb-20 sm:pt-8 lg:px-10 lg:pb-24 lg:pt-10"
+      className="scroll-mt-[92px] bg-canvas px-4 pb-12 pt-5 text-ink min-[380px]:pb-14 sm:scroll-mt-[108px] sm:px-7 sm:pb-20 sm:pt-8 lg:px-10 lg:pb-24 lg:pt-10 xl:scroll-mt-[120px]"
     >
       <div className="mx-auto max-w-[1440px]">
-        <div className="mb-8 max-w-xl sm:mb-10">
+        <div className="mb-6 max-w-xl sm:mb-10">
           <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/50">
             Find your edit
           </p>

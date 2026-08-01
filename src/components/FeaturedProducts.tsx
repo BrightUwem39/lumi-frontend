@@ -77,10 +77,10 @@ export function FeaturedProducts() {
     <section
       id="products"
       aria-labelledby="featured-products-heading"
-      className="bg-canvas px-4 pb-6 pt-16 text-ink sm:px-7 sm:pb-8 sm:pt-20 lg:px-10 lg:pb-10 lg:pt-24"
+      className="scroll-mt-[92px] bg-canvas px-4 pb-5 pt-12 text-ink min-[380px]:pt-14 sm:scroll-mt-[108px] sm:px-7 sm:pb-8 sm:pt-20 lg:px-10 lg:pb-10 lg:pt-24 xl:scroll-mt-[120px]"
     >
       <div className="mx-auto max-w-[1440px]">
-        <div className="mb-7 flex flex-col gap-6 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-6 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/50">
               Curated for you
@@ -94,7 +94,7 @@ export function FeaturedProducts() {
           <div
             role="tablist"
             aria-label="Filter featured products"
-            className="no-scrollbar flex max-w-full gap-5 overflow-x-auto border-b border-line sm:gap-7"
+            className="no-scrollbar -mx-4 flex max-w-[calc(100%+2rem)] gap-5 overflow-x-auto border-b border-line px-4 sm:mx-0 sm:max-w-full sm:gap-7 sm:px-0"
           >
             {tabs.map((tab) => {
               const isActive = activeFilter === tab.value
@@ -131,13 +131,13 @@ export function FeaturedProducts() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.22 }}
-            className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
+            className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
           >
             {visibleProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
-                className="w-[82vw] max-w-[340px] shrink-0 snap-start sm:w-auto sm:max-w-none"
+                className="w-[76vw] max-w-[320px] shrink-0 snap-start min-[430px]:w-[62vw] sm:w-auto sm:max-w-none"
               />
             ))}
           </motion.div>

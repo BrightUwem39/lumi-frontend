@@ -21,10 +21,10 @@ export function NewsletterSection() {
     <section
       id="newsletter"
       aria-labelledby="newsletter-heading"
-      className="border-b border-line bg-canvas px-4 py-16 text-ink sm:px-7 sm:py-20 lg:px-10 lg:py-24"
+      className="border-b border-line bg-canvas px-4 py-12 text-ink min-[380px]:py-14 sm:px-7 sm:py-20 lg:px-10 lg:py-24"
     >
       <motion.div
-        className="mx-auto grid max-w-[1440px] gap-9 lg:grid-cols-[1fr_1.15fr] lg:items-end lg:gap-16"
+        className="mx-auto grid max-w-[1440px] gap-7 sm:gap-9 lg:grid-cols-[1fr_1.15fr] lg:items-end lg:gap-16"
         initial={{ opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.25 }}
@@ -36,7 +36,7 @@ export function NewsletterSection() {
           </p>
           <h2
             id="newsletter-heading"
-            className="text-4xl leading-[1.05] sm:text-5xl"
+            className="text-3xl leading-[1.08] min-[380px]:text-4xl sm:text-5xl"
           >
             We’ll only write when it’s worth opening.
           </h2>
@@ -49,7 +49,7 @@ export function NewsletterSection() {
         <div>
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col gap-3 border-b border-ink transition-colors focus-within:border-transparent sm:flex-row sm:items-center sm:gap-4"
+            className="flex flex-col gap-2.5 border-b border-ink transition-colors focus-within:border-transparent sm:flex-row sm:items-center sm:gap-4"
           >
             <label htmlFor="newsletter-email" className="sr-only">
               Email address

@@ -59,7 +59,7 @@ export function CartPage() {
   }
 
   return (
-    <main className="bg-canvas px-4 py-10 text-ink sm:px-7 sm:py-14 lg:px-10 lg:py-16">
+    <main className="bg-canvas px-3 py-8 text-ink min-[380px]:px-4 min-[380px]:py-10 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
       <div className="mx-auto max-w-[1440px]">
         <Link
           to="/shop"
@@ -100,12 +100,12 @@ export function CartPage() {
                 {items.map(({ product, quantity }) => (
                   <article
                     key={product.id}
-                    className="grid grid-cols-[96px_1fr_auto] gap-x-4 gap-y-4 py-6 sm:grid-cols-[1fr_100px_130px_44px] sm:items-center sm:gap-4"
+                    className="grid grid-cols-[80px_minmax(0,1fr)_40px] gap-x-3 gap-y-3 py-5 min-[380px]:grid-cols-[88px_minmax(0,1fr)_40px] min-[380px]:gap-x-4 min-[380px]:gap-y-4 min-[380px]:py-6 sm:grid-cols-[1fr_100px_130px_44px] sm:items-center sm:gap-4"
                   >
-                    <div className="col-span-2 flex min-w-0 gap-4 sm:col-span-1">
+                    <div className="col-span-2 flex min-w-0 gap-3 min-[380px]:gap-4 sm:col-span-1">
                       <Link
                         to={`/product/${product.id}`}
-                        className="aspect-[4/5] w-24 shrink-0 overflow-hidden bg-[#e8e5df]"
+                        className="aspect-[4/5] w-20 shrink-0 overflow-hidden bg-[#e8e5df] min-[380px]:w-[88px] sm:w-24"
                       >
                         <img
                           src={product.image}
@@ -117,7 +117,7 @@ export function CartPage() {
                         <p className="text-[8px] uppercase tracking-[0.16em] text-ink/45">
                           {product.brand} · {product.category}
                         </p>
-                        <h2 className="mt-1.5 text-lg leading-5">
+                        <h2 className="mt-1.5 line-clamp-2 text-base leading-5 min-[380px]:text-lg">
                           <Link to={`/product/${product.id}`}>
                             {product.name}
                           </Link>
@@ -281,7 +281,7 @@ function EmptyCart() {
         </p>
         <Link
           to="/shop"
-          className="mt-6 inline-flex min-h-12 items-center bg-ink px-7 text-[9px] font-medium uppercase tracking-[0.17em] text-canvas"
+          className="mt-6 inline-flex min-h-12 w-full items-center justify-center bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.14em] text-canvas min-[380px]:w-auto min-[380px]:px-7 min-[380px]:tracking-[0.17em]"
         >
           Shop the collection
         </Link>

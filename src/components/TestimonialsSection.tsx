@@ -53,7 +53,7 @@ export function TestimonialsSection() {
     <section
       id="testimonials"
       aria-labelledby="testimonials-heading"
-      className="bg-ink px-4 py-16 text-canvas sm:px-7 sm:py-20 lg:px-10 lg:py-24"
+      className="bg-ink px-4 py-12 text-canvas min-[380px]:py-14 sm:px-7 sm:py-20 lg:px-10 lg:py-24"
     >
       <div className="mx-auto max-w-[1440px]">
         <div className="mb-8 max-w-xl sm:mb-10">

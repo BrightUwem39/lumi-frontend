@@ -127,7 +127,7 @@ export function CheckoutPage() {
   }
 
   return (
-    <main className="bg-canvas px-4 py-8 text-ink sm:px-7 sm:py-12 lg:px-10 lg:py-16">
+    <main className="bg-canvas px-3 py-8 text-ink min-[380px]:px-4 sm:px-7 sm:py-12 lg:px-10 lg:py-16">
       <div className="mx-auto max-w-[1280px]">
         <Link
           to="/cart"
@@ -151,10 +151,10 @@ export function CheckoutPage() {
         ) : items.length === 0 ? (
           <div className="grid min-h-[52svh] place-items-center text-center">
             <div>
-              <h2 className="text-2xl">There’s nothing to check out yet.</h2>
+              <h2 className="break-words text-2xl">There’s nothing to check out yet.</h2>
               <Link
                 to="/shop"
-                className="mt-6 inline-flex min-h-12 items-center bg-ink px-7 text-[9px] uppercase tracking-[0.17em] text-canvas"
+                className="mt-6 inline-flex min-h-12 w-full items-center justify-center bg-ink px-4 text-[9px] uppercase tracking-[0.14em] text-canvas min-[380px]:w-auto min-[380px]:px-7 min-[380px]:tracking-[0.17em]"
               >
                 Browse the collection
               </Link>
