@@ -1,3 +1,4 @@
+import { FiArrowRight } from 'react-icons/fi'
 import { CategoryCard } from './CategoryCard'
 
 // Category data can later come from the backend without changing the card.
@@ -60,20 +61,29 @@ export function CategorySection() {
       className="scroll-mt-[92px] bg-canvas px-4 pb-12 pt-5 text-ink min-[380px]:pb-14 sm:scroll-mt-[108px] sm:px-7 sm:pb-20 sm:pt-8 lg:px-10 lg:pb-24 lg:pt-10 xl:scroll-mt-[120px]"
     >
       <div className="mx-auto max-w-[1440px]">
-        <div className="mb-6 max-w-xl sm:mb-10">
-          <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/50">
-            Find your edit
+        <div className="mb-5 flex items-end justify-between gap-4 sm:mb-10">
+          <div className="max-w-xl">
+            <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/50">
+              Find your edit
+            </p>
+            <h2 id="categories-heading" className="text-3xl sm:text-4xl">
+              Shop by category
+            </h2>
+          </div>
+          <p className="mb-1 flex shrink-0 items-center gap-1.5 text-[8px] font-medium uppercase tracking-[0.12em] text-ink/45 sm:hidden">
+            Swipe <FiArrowRight size={12} />
           </p>
-          <h2 id="categories-heading" className="text-3xl sm:text-4xl">
-            Shop by category
-          </h2>
         </div>
 
-        {/* One column on narrow phones, two columns from tablet size, and a
-            twelve-column editorial composition on wide desktop screens. */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-12">
+        {/* Phones swipe through snap-aligned cards; larger screens retain the
+            editorial grid so every category is visible at once. */}
+        <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-12">
           {categories.map((category) => (
-            <CategoryCard key={category.title} {...category} />
+            <CategoryCard
+              key={category.title}
+              {...category}
+              className={`w-[82vw] max-w-[330px] shrink-0 snap-start sm:w-auto sm:max-w-none ${category.className}`}
+            />
           ))}
         </div>
       </div>

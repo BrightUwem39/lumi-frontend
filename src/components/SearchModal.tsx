@@ -272,13 +272,13 @@ function RecentlyViewed({ products, onClose }: { products: SearchProduct[]; onCl
     <div>
       <SearchGroupTitle icon={<FiClock />} title="Recently viewed" />
       {recentlyViewed.length ? (
-        <div className="mt-3 grid grid-cols-2 gap-3 min-[480px]:grid-cols-3 sm:gap-4">
+        <div className="no-scrollbar -mx-3 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-3 pb-2 min-[480px]:mx-0 min-[480px]:grid min-[480px]:grid-cols-3 min-[480px]:overflow-visible min-[480px]:px-0 sm:gap-4">
           {recentlyViewed.slice(0, 3).map((product) => (
             <Link
               key={product.id}
               to={`/product/${product.id}`}
               onClick={onClose}
-              className="group min-w-0"
+              className="group w-[44vw] max-w-40 shrink-0 snap-start min-[480px]:w-auto min-[480px]:max-w-none"
             >
               <div className="aspect-[4/5] overflow-hidden bg-[#e8e5df]">
                 <img

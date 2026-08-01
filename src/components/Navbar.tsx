@@ -282,6 +282,16 @@ export function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+              drag="x"
+              dragConstraints={{ left: -180, right: 0 }}
+              dragElastic={0.08}
+              dragMomentum={false}
+              dragDirectionLock
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -70 || info.velocity.x < -450) {
+                  setMobileOpen(false)
+                }
+              }}
             >
               <button
                 type="button"

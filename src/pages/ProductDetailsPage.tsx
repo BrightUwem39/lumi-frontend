@@ -3,6 +3,7 @@ import {
   FiCheck,
   FiChevronDown,
   FiHeart,
+  FiArrowRight,
   FiMinus,
   FiPlus,
   FiShield,
@@ -282,10 +283,13 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
       <section aria-labelledby="related-heading" className="px-4 py-14 sm:px-7 sm:py-20 lg:px-10">
         <div className="mx-auto max-w-[1440px]">
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">You may also like</p>
-          <h2 id="related-heading" className="mt-2 text-3xl sm:text-4xl">Related products</h2>
-          <div className="mt-8 grid grid-cols-1 gap-x-3 gap-y-8 min-[340px]:grid-cols-2 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4">
+          <div className="flex items-end justify-between gap-4">
+            <h2 id="related-heading" className="mt-2 text-3xl sm:text-4xl">Related products</h2>
+            <p className="mb-1 flex shrink-0 items-center gap-1.5 text-[8px] uppercase tracking-[0.12em] text-ink/45 sm:hidden">Swipe <FiArrowRight size={12} /></p>
+          </div>
+          <div className="no-scrollbar -mx-4 mt-8 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
             {relatedProducts.map((item) => (
-              <ProductCard key={item.id} product={item} />
+              <ProductCard key={item.id} product={item} className="w-[72vw] max-w-[300px] shrink-0 snap-start min-[430px]:w-[58vw] sm:w-auto sm:max-w-none" />
             ))}
           </div>
         </div>

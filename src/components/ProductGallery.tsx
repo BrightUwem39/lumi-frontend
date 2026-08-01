@@ -95,7 +95,7 @@ export function ProductGallery({
 
         <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-2 bg-white/90 px-3 py-2 text-[8px] uppercase tracking-[0.14em] text-[#171713] backdrop-blur">
           <FiZoomIn size={13} />
-          <span className="sm:hidden">Tap to zoom</span>
+          <span className="sm:hidden">Swipe · tap to zoom</span>
           <span className="hidden sm:inline">Hover to zoom</span>
         </div>
 

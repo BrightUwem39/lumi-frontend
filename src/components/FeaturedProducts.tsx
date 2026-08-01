@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { FiArrowRight } from 'react-icons/fi'
 import { ProductCard } from './ProductCard'
 import type { Product } from '../types/product'
 
@@ -123,6 +124,10 @@ export function FeaturedProducts() {
           </div>
         </div>
 
+        <p className="mb-3 flex items-center justify-end gap-1.5 text-[8px] font-medium uppercase tracking-[0.12em] text-ink/45 sm:hidden">
+          Swipe products <FiArrowRight size={12} />
+        </p>
+
         <AnimatePresence mode="wait">
           <motion.div
             key={activeFilter}
@@ -131,7 +136,7 @@ export function FeaturedProducts() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.22 }}
-            className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
+            className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
           >
             {visibleProducts.map((product) => (
               <ProductCard

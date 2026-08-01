@@ -364,8 +364,19 @@ export function ShopPage() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.3 }}
+              drag="x"
+              dragConstraints={{ left: -180, right: 0 }}
+              dragElastic={0.08}
+              dragMomentum={false}
+              dragDirectionLock
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -70 || info.velocity.x < -450) {
+                  setFiltersOpen(false)
+                }
+              }}
             >
-              <div className="mb-7 flex justify-end">
+              <div className="mb-7 flex items-center justify-between gap-4">
+                <span className="text-[8px] uppercase tracking-[0.13em] text-ink/40">Swipe left to close</span>
                 <button
                   type="button"
                   aria-label="Close filters"
