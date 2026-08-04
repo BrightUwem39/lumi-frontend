@@ -1,5 +1,10 @@
-import { motion, useReducedMotion, type Variants } from 'framer-motion'
-import { LuCheck as FiCheck, LuSlidersHorizontal as FiSliders } from 'react-icons/lu'
+import { useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
+import {
+  LuCheck as FiCheck,
+  LuChevronDown as FiChevronDown,
+  LuSlidersHorizontal as FiSliders,
+} from 'react-icons/lu'
 
 export type PriceFilter =
   | 'all'
@@ -88,29 +93,45 @@ export function ProductFilters({
   animated = false,
 }: ProductFilterProps) {
   const reduceMotion = useReducedMotion()
+  const activeCount =
+    (category === 'All' ? 0 : 1) +
+    (price === 'all' ? 0 : 1) +
+    selectedSizes.length +
+    selectedColors.length +
+    (minRating === 0 ? 0 : 1) +
+    (availability === 'all' ? 0 : 1)
 
   return (
     <motion.div
+      className="min-w-0"
       variants={filterRootVariants}
       initial={animated && !reduceMotion ? 'hidden' : false}
       animate="visible"
     >
-      <div className="flex items-center justify-between border-b border-line pb-4">
-        <h2 className="flex items-center gap-2 text-sm">
-          <FiSliders size={15} />
-          Filters
-        </h2>
+      <div className="flex items-center justify-between gap-4 border-b border-line pb-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center border border-line bg-ink/[0.03]">
+            <FiSliders size={15} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-sm">Refine</h2>
+            <p className="mt-0.5 text-[8px] uppercase tracking-[0.13em] text-ink/40">
+              {activeCount ? `${activeCount} active` : 'All products'}
+            </p>
+          </div>
+        </div>
         <button
           type="button"
           onClick={resetFilters}
-          className="text-[9px] font-medium uppercase tracking-[0.15em] text-ink/50 transition-colors hover:text-ink"
+          disabled={activeCount === 0}
+          className="text-[8px] font-medium uppercase tracking-[0.14em] text-ink/55 transition-colors hover:text-ink disabled:cursor-default disabled:opacity-30"
         >
-          Reset all
+          Clear all
         </button>
       </div>
 
-      <FilterGroup title="Category">
-        <div className="space-y-3">
+      <FilterGroup title="Category" count={category === 'All' ? 0 : 1} initiallyOpen>
+        <div className="space-y-1">
           {categories.map((item) => (
             <FilterCheckbox
               key={item}
@@ -123,8 +144,8 @@ export function ProductFilters({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Price">
-        <div className="space-y-3">
+      <FilterGroup title="Price" count={price === 'all' ? 0 : 1} initiallyOpen>
+        <div className="space-y-1">
           {priceOptions.map((option) => (
             <FilterCheckbox
               key={option.value}
@@ -137,8 +158,8 @@ export function ProductFilters({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Size">
-        <div className="grid grid-cols-4 gap-2">
+      <FilterGroup title="Size" count={selectedSizes.length} initiallyOpen>
+        <div className="grid grid-cols-3 gap-2">
           {sizes.map((size) => {
             const selected = selectedSizes.includes(size)
             return (
@@ -148,7 +169,7 @@ export function ProductFilters({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => toggleSize(size)}
-                className={`min-h-10 border text-[10px] transition-colors ${
+                className={`min-h-11 border text-[10px] transition-[background-color,border-color,color] ${
                   selected
                     ? 'border-ink bg-ink text-canvas'
                     : 'border-line hover:border-ink'
@@ -161,7 +182,7 @@ export function ProductFilters({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Color">
+      <FilterGroup title="Color" count={selectedColors.length}>
         <div className="grid grid-cols-2 gap-x-3 gap-y-3">
           {colors.map((color) => {
             const selected = selectedColors.includes(color.name)
@@ -172,10 +193,10 @@ export function ProductFilters({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => toggleColor(color.name)}
-                className="flex items-center gap-2.5 text-left text-xs"
+                className={`flex min-h-11 items-center gap-2.5 border px-3 text-left text-xs transition-colors ${selected ? 'border-ink bg-ink/[0.04]' : 'border-line hover:border-ink'}`}
               >
                 <span
-                  className={`grid size-5 shrink-0 place-items-center rounded-full border ${
+                  className={`grid size-4 shrink-0 place-items-center rounded-full border ${
                     selected ? 'border-ink ring-1 ring-ink ring-offset-2 ring-offset-canvas' : 'border-line'
                   }`}
                   style={{ backgroundColor: color.hex }}
@@ -194,8 +215,8 @@ export function ProductFilters({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Ratings">
-        <div className="space-y-3">
+      <FilterGroup title="Ratings" count={minRating === 0 ? 0 : 1}>
+        <div className="space-y-1">
           {[0, 4, 4.5].map((rating) => (
             <FilterCheckbox
               key={rating}
@@ -208,8 +229,8 @@ export function ProductFilters({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Availability" last>
-        <div className="space-y-3">
+      <FilterGroup title="Availability" count={availability === 'all' ? 0 : 1} last>
+        <div className="space-y-1">
           {[
             ['all', 'All products'],
             ['in-stock', 'In stock'],
@@ -234,22 +255,56 @@ export function ProductFilters({
 function FilterGroup({
   title,
   children,
+  count,
+  initiallyOpen = false,
   last = false,
 }: {
   title: string
   children: React.ReactNode
+  count: number
+  initiallyOpen?: boolean
   last?: boolean
 }) {
+  const [open, setOpen] = useState(initiallyOpen)
+
   return (
-    <motion.fieldset
+    <motion.section
       variants={filterGroupVariants}
-      className={`${last ? '' : 'border-b border-line'} py-5`}
+      className={last ? '' : 'border-b border-line'}
     >
-      <legend className="mb-4 text-[9px] font-medium uppercase tracking-[0.18em]">
-        {title}
-      </legend>
-      {children}
-    </motion.fieldset>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="flex min-h-14 w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="flex min-w-0 items-center gap-2 text-[9px] font-medium uppercase tracking-[0.16em]">
+          {title}
+          {count > 0 && (
+            <span className="grid size-5 place-items-center rounded-full bg-ink text-[8px] tracking-normal text-canvas">
+              {count}
+            </span>
+          )}
+        </span>
+        <FiChevronDown
+          size={15}
+          className={`shrink-0 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="pb-5">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.section>
   )
 }
 
@@ -267,15 +322,20 @@ function FilterCheckbox({
   return (
     <motion.label
       variants={filterOptionVariants}
-      className="flex cursor-pointer items-center gap-3 text-xs"
+      className={`group flex min-h-10 cursor-pointer items-center justify-between gap-3 border px-3 text-xs transition-colors ${checked ? 'border-ink bg-ink/[0.04]' : 'border-transparent hover:bg-ink/[0.03]'}`}
     >
       <input
         type={radio ? 'radio' : 'checkbox'}
         checked={checked}
         onChange={onChange}
-        className="size-3.5 accent-current"
+        className="sr-only"
       />
-      {label}
+      <span>{label}</span>
+      <span
+        className={`grid size-4 shrink-0 place-items-center border ${radio ? 'rounded-full' : ''} ${checked ? 'border-ink bg-ink text-canvas' : 'border-line'}`}
+      >
+        {checked && (radio ? <span className="size-1.5 rounded-full bg-canvas" /> : <FiCheck size={10} />)}
+      </span>
     </motion.label>
   )
 }

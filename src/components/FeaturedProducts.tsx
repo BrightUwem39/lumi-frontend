@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
-import { LuArrowRight as FiArrowRight } from 'react-icons/lu'
 import { ProductCard } from './ProductCard'
 import { MotionReveal } from './MotionReveal'
 import type { Product } from '../types/product'
@@ -145,10 +144,6 @@ export function FeaturedProducts() {
           </div>
         </MotionReveal>
 
-        <p className="mb-3 flex items-center justify-end gap-1.5 text-[8px] font-medium uppercase tracking-[0.12em] text-ink/45 sm:hidden">
-          Swipe products <FiArrowRight size={12} />
-        </p>
-
         <AnimatePresence mode="wait">
           <motion.div
             key={activeFilter}
@@ -158,13 +153,13 @@ export function FeaturedProducts() {
             whileInView="visible"
             viewport={{ once: true, amount: 0.12 }}
             exit={{ opacity: 0, y: -8 }}
-            className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
+            className="no-scrollbar flex w-full snap-x snap-mandatory items-stretch gap-3 overflow-x-auto overscroll-x-contain pb-4 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
           >
             {visibleProducts.map((product) => (
               <motion.div
                 key={product.id}
                 variants={productItemVariants}
-                className="w-[76vw] max-w-[320px] shrink-0 snap-start min-[430px]:w-[62vw] sm:w-auto sm:max-w-none"
+                className="w-full min-w-0 shrink-0 snap-center self-stretch sm:w-auto sm:shrink"
               >
                 <ProductCard product={product} viewportReveal={false} />
               </motion.div>

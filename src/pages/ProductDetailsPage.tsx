@@ -166,7 +166,7 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
             <ProductGallery images={galleryImages} productName={product.name} />
 
             {/* Product information remains visible while browsing the tall gallery. */}
-            <div className="lg:sticky lg:top-6 lg:self-start">
+            <div className="lg:sticky lg:top-32 lg:self-start">
               <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50">
                 {product.brand} · {product.category}
               </p>

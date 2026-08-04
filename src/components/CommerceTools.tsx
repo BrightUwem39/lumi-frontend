@@ -37,18 +37,37 @@ export function CommerceTools() {
     pathname === '/shop' ||
     pathname.startsWith('/product/')
 
-  // Hide fixed controls while the footer is visible so they never cover its actions.
+  // Measure the real button position on scroll. This is more dependable than an
+  // intersection threshold when route and footer animations change page height.
   useEffect(() => {
-    const footer = document.getElementById('site-footer')
-    if (!footer) return
+    const backToTop = document.getElementById('footer-back-to-top')
+    if (!backToTop) return
 
-    const observer = new IntersectionObserver(
-      ([entry]) => setFooterVisible(entry.isIntersecting),
-      { threshold: 0.05 },
-    )
+    let frameId = 0
 
-    observer.observe(footer)
-    return () => observer.disconnect()
+    const updateVisibility = () => {
+      const rect = backToTop.getBoundingClientRect()
+      // Allow the cart's fade transition to finish just before the button appears.
+      const cartClearance = 80
+      setFooterVisible(
+        rect.top < window.innerHeight + cartClearance && rect.bottom > 0,
+      )
+    }
+
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frameId)
+      frameId = requestAnimationFrame(updateVisibility)
+    }
+
+    updateVisibility()
+    window.addEventListener('scroll', scheduleUpdate, { passive: true })
+    window.addEventListener('resize', scheduleUpdate)
+
+    return () => {
+      cancelAnimationFrame(frameId)
+      window.removeEventListener('scroll', scheduleUpdate)
+      window.removeEventListener('resize', scheduleUpdate)
+    }
   }, [])
 
   // Floating commerce controls should not cover legal, account, or checkout content.

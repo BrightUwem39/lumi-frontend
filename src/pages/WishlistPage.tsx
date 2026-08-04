@@ -78,13 +78,17 @@ export function WishlistPage() {
         ) : savedProducts.length === 0 ? (
           <EmptyWishlist />
         ) : (
-          /* Cards stack on small phones and gradually expand to four columns. */
+          /* Compact media rows are easier to scan on phones; cards expand into
+             the editorial grid once there is enough horizontal space. */
           <section
             aria-label="Saved products"
-            className="mt-7 grid grid-cols-1 gap-x-3 gap-y-8 min-[340px]:grid-cols-2 sm:mt-8 sm:gap-x-4 sm:gap-y-10 lg:grid-cols-3 xl:grid-cols-4"
+            className="mt-7 grid grid-cols-1 gap-x-3 gap-y-5 min-[520px]:grid-cols-2 min-[520px]:gap-y-9 sm:mt-8 sm:gap-x-4 sm:gap-y-10 lg:grid-cols-3 xl:grid-cols-4"
           >
             {savedProducts.map((product) => (
-              <article key={product.id} className="group min-w-0">
+              <article
+                key={product.id}
+                className="group grid min-w-0 grid-cols-[104px_minmax(0,1fr)] gap-3 border-b border-line pb-5 min-[380px]:grid-cols-[116px_minmax(0,1fr)] min-[520px]:block min-[520px]:border-0 min-[520px]:pb-0"
+              >
                 <div className="relative aspect-[4/5] overflow-hidden bg-[#e8e5df]">
                   <Link
                     to={`/product/${product.id}`}
@@ -97,7 +101,7 @@ export function WishlistPage() {
                     />
                   </Link>
                   {product.badge && (
-                    <span className="absolute left-3 top-3 bg-white px-2.5 py-1 text-[8px] font-medium uppercase tracking-[0.14em] text-[#171713]">
+                    <span className="absolute left-3 top-3 hidden bg-white px-2.5 py-1 text-[8px] font-medium uppercase tracking-[0.14em] text-[#171713] min-[520px]:block">
                       {product.badge}
                     </span>
                   )}
@@ -105,13 +109,13 @@ export function WishlistPage() {
                     type="button"
                     aria-label={`Remove ${product.name} from wishlist`}
                     onClick={() => toggleWishlist(product.id)}
-                    className="absolute right-3 top-3 grid size-10 place-items-center rounded-full bg-white text-[#171713] shadow-sm transition-transform hover:scale-105"
+                    className="absolute right-2 top-2 grid size-10 place-items-center rounded-full bg-white text-[#171713] shadow-sm transition-transform hover:scale-105 min-[520px]:right-3 min-[520px]:top-3"
                   >
                     <FiTrash2 size={16} />
                   </button>
                 </div>
 
-                <div className="pt-4">
+                <div className="flex min-w-0 flex-col pt-1 min-[520px]:block min-[520px]:pt-4">
                   <p className="text-[8px] uppercase tracking-[0.17em] text-ink/45">
                     {product.brand} · {product.category}
                   </p>
@@ -140,7 +144,7 @@ export function WishlistPage() {
                         event.currentTarget,
                       )
                     }
-                    className="mt-3 flex min-h-11 w-full items-center justify-center gap-1.5 bg-ink px-2 text-[8px] font-medium uppercase tracking-[0.1em] text-canvas disabled:cursor-not-allowed disabled:opacity-40 min-[420px]:mt-4 min-[420px]:min-h-12 min-[420px]:gap-2 min-[420px]:px-4 min-[420px]:text-[9px] min-[420px]:tracking-[0.15em]"
+                    className="mt-auto flex min-h-11 w-full items-center justify-center gap-1.5 bg-ink px-2 text-[8px] font-medium uppercase tracking-[0.1em] text-canvas disabled:cursor-not-allowed disabled:opacity-40 min-[520px]:mt-4 min-[520px]:min-h-12 min-[520px]:gap-2 min-[520px]:px-4 min-[520px]:text-[9px] min-[520px]:tracking-[0.15em]"
                   >
                     <FiShoppingBag size={14} />
                     {product.available ? 'Move to cart' : 'Out of stock'}

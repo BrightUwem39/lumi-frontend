@@ -98,7 +98,7 @@ export function ProductCard({
   return (
     <>
       <Tilt
-        className={`min-w-0 ${className}`}
+        className={`h-full min-w-0 ${className}`}
         tiltEnable={canTilt && !reduceMotion}
         tiltMaxAngleX={4.5}
         tiltMaxAngleY={4.5}
@@ -111,7 +111,7 @@ export function ProductCard({
         glarePosition="all"
       >
         <motion.article
-          className="group min-w-0"
+          className="group flex h-full min-w-0 flex-col"
           data-product-card={product.id}
           initial={viewportReveal && !reduceMotion ? { opacity: 0, y: 18 } : false}
           whileInView={viewportReveal && !reduceMotion ? { opacity: 1, y: 0 } : undefined}
@@ -149,9 +149,9 @@ export function ProductCard({
             title="Quick view"
             aria-label={`Quick view ${product.name}`}
             onClick={handleQuickView}
-            className="absolute right-2 top-2 z-20 grid size-11 place-items-center text-white mix-blend-difference transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-60 sm:right-3 sm:top-3 sm:size-9"
+            className="absolute right-2 top-2 z-20 grid size-10 place-items-center text-white transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-60 sm:right-3 sm:top-3"
           >
-            <FiEye size={17} strokeWidth={1.4} />
+            <FiEye size={19} strokeWidth={1.4} />
           </button>
 
           {/* The centered plus is the card's minimal add-to-bag action. */}
@@ -160,17 +160,17 @@ export function ProductCard({
             title={justAdded ? 'Added to bag' : 'Add to bag'}
             aria-label={justAdded ? `${product.name} added to bag` : `Add ${product.name} to bag`}
             onClick={(event) => handleAddToCart(event.currentTarget)}
-            className="absolute bottom-2 left-1/2 z-20 grid size-11 -translate-x-1/2 place-items-center bg-canvas/90 text-ink shadow-sm backdrop-blur-sm transition-[opacity,transform] hover:-translate-x-1/2 hover:-translate-y-0.5 hover:opacity-80 sm:bottom-3 sm:size-9"
+            className="absolute bottom-2 left-1/2 z-20 grid size-9 -translate-x-1/2 place-items-center text-white transition-[opacity,transform] hover:-translate-x-1/2 hover:-translate-y-0.5 hover:opacity-60 sm:bottom-3"
           >
-            <FiPlus size={20} strokeWidth={1.35} />
+            <FiPlus size={17} strokeWidth={1.35} />
           </button>
 
         </div>
 
         {/* A restrained editorial hierarchy keeps commerce details easy to scan. */}
-        <div className="border-b border-line/70 pb-4 pt-3.5 min-[420px]:pt-4">
+        <div className="flex flex-1 flex-col border-b border-line/70 pb-4 pt-3.5 min-[420px]:pt-4">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <p className="min-w-0 truncate text-[8px] font-medium uppercase tracking-[0.19em] text-ink/48">
+            <p className="min-w-0 truncate text-[7px] font-medium uppercase tracking-[0.13em] text-ink/48 sm:text-[8px] sm:tracking-[0.19em]">
               {product.category}{product.badge ? ` · ${product.badge}` : ''}
             </p>
             <div className="flex shrink-0 items-center gap-1">
@@ -179,7 +179,7 @@ export function ProductCard({
                 aria-label={isFavorite ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
                 aria-pressed={isFavorite}
                 onClick={() => toggleWishlist(product.id)}
-                className="grid size-10 place-items-center transition-opacity hover:opacity-50 sm:size-8"
+                className="grid size-8 place-items-center transition-opacity hover:opacity-50"
               >
                 <FiHeart size={15} fill={isFavorite ? 'currentColor' : 'none'} strokeWidth={1.4} />
               </button>
@@ -189,32 +189,32 @@ export function ProductCard({
                 aria-label={isCompared ? `Remove ${product.name} from comparison` : `Compare ${product.name}`}
                 aria-pressed={isCompared}
                 onClick={() => toggleComparison(product.id)}
-                className={`grid size-10 place-items-center transition-opacity hover:opacity-50 sm:size-8 ${isCompared ? 'opacity-100' : 'opacity-45'}`}
+                className={`grid size-8 place-items-center transition-opacity hover:opacity-50 ${isCompared ? 'opacity-100' : 'opacity-45'}`}
               >
                 <FiLayers size={14} />
               </button>
             </div>
           </div>
 
-          <h3 className="mt-2 line-clamp-2 text-[16px] leading-[1.22] tracking-[-0.015em] min-[420px]:text-[18px]">
+          <h3 className="mt-1.5 min-w-0 truncate whitespace-nowrap text-[14px] leading-[1.2] tracking-[-0.012em] min-[420px]:text-[16px] sm:mt-2 sm:text-[18px]">
             <Link
               to={`/product/${product.id}`}
-              className="transition-opacity hover:opacity-55"
+              className="block min-w-0 truncate transition-opacity hover:opacity-55"
             >
               {product.name}
             </Link>
           </h3>
 
-          <div className="mt-3 flex min-h-5 items-center gap-2.5">
-            <span className="text-[13px] font-medium">
+          <div className="mt-3 flex min-h-10 flex-wrap content-start items-center gap-x-2.5 gap-y-1.5 sm:min-h-5">
+            <span className="text-[11px] font-medium sm:text-[13px]">
               {currency.format(product.price)}
             </span>
             {product.originalPrice && (
               <>
-                <span className="text-[11px] text-ink/35 line-through">
+                <span className="text-[9px] text-ink/35 line-through sm:text-[11px]">
                   {currency.format(product.originalPrice)}
                 </span>
-                <span className="border border-line px-1.5 py-0.5 text-[7px] font-medium uppercase tracking-[0.13em] text-ink/55">
+                <span className="border border-line px-1 py-0.5 text-[6px] font-medium uppercase tracking-[0.08em] text-ink/55 sm:px-1.5 sm:text-[7px] sm:tracking-[0.13em]">
                   Save {discount}%
                 </span>
               </>

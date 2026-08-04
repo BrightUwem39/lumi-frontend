@@ -78,7 +78,7 @@ function App() {
   const routeKey = `${location.pathname}${location.search}`
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-canvas text-ink transition-colors duration-300">
+    <div className="min-h-screen bg-canvas text-ink transition-colors duration-300">
       <ScrollManager />
       <Navbar />
       <CartExperience />

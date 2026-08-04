@@ -21,35 +21,34 @@ export function NewsletterSection() {
     <section
       id="newsletter"
       aria-labelledby="newsletter-heading"
-      className="border-b border-line bg-canvas px-4 py-12 text-ink min-[380px]:py-14 sm:px-7 sm:py-20 lg:px-10 lg:py-24"
+      className="overflow-hidden bg-canvas px-4 py-12 text-ink sm:px-7 sm:py-16 lg:px-10 lg:py-20"
     >
       <motion.div
-        className="mx-auto grid max-w-[1440px] gap-7 sm:gap-9 lg:grid-cols-[1fr_1.15fr] lg:items-end lg:gap-16"
+        className="mx-auto grid max-w-[1440px] gap-10 border-b border-ink/18 pb-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] lg:items-end lg:gap-20 lg:pb-16"
         initial={{ opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.25 }}
         transition={{ duration: 0.55 }}
       >
-        <div className="max-w-xl">
-          <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/50">
-            From our studio
+        <div className="min-w-0">
+          <p className="text-[8px] font-medium uppercase tracking-[0.2em] text-ink/45">
+            Notes from the studio
           </p>
           <h2
             id="newsletter-heading"
-            className="text-3xl leading-[1.08] min-[380px]:text-4xl sm:text-5xl"
+            className="mt-4 max-w-[12ch] text-[clamp(2.15rem,7vw,4.75rem)] leading-[0.94] tracking-[-0.03em]"
           >
-            We’ll only write when it’s worth opening.
+            See what’s next before it arrives.
           </h2>
-          <p className="mt-4 max-w-md text-sm leading-6 text-ink/60">
-            First looks, early access, and the occasional note from behind the
-            scenes. No daily emails.
+          <p className="mt-5 max-w-lg text-[13px] leading-6 text-ink/58 sm:text-sm">
+            New work, restocks, and the occasional note from behind the scenes.
           </p>
         </div>
 
-        <div>
+        <div className="min-w-0">
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col gap-2.5 border-b border-ink transition-colors focus-within:border-transparent sm:flex-row sm:items-center sm:gap-4"
+            className="flex min-w-0 items-center border-b border-ink/45 transition-colors focus-within:border-ink"
           >
             <label htmlFor="newsletter-email" className="sr-only">
               Email address
@@ -64,32 +63,29 @@ export function NewsletterSection() {
                 setEmail(event.target.value)
                 setSubscribed(false)
               }}
-              placeholder="Your email address"
+              placeholder="Email address"
               className="min-h-14 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink/35 focus-visible:outline-none"
             />
             <button
               type="submit"
-              className="group flex min-h-12 items-center justify-between gap-4 bg-ink px-5 text-[9px] font-medium uppercase tracking-[0.18em] text-canvas sm:min-w-40 sm:justify-center"
+              aria-label="Subscribe to Lumi newsletter"
+              className="grid size-12 shrink-0 place-items-center transition-transform hover:translate-x-1"
             >
-              Join the list
-              <FiArrowRight
-                size={15}
-                className="transition-transform group-hover:translate-x-1"
-              />
+              <FiArrowRight size={19} />
             </button>
           </form>
 
-          <div aria-live="polite" className="min-h-8 pt-3">
+          <div aria-live="polite" className="min-h-8 pt-2">
             <AnimatePresence>
               {subscribed && (
                 <motion.p
-                  className="flex items-center gap-2 text-xs text-ink/65"
+                  className="flex items-center gap-2 text-[10px] text-ink/55"
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                 >
                   <FiCheck size={14} />
-                  You’re in. Keep an eye on your inbox.
+                  You’re in. We’ll be in touch.
                 </motion.p>
               )}
             </AnimatePresence>

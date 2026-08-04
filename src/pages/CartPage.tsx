@@ -45,6 +45,7 @@ export function CartPage() {
     (sum, item) => sum + item.product.price * item.quantity,
     0,
   )
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const discount = subtotal * discountRate
   const shipping = subtotal === 0 || subtotal >= 250 ? 0 : 18
   const total = subtotal - discount + shipping
@@ -79,8 +80,8 @@ export function CartPage() {
             </p>
             <h1 className="text-4xl sm:text-5xl">Shopping bag</h1>
           </div>
-          <p className="text-xs text-ink/50">
-            {items.length} {items.length === 1 ? 'item' : 'items'}
+          <p className="shrink-0 text-xs text-ink/50">
+            {itemCount} {itemCount === 1 ? 'item' : 'items'}
           </p>
         </div>
 
@@ -179,7 +180,7 @@ export function CartPage() {
               </div>
             </section>
 
-            <aside className="min-w-0 w-full overflow-hidden border border-line p-4 min-[380px]:p-5 sm:p-7 lg:ml-auto lg:max-w-xl xl:sticky xl:top-6 xl:ml-0 xl:max-w-none">
+            <aside className="min-w-0 w-full overflow-hidden border border-line p-4 min-[380px]:p-5 sm:p-7 lg:ml-auto lg:max-w-xl xl:sticky xl:top-32 xl:ml-0 xl:max-w-none">
               <h2 className="text-xl min-[380px]:text-2xl">Order summary</h2>
 
               {/* The coupon is intentionally frontend-only until checkout APIs exist. */}

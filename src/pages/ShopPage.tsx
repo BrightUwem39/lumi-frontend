@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
 import {
+  LuChevronLeft as FiChevronLeft,
   LuChevronDown as FiChevronDown,
+  LuChevronRight as FiChevronRight,
+  LuArrowUpDown as FiArrowUpDown,
+  LuCheck as FiCheck,
   LuListFilter as FiFilter,
   LuSearch as FiSearch,
   LuX as FiX,
@@ -62,6 +66,7 @@ export function ShopPage() {
     return requestedSort === 'latest' ? 'latest' : 'featured'
   })
   const [sortOpen, setSortOpen] = useState(false)
+  const sortMenuRef = useRef<HTMLDivElement>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [page, setPage] = useState(1)
   const productsPerPage = 6
@@ -156,6 +161,21 @@ export function ShopPage() {
     }
   }, [filtersOpen])
 
+  // Pointer presses outside the sort control dismiss its menu without forcing
+  // customers to select an option first.
+  useEffect(() => {
+    if (!sortOpen) return
+
+    const closeSortMenu = (event: PointerEvent) => {
+      if (!sortMenuRef.current?.contains(event.target as Node)) {
+        setSortOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', closeSortMenu)
+    return () => document.removeEventListener('pointerdown', closeSortMenu)
+  }, [sortOpen])
+
   const resetFilters = () => {
     setCategory('All')
     setPriceFilter('all')
@@ -219,11 +239,11 @@ export function ShopPage() {
         </div>
       </header>
 
-      <section aria-label="Shop products" className="px-3 py-6 min-[380px]:px-4 min-[380px]:py-8 sm:px-7 lg:px-10 lg:py-10">
+      <section aria-label="Shop products" className="px-4 py-6 min-[380px]:py-8 sm:px-7 lg:px-10 lg:py-10">
         <div className="mx-auto max-w-[1440px]">
           {/* Search, mobile filter, result count, and sort controls. */}
-          <div className="mb-6 grid grid-cols-1 gap-2.5 border-b border-line pb-5 min-[380px]:grid-cols-2 sm:mb-8 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-3 sm:pb-6">
-            <label className="flex min-h-12 items-center gap-3 bg-ink/[0.04] px-4 min-[380px]:col-span-2 sm:col-span-1">
+          <div className="mb-6 grid grid-cols-2 gap-2.5 border-b border-line pb-5 sm:mb-8 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-3 sm:pb-6">
+            <label className="col-span-2 flex min-h-12 items-center gap-3 bg-ink/[0.04] px-4 sm:col-span-1">
               <FiSearch size={17} className="shrink-0 text-ink/55" />
               <span className="sr-only">Search products</span>
               <input
@@ -244,42 +264,70 @@ export function ShopPage() {
               Filters
             </button>
 
-            <div className="relative">
+            <div ref={sortMenuRef} className="relative min-w-0">
               <button
                 type="button"
+                aria-label="Sort products"
                 aria-expanded={sortOpen}
+                aria-controls="shop-sort-menu"
                 onClick={() => setSortOpen((open) => !open)}
-                className="flex min-h-12 w-full min-w-0 items-center justify-between gap-2 border border-line px-3 text-[9px] font-medium uppercase tracking-[0.12em] min-[380px]:gap-4 min-[380px]:px-5 min-[380px]:tracking-[0.14em] sm:w-auto"
+                className={`flex min-h-12 w-full min-w-0 items-center gap-2 border px-3 text-left transition-colors min-[380px]:gap-3 min-[380px]:px-4 sm:w-auto sm:min-w-48 ${sortOpen ? 'border-ink' : 'border-line hover:border-ink'}`}
               >
-                <span className="min-w-0 truncate">
-                  {sortOptions.find((option) => option.value === sortBy)?.label}
+                <FiArrowUpDown size={14} className="shrink-0 text-ink/55" />
+                <span className="min-w-0 flex-1">
+                  <span className="hidden text-[7px] font-medium uppercase tracking-[0.14em] text-ink/38 min-[400px]:block">
+                    Sort by
+                  </span>
+                  <span className="block truncate text-[9px] font-medium uppercase tracking-[0.11em] min-[400px]:mt-0.5 min-[400px]:tracking-[0.13em]">
+                    {sortOptions.find((option) => option.value === sortBy)?.label}
+                  </span>
                 </span>
                 <FiChevronDown
                   size={14}
-                  className={`transition-transform ${sortOpen ? 'rotate-180' : ''}`}
+                  className={`shrink-0 transition-transform duration-300 ${sortOpen ? 'rotate-180' : ''}`}
                 />
               </button>
               <AnimatePresence>
                 {sortOpen && (
                   <motion.div
-                    className="absolute right-0 top-[calc(100%+6px)] z-30 w-full min-w-52 border border-line bg-canvas p-1 shadow-xl"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
+                    id="shop-sort-menu"
+                    role="menu"
+                    className="absolute right-0 top-[calc(100%+8px)] z-30 w-[min(82vw,280px)] overflow-hidden border border-line bg-canvas p-2 shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.985 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    {sortOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => {
-                          setSortBy(option.value)
-                          setSortOpen(false)
-                        }}
-                        className="block w-full px-4 py-3 text-left text-[9px] uppercase tracking-[0.12em] hover:bg-ink hover:text-canvas"
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+                    <div className="flex items-center justify-between border-b border-line px-2 pb-3 pt-1">
+                      <span className="text-[8px] font-medium uppercase tracking-[0.16em] text-ink/45">Sort collection</span>
+                      <span className="text-[8px] text-ink/35">{sortOptions.length} options</span>
+                    </div>
+                    <div className="pt-1">
+                      {sortOptions.map((option, index) => {
+                        const selected = option.value === sortBy
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={selected}
+                            onClick={() => {
+                              setSortBy(option.value)
+                              setSortOpen(false)
+                            }}
+                            className={`flex min-h-12 w-full items-center gap-3 px-3 text-left transition-colors ${selected ? 'bg-ink text-canvas' : 'hover:bg-ink/[0.05]'}`}
+                          >
+                            <span className={`text-[8px] ${selected ? 'text-canvas/55' : 'text-ink/35'}`}>
+                              {String(index + 1).padStart(2, '0')}
+                            </span>
+                            <span className="min-w-0 flex-1 text-[9px] font-medium uppercase tracking-[0.12em]">
+                              {option.label}
+                            </span>
+                            {selected && <FiCheck size={14} className="shrink-0" />}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -288,7 +336,7 @@ export function ShopPage() {
 
           <div className="grid min-w-0 gap-8 lg:grid-cols-[250px_minmax(0,1fr)] xl:gap-12">
             <aside className="hidden lg:block">
-              <div className="sticky top-6">
+              <div className="sticky top-32">
                 <ProductFilters {...filterProps} />
               </div>
             </aside>
@@ -308,7 +356,7 @@ export function ShopPage() {
                   initial={reduceMotion ? false : 'hidden'}
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.08 }}
-                  className="grid grid-cols-1 gap-x-3 gap-y-8 min-[340px]:grid-cols-2 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-3"
+                  className="mx-auto grid w-full grid-cols-2 gap-x-3 gap-y-8 px-1 min-[420px]:px-0 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-3"
                 >
                   {visibleProducts.map((product) => (
                     <motion.div key={product.id} variants={productItemVariants} layout>
@@ -340,26 +388,30 @@ export function ShopPage() {
                   aria-label="Product pagination"
                   className="mt-12 flex items-center justify-center gap-2 border-t border-line pt-8"
                 >
-                  {Array.from({ length: totalPages }, (_, index) => index + 1).map(
-                    (pageNumber) => (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        aria-current={page === pageNumber ? 'page' : undefined}
-                        onClick={() => {
-                          setPage(pageNumber)
-                          window.scrollTo({ top: 300, behavior: 'smooth' })
-                        }}
-                        className={`grid size-10 place-items-center border text-xs ${
-                          page === pageNumber
-                            ? 'border-ink bg-ink text-canvas'
-                            : 'border-line hover:border-ink'
-                        }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    ),
-                  )}
+                  <button
+                    type="button"
+                    aria-label="Previous product page"
+                    disabled={page === 1}
+                    onClick={() => {
+                      setPage((current) => Math.max(1, current - 1))
+                      window.scrollTo({ top: 300, behavior: 'smooth' })
+                    }}
+                    className="grid size-10 place-items-center border border-line transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    <FiChevronLeft size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next product page"
+                    disabled={page === totalPages}
+                    onClick={() => {
+                      setPage((current) => Math.min(totalPages, current + 1))
+                      window.scrollTo({ top: 300, behavior: 'smooth' })
+                    }}
+                    className="grid size-10 place-items-center border border-line transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    <FiChevronRight size={16} />
+                  </button>
                 </nav>
               )}
             </div>

@@ -84,7 +84,7 @@ export function ProfilePage() {
           </label>
           <nav
             aria-label="Account sections"
-            className="hidden min-w-0 lg:sticky lg:top-6 lg:block lg:self-start lg:border-r lg:pr-6"
+            className="hidden min-w-0 lg:sticky lg:top-32 lg:block lg:self-start lg:border-r lg:pr-6"
           >
             {accountTabs.map((tab) => {
               const selected = activeTab === tab.id

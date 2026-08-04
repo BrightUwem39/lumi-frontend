@@ -424,7 +424,7 @@ function CheckoutSummary({
   total: number
 }) {
   return (
-    <aside className="min-w-0 w-full overflow-hidden border border-line p-4 min-[380px]:p-5 sm:p-7 lg:ml-auto lg:max-w-xl xl:sticky xl:top-6 xl:ml-0 xl:max-w-none">
+    <aside className="min-w-0 w-full overflow-hidden border border-line p-4 min-[380px]:p-5 sm:p-7 lg:ml-auto lg:max-w-xl xl:sticky xl:top-32 xl:ml-0 xl:max-w-none">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl">Order summary</h2>
         <Link

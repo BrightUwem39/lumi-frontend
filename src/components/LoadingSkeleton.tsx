@@ -18,7 +18,7 @@ export function PageLoadingSkeleton({ variant }: PageLoadingSkeletonProps) {
       <section
         role="status"
         aria-label="Loading saved products"
-        className="mt-7 grid grid-cols-1 gap-x-3 gap-y-8 min-[340px]:grid-cols-2 sm:mt-8 sm:gap-x-4 lg:grid-cols-3 xl:grid-cols-4"
+        className="mt-7 grid grid-cols-2 gap-x-3 gap-y-8 sm:mt-8 sm:gap-x-4 lg:grid-cols-3 xl:grid-cols-4"
       >
         <span className="sr-only">Loading saved products…</span>
         {[0, 1, 2, 3].map((item) => (
@@ -54,7 +54,7 @@ export function PageLoadingSkeleton({ variant }: PageLoadingSkeletonProps) {
             ))}
           </div>
         </div>
-        <Skeleton className="h-72 w-full xl:sticky xl:top-6" />
+        <Skeleton className="h-72 w-full xl:sticky xl:top-32" />
       </div>
     )
   }

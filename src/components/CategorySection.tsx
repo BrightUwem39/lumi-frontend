@@ -1,4 +1,3 @@
-import { LuArrowRight as FiArrowRight } from 'react-icons/lu'
 import { CategoryCard } from './CategoryCard'
 import { MotionReveal } from './MotionReveal'
 
@@ -71,19 +70,16 @@ export function CategorySection() {
               Shop by category
             </h2>
           </div>
-          <p className="mb-1 flex shrink-0 items-center gap-1.5 text-[8px] font-medium uppercase tracking-[0.12em] text-ink/45 sm:hidden">
-            Swipe <FiArrowRight size={12} />
-          </p>
         </MotionReveal>
 
         {/* Phones swipe through snap-aligned cards; larger screens retain the
             editorial grid so every category is visible at once. */}
-        <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-12">
+        <div className="no-scrollbar flex w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-2 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:pb-0 xl:grid-cols-12">
           {categories.map((category) => (
             <CategoryCard
               key={category.title}
               {...category}
-              className={`w-[82vw] max-w-[330px] shrink-0 snap-start sm:w-auto sm:max-w-none ${category.className}`}
+              className={`w-full shrink-0 snap-center sm:w-auto sm:shrink ${category.className}`}
             />
           ))}
         </div>

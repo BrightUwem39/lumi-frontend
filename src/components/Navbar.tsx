@@ -131,7 +131,7 @@ export function Navbar() {
   return (
     <>
       {/* The header contains the promotion bar and the responsive main navbar. */}
-      <header className="sticky top-0 z-40 bg-canvas/95 text-ink shadow-[0_1px_0_rgba(0,0,0,0.04)] backdrop-blur-md">
+      <header className="fixed inset-x-0 top-0 z-40 bg-canvas/95 text-ink shadow-[0_1px_0_rgba(0,0,0,0.04)] backdrop-blur-md">
         {/* Shorter phone copy prevents the promotion from wrapping. */}
         <Link
           to="/shop"
@@ -293,6 +293,10 @@ export function Navbar() {
           </div>
         </div>
       </header>
+
+      {/* A fixed header needs an equal-height spacer so page content starts
+          below it at every responsive navbar height. */}
+      <div aria-hidden="true" className="h-[92px] sm:h-[108px] xl:h-[120px]" />
 
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
