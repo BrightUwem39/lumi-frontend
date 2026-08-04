@@ -8,7 +8,7 @@ const stories = [
     number: '01',
     title: 'The ease of quiet tailoring',
     excerpt: 'A closer look at softened structure, generous proportions, and the pieces that make getting dressed feel simple.',
-    image: '/images/products/atelier-wide-leg-trouser.png',
+    image: '/images/editorial/atelier-trouser-street-v2.jpg',
     category: 'In the studio',
   },
   {
@@ -16,7 +16,7 @@ const stories = [
     number: '02',
     title: 'Dressing for summer light',
     excerpt: 'Breathable layers and warm neutrals chosen for long afternoons, unhurried dinners, and everything between.',
-    image: '/images/lumi-summer-hero.png',
+    image: '/images/editorial/lumi-lagos-campaign-v2.jpg',
     category: 'The seasonal edit',
   },
   {
@@ -24,7 +24,7 @@ const stories = [
     number: '03',
     title: 'Objects worth keeping',
     excerpt: 'Why thoughtful materials, repairable construction, and daily usefulness matter more than passing novelty.',
-    image: '/images/products/arc-frame-sunglasses.png',
+    image: '/images/editorial/arc-sunglasses-cafe-v2.jpg',
     category: 'Design notes',
   },
 ]

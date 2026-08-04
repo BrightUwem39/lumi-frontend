@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  FiCheck,
-  FiLayers,
-  FiShoppingBag,
-  FiStar,
-  FiX,
-} from 'react-icons/fi'
+  LuCheck as FiCheck,
+  LuLayers as FiLayers,
+  LuShoppingBag as FiShoppingBag,
+  LuStar as FiStar,
+  LuX as FiX,
+} from 'react-icons/lu'
 import { Link, useLocation } from 'react-router-dom'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
+import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -23,6 +24,8 @@ export function CommerceTools() {
   const [comparisonOpen, setComparisonOpen] = useState(false)
   const [footerVisible, setFooterVisible] = useState(false)
   const cartCount = useShopStore((state) => state.cartCount)
+  const openCartDrawer = useCartUiStore((state) => state.openDrawer)
+  const cartPulseKey = useCartUiStore((state) => state.pulseKey)
   const comparisonItems = useShopStore((state) => state.comparisonItems)
   const clearComparison = useShopStore((state) => state.clearComparison)
   const { products } = useCatalog()
@@ -56,18 +59,27 @@ export function CommerceTools() {
       {/* Floating cart shifts upward while the comparison tray is visible. */}
       <Link
         to="/cart"
+        data-cart-target="floating"
+        onClick={(event) => {
+          event.preventDefault()
+          openCartDrawer()
+        }}
         aria-hidden={footerVisible}
         tabIndex={footerVisible ? -1 : undefined}
         aria-label={`Open cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`}
-        className={`fixed right-3 z-30 min-h-11 items-center gap-2 rounded-full bg-ink px-3 text-[9px] font-medium uppercase tracking-[0.13em] text-canvas shadow-xl transition-all duration-300 sm:right-6 sm:min-h-12 sm:px-4 ${
+        className={`fixed right-3 z-30 size-11 items-center justify-center rounded-full bg-ink text-canvas shadow-xl transition-all duration-300 sm:right-6 sm:size-12 ${
           comparedProducts.length ? 'bottom-24 sm:bottom-20' : 'bottom-5 sm:bottom-6'
         } ${cartCount === 0 || pathname === '/' ? 'hidden sm:flex' : 'flex'} ${footerVisible ? 'pointer-events-none translate-y-4 opacity-0' : 'translate-y-0 opacity-100'}`}
       >
-        <FiShoppingBag size={15} />
-        <span className="hidden sm:inline">Cart</span>
-        <span className="grid size-5 place-items-center rounded-full bg-canvas text-[9px] text-ink">
-          {cartCount > 9 ? '9+' : cartCount}
-        </span>
+        <motion.span
+          key={cartPulseKey}
+          className="grid place-items-center"
+          initial={cartPulseKey > 0 ? { scale: 0.78, rotate: 0 } : false}
+          animate={cartPulseKey > 0 ? { scale: [0.78, 1.3, 0.94, 1], rotate: [0, -9, 6, 0] } : undefined}
+          transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <FiShoppingBag size={17} />
+        </motion.span>
       </Link>
 
       <AnimatePresence>
@@ -139,6 +151,7 @@ function ComparisonModal({
   const { products } = useCatalog()
   const toggleComparison = useShopStore((state) => state.toggleComparison)
   const addToCart = useShopStore((state) => state.addToCart)
+  const launchCartFlight = useCartUiStore((state) => state.launchFlight)
   const comparedProducts = products.filter((product) =>
     comparisonItems.includes(product.id),
   )
@@ -245,7 +258,17 @@ function ComparisonModal({
                     <button
                       type="button"
                       disabled={!product.available}
-                      onClick={() => addToCart(product.id)}
+                      onClick={(event) => {
+                        addToCart(product.id)
+                        launchCartFlight(
+                          createCartFlight(
+                            product.image,
+                            product.name,
+                            event.currentTarget,
+                          ),
+                        )
+                        onClose()
+                      }}
                       className="min-h-11 w-full bg-ink px-3 text-[8px] uppercase tracking-[0.13em] text-canvas disabled:opacity-35"
                     >
                       Add to cart

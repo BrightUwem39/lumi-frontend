@@ -1,12 +1,12 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  FiArrowRight,
-  FiClock,
-  FiSearch,
-  FiTrendingUp,
-  FiX,
-} from 'react-icons/fi'
+  LuArrowRight as FiArrowRight,
+  LuClock3 as FiClock,
+  LuSearch as FiSearch,
+  LuTrendingUp as FiTrendingUp,
+  LuX as FiX,
+} from 'react-icons/lu'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
@@ -23,49 +23,49 @@ const featuredSearchProducts: SearchProduct[] = [
     id: 'luna-silk-dress',
     name: 'Luna Silk Dress',
     category: 'Women · Dresses',
-    image: '/images/products/luna-silk-dress.webp',
+    image: '/images/editorial/shop/luna-silk-dress-v2.jpg',
   },
   {
     id: 'relaxed-wool-blazer',
     name: 'Relaxed Wool Blazer',
     category: 'Men · Tailoring',
-    image: '/images/products/charcoal-wool-blazer.webp',
+    image: '/images/editorial/shop/relaxed-wool-blazer-v2.jpg',
   },
   {
     id: 'crescent-leather-bag',
     name: 'Crescent Leather Bag',
     category: 'Accessories · Bags',
-    image: '/images/products/crescent-leather-bag.webp',
+    image: '/images/editorial/crescent-bag-transit-v2.jpg',
   },
   {
     id: 'column-ankle-boots',
     name: 'Column Ankle Boots',
     category: 'Women · Shoes',
-    image: '/images/products/column-ankle-boots.webp',
+    image: '/images/editorial/column-boots-rain-v2.jpg',
   },
   {
     id: 'solstice-wool-coat',
     name: 'Solstice Wool Coat',
     category: 'Women · Outerwear',
-    image: '/images/products/solstice-wool-coat.png',
+    image: '/images/editorial/solstice-coat-atelier-v2.jpg',
   },
   {
     id: 'fine-rib-knit-top',
     name: 'Fine-Rib Knit Top',
     category: 'Women · Knitwear',
-    image: '/images/products/fine-rib-knit-top.png',
+    image: '/images/editorial/fine-rib-window-v2.jpg',
   },
   {
     id: 'atelier-wide-leg-trouser',
     name: 'Atelier Wide-Leg Trouser',
     category: 'Women · Tailoring',
-    image: '/images/products/atelier-wide-leg-trouser.png',
+    image: '/images/editorial/atelier-trouser-street-v2.jpg',
   },
   {
     id: 'arc-frame-sunglasses',
     name: 'Arc Frame Sunglasses',
     category: 'Accessories · Eyewear',
-    image: '/images/products/arc-frame-sunglasses.png',
+    image: '/images/editorial/arc-sunglasses-cafe-v2.jpg',
   },
 ]
 

@@ -1,4 +1,5 @@
-import { FiCheck, FiSliders } from 'react-icons/fi'
+import { motion, useReducedMotion, type Variants } from 'framer-motion'
+import { LuCheck as FiCheck, LuSlidersHorizontal as FiSliders } from 'react-icons/lu'
 
 export type PriceFilter =
   | 'all'
@@ -24,6 +25,7 @@ export type ProductFilterProps = {
   availability: 'all' | 'in-stock' | 'out-of-stock'
   setAvailability: (value: 'all' | 'in-stock' | 'out-of-stock') => void
   resetFilters: () => void
+  animated?: boolean
 }
 
 const priceOptions: { label: string; value: PriceFilter }[] = [
@@ -33,6 +35,37 @@ const priceOptions: { label: string; value: PriceFilter }[] = [
   { label: '$150 – $250', value: '150-250' },
   { label: '$250+', value: 'over-250' },
 ]
+
+// Nested variants reveal filter groups first, then each choice within the group.
+const filterRootVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: { delayChildren: 0.08, staggerChildren: 0.065 },
+  },
+}
+
+const filterGroupVariants: Variants = {
+  hidden: { opacity: 0, x: -14 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.3,
+      ease: [0.22, 1, 0.36, 1],
+      when: 'beforeChildren',
+      staggerChildren: 0.028,
+    },
+  },
+}
+
+const filterOptionVariants: Variants = {
+  hidden: { opacity: 0, x: -8 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+  },
+}
 
 // Reusable filter UI shared by the fixed desktop sidebar and mobile drawer.
 export function ProductFilters({
@@ -52,9 +85,16 @@ export function ProductFilters({
   availability,
   setAvailability,
   resetFilters,
+  animated = false,
 }: ProductFilterProps) {
+  const reduceMotion = useReducedMotion()
+
   return (
-    <div>
+    <motion.div
+      variants={filterRootVariants}
+      initial={animated && !reduceMotion ? 'hidden' : false}
+      animate="visible"
+    >
       <div className="flex items-center justify-between border-b border-line pb-4">
         <h2 className="flex items-center gap-2 text-sm">
           <FiSliders size={15} />
@@ -102,8 +142,9 @@ export function ProductFilters({
           {sizes.map((size) => {
             const selected = selectedSizes.includes(size)
             return (
-              <button
+              <motion.button
                 key={size}
+                variants={filterOptionVariants}
                 type="button"
                 aria-pressed={selected}
                 onClick={() => toggleSize(size)}
@@ -114,7 +155,7 @@ export function ProductFilters({
                 }`}
               >
                 {size}
-              </button>
+              </motion.button>
             )
           })}
         </div>
@@ -125,8 +166,9 @@ export function ProductFilters({
           {colors.map((color) => {
             const selected = selectedColors.includes(color.name)
             return (
-              <button
+              <motion.button
                 key={color.name}
+                variants={filterOptionVariants}
                 type="button"
                 aria-pressed={selected}
                 onClick={() => toggleColor(color.name)}
@@ -146,7 +188,7 @@ export function ProductFilters({
                   )}
                 </span>
                 {color.name}
-              </button>
+              </motion.button>
             )
           })}
         </div>
@@ -185,7 +227,7 @@ export function ProductFilters({
           ))}
         </div>
       </FilterGroup>
-    </div>
+    </motion.div>
   )
 }
 
@@ -199,12 +241,15 @@ function FilterGroup({
   last?: boolean
 }) {
   return (
-    <fieldset className={`${last ? '' : 'border-b border-line'} py-5`}>
+    <motion.fieldset
+      variants={filterGroupVariants}
+      className={`${last ? '' : 'border-b border-line'} py-5`}
+    >
       <legend className="mb-4 text-[9px] font-medium uppercase tracking-[0.18em]">
         {title}
       </legend>
       {children}
-    </fieldset>
+    </motion.fieldset>
   )
 }
 
@@ -220,7 +265,10 @@ function FilterCheckbox({
   radio?: boolean
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 text-xs">
+    <motion.label
+      variants={filterOptionVariants}
+      className="flex cursor-pointer items-center gap-3 text-xs"
+    >
       <input
         type={radio ? 'radio' : 'checkbox'}
         checked={checked}
@@ -228,6 +276,6 @@ function FilterCheckbox({
         className="size-3.5 accent-current"
       />
       {label}
-    </label>
+    </motion.label>
   )
 }

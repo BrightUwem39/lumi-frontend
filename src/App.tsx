@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   Navigate,
   Route,
@@ -8,12 +8,14 @@ import {
   useParams,
 } from 'react-router-dom'
 import { CategorySection } from './components/CategorySection'
+import { CartExperience } from './components/CartExperience'
 import { CommerceTools } from './components/CommerceTools'
 import { FeaturedProducts } from './components/FeaturedProducts'
 import { Footer } from './components/Footer'
 import { Hero } from './components/Hero'
 import { Navbar } from './components/Navbar'
 import { NewsletterSection } from './components/NewsletterSection'
+import { ScrollFadeSection } from './components/ScrollFadeSection'
 import { TestimonialsSection } from './components/TestimonialsSection'
 import { CartPage } from './pages/CartPage'
 import { CheckoutPage } from './pages/CheckoutPage'
@@ -28,11 +30,21 @@ import { WishlistPage } from './pages/WishlistPage'
 function HomePage() {
   return (
     <main aria-label="Store content">
-      <Hero />
-      <FeaturedProducts />
-      <CategorySection />
-      <TestimonialsSection />
-      <NewsletterSection />
+      <ScrollFadeSection>
+        <Hero />
+      </ScrollFadeSection>
+      <ScrollFadeSection>
+        <FeaturedProducts />
+      </ScrollFadeSection>
+      <ScrollFadeSection>
+        <CategorySection />
+      </ScrollFadeSection>
+      <ScrollFadeSection>
+        <TestimonialsSection />
+      </ScrollFadeSection>
+      <ScrollFadeSection>
+        <NewsletterSection />
+      </ScrollFadeSection>
     </main>
   )
 }
@@ -62,20 +74,50 @@ function ScrollManager() {
 
 function App() {
   const location = useLocation()
+  const reduceMotion = useReducedMotion()
+  const routeKey = `${location.pathname}${location.search}`
 
   return (
     <div className="min-h-screen overflow-x-clip bg-canvas text-ink transition-colors duration-300">
       <ScrollManager />
       <Navbar />
+      <CartExperience />
 
-      {/* Route content fades gently without delaying navigation or feeling theatrical. */}
+      {/* An NProgress-style bar advances in stages before completing and fading. */}
+      <div
+        key={`progress-${routeKey}`}
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[3px] overflow-hidden"
+      >
+        <motion.div
+          className="relative h-full origin-left bg-ink"
+          initial={reduceMotion ? false : { scaleX: 0.04, opacity: 1 }}
+          animate={
+            reduceMotion
+              ? { opacity: 0 }
+              : { scaleX: [0.04, 0.62, 0.84, 1], opacity: [1, 1, 1, 0] }
+          }
+          transition={{
+            duration: reduceMotion ? 0 : 0.92,
+            times: [0, 0.28, 0.72, 1],
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          <span className="absolute right-0 top-0 h-full w-20 translate-x-1/3 bg-gradient-to-r from-transparent to-ink opacity-80 blur-[2px]" />
+        </motion.div>
+      </div>
+
+      {/* Route content fades and travels horizontally so navigation never feels like a hard cut. */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          key={`${location.pathname}${location.search}`}
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.18 }}
+          key={routeKey}
+          initial={reduceMotion ? false : { opacity: 0, x: 18, y: 8 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          exit={reduceMotion ? { opacity: 1 } : { opacity: 0, x: -12, y: -5 }}
+          transition={{
+            duration: reduceMotion ? 0 : 0.34,
+            ease: [0.22, 1, 0.36, 1],
+          }}
         >
           <Routes location={location}>
             <Route path="/" element={<HomePage />} />

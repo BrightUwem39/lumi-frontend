@@ -1,13 +1,15 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
-  FiArrowLeft,
-  FiCheck,
-  FiMinus,
-  FiPlus,
-  FiShoppingBag,
-  FiTrash2,
-} from 'react-icons/fi'
+  LuArrowLeft as FiArrowLeft,
+  LuCheck as FiCheck,
+  LuMinus as FiMinus,
+  LuPlus as FiPlus,
+  LuShoppingBag as FiShoppingBag,
+  LuTrash2 as FiTrash2,
+} from 'react-icons/lu'
 import { Link } from 'react-router-dom'
+import { PageLoadingSkeleton } from '../components/LoadingSkeleton'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
 
@@ -18,6 +20,7 @@ const currency = new Intl.NumberFormat('en-US', {
 })
 
 export function CartPage() {
+  const reduceMotion = useReducedMotion()
   const { products, status: catalogStatus } = useCatalog()
   const cartItems = useShopStore((state) => state.cartItems)
   const updateCartQuantity = useShopStore((state) => state.updateCartQuantity)
@@ -82,7 +85,7 @@ export function CartPage() {
         </div>
 
         {catalogStatus === 'loading' && Object.keys(cartItems).length > 0 ? (
-          <div className="grid min-h-[45svh] place-items-center text-sm text-ink/50">Loading your bag…</div>
+          <PageLoadingSkeleton variant="cart" />
         ) : items.length === 0 ? (
           <EmptyCart />
         ) : (
@@ -143,9 +146,14 @@ export function CartPage() {
                       >
                         <FiMinus size={13} />
                       </button>
-                      <span className="min-w-8 text-center text-xs">
+                      <motion.span
+                        key={quantity}
+                        initial={reduceMotion ? false : { scale: 0.65, opacity: 0.45 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="min-w-8 text-center text-xs"
+                      >
                         {quantity}
-                      </span>
+                      </motion.span>
                       <button
                         type="button"
                         aria-label={`Increase ${product.name} quantity`}

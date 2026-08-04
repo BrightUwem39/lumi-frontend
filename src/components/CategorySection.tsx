@@ -1,27 +1,28 @@
-import { FiArrowRight } from 'react-icons/fi'
+import { LuArrowRight as FiArrowRight } from 'react-icons/lu'
 import { CategoryCard } from './CategoryCard'
+import { MotionReveal } from './MotionReveal'
 
 // Category data can later come from the backend without changing the card.
 const categories = [
   {
     title: 'Women',
-    image: '/images/products/luna-silk-dress.webp',
+    image: '/images/editorial/fine-rib-window-v2.jpg',
     to: '/shop?category=Women',
     itemCount: 84,
     className: 'xl:col-span-8',
-    imagePosition: 'object-[center_22%]',
+    imagePosition: 'object-[center_28%]',
   },
   {
     title: 'Men',
-    image: '/images/products/charcoal-wool-blazer.webp',
+    image: '/images/editorial/mens-walkway-v2.jpg',
     to: '/shop?category=Men',
     itemCount: 62,
     className: 'xl:col-span-4',
-    imagePosition: 'object-[center_18%]',
+    imagePosition: 'object-[center_28%]',
   },
   {
     title: 'Accessories',
-    image: '/images/products/crescent-leather-bag.webp',
+    image: '/images/editorial/arc-sunglasses-cafe-v2.jpg',
     to: '/shop?category=Accessories',
     itemCount: 38,
     className: 'xl:col-span-4',
@@ -29,7 +30,7 @@ const categories = [
   },
   {
     title: 'Shoes',
-    image: '/images/products/column-ankle-boots.webp',
+    image: '/images/editorial/column-boots-rain-v2.jpg',
     to: '/shop?category=Shoes',
     itemCount: 29,
     className: 'xl:col-span-4',
@@ -37,19 +38,19 @@ const categories = [
   },
   {
     title: 'Bags',
-    image: '/images/products/crescent-leather-bag.webp',
+    image: '/images/editorial/crescent-bag-transit-v2.jpg',
     to: '/shop?search=bag',
     itemCount: 21,
     className: 'xl:col-span-4',
-    imagePosition: 'object-[65%_center]',
+    imagePosition: 'object-center',
   },
   {
     title: 'New arrivals',
-    image: '/images/lumi-summer-hero.png',
+    image: '/images/editorial/lumi-lagos-campaign-v2.jpg',
     to: '/shop?sort=latest',
     itemCount: 46,
     className: 'xl:col-span-12 xl:min-h-[430px]',
-    imagePosition: 'object-[68%_center]',
+    imagePosition: 'object-[67%_center]',
   },
 ]
 
@@ -61,7 +62,7 @@ export function CategorySection() {
       className="scroll-mt-[92px] bg-canvas px-4 pb-12 pt-5 text-ink min-[380px]:pb-14 sm:scroll-mt-[108px] sm:px-7 sm:pb-20 sm:pt-8 lg:px-10 lg:pb-24 lg:pt-10 xl:scroll-mt-[120px]"
     >
       <div className="mx-auto max-w-[1440px]">
-        <div className="mb-5 flex items-end justify-between gap-4 sm:mb-10">
+        <MotionReveal className="mb-5 flex items-end justify-between gap-4 sm:mb-10">
           <div className="max-w-xl">
             <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/50">
               Find your edit
@@ -73,7 +74,7 @@ export function CategorySection() {
           <p className="mb-1 flex shrink-0 items-center gap-1.5 text-[8px] font-medium uppercase tracking-[0.12em] text-ink/45 sm:hidden">
             Swipe <FiArrowRight size={12} />
           </p>
-        </div>
+        </MotionReveal>
 
         {/* Phones swipe through snap-aligned cards; larger screens retain the
             editorial grid so every category is visible at once. */}

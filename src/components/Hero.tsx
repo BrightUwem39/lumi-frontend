@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion'
-import { FiArrowDownRight, FiArrowRight } from 'react-icons/fi'
+import { motion, useReducedMotion } from 'framer-motion'
+import { Parallax } from 'react-scroll-parallax'
+import { LuArrowDownRight as FiArrowDownRight, LuArrowRight as FiArrowRight } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { OptimizedImage } from './OptimizedImage'
 
@@ -10,6 +11,8 @@ const reveal = {
 }
 
 export function Hero() {
+  const reduceMotion = useReducedMotion()
+
   return (
     // Viewport-based heights fill the screen after each responsive navbar height.
     <section
@@ -18,34 +21,41 @@ export function Hero() {
     >
       {/* The campaign image is content, so it has descriptive alt text.
           Object positions keep the model visible as the viewport narrows. */}
-      <motion.div
-        className="absolute inset-0"
-        initial={false}
-        animate={{ scale: 1 }}
-        transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+      <Parallax
+        speed={reduceMotion ? 0 : -12}
+        className="absolute -inset-y-12 inset-x-0"
+        aria-hidden="true"
       >
-        <OptimizedImage
-          src="/images/lumi-summer-hero.png"
-          alt="Model wearing an ivory linen summer look beside Mediterranean architecture"
-          fetchPriority="high"
-          decoding="async"
-          eager
-          responsiveWidths={[640, 960, 1280, 1600, 1920]}
-          className="absolute inset-0 size-full object-cover object-[68%_center] sm:object-[64%_center] lg:object-center"
-        />
-      </motion.div>
+        <motion.div
+          className="size-full"
+          initial={reduceMotion ? false : { scale: 1.075 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <OptimizedImage
+            src="/images/editorial/lumi-lagos-campaign-v2.jpg"
+            alt="Woman in ivory linen walking beside a weathered modernist building in Lagos"
+            fetchPriority="high"
+            decoding="async"
+            eager
+            responsiveWidths={[640, 960, 1280, 1600, 1920]}
+            className="size-full object-cover object-[67%_center] sm:object-[65%_center] lg:object-center"
+          />
+        </motion.div>
+      </Parallax>
 
       {/* Responsive overlays preserve text contrast without hiding the photograph. */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/15 sm:bg-gradient-to-r sm:from-black/55 sm:via-black/15 sm:to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 sm:hidden" />
 
-      {/* Main campaign copy aligns to the bottom on phones and vertically
-          centers on larger screens. */}
-      <div className="relative mx-auto flex min-h-[calc(100svh-92px)] max-w-[1440px] items-end px-4 pb-6 pt-14 min-[380px]:px-5 min-[380px]:pb-8 sm:min-h-[calc(100svh-108px)] sm:items-center sm:px-8 sm:pb-14 sm:pt-14 lg:px-12 xl:min-h-[calc(100svh-120px)] xl:px-16">
+      {/* The foreground travels slightly faster than the campaign image,
+          creating depth while keeping every CTA easy to interact with. */}
+      <Parallax speed={reduceMotion ? 0 : 4} className="relative">
+        <div className="relative mx-auto flex min-h-[calc(100svh-92px)] max-w-[1440px] items-end px-4 pb-6 pt-14 min-[380px]:px-5 min-[380px]:pb-8 sm:min-h-[calc(100svh-108px)] sm:items-center sm:px-8 sm:pb-14 sm:pt-14 lg:px-12 xl:min-h-[calc(100svh-120px)] xl:px-16">
         <motion.div
           className="w-full max-w-xl sm:max-w-lg lg:max-w-2xl"
-          initial={false}
-          animate="visible"
+            initial={reduceMotion ? false : 'hidden'}
+            animate="visible"
           transition={{ staggerChildren: 0.12, delayChildren: 0.25 }}
         >
           {/* Eyebrow identifies the featured seasonal release. */}
@@ -123,14 +133,20 @@ export function Hero() {
             </Link>
           </motion.div>
         </motion.div>
-      </div>
+        </div>
+      </Parallax>
 
       {/* Editorial campaign metadata is decorative and only shown when space allows. */}
-      <div className="absolute bottom-8 right-8 hidden items-center gap-3 text-[9px] uppercase tracking-[0.2em] text-white/70 lg:flex">
+      <motion.div
+        className="absolute bottom-8 right-8 hidden items-center gap-3 text-[9px] uppercase tracking-[0.2em] text-white/70 lg:flex"
+        initial={reduceMotion ? false : { opacity: 0, x: 18 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.9, duration: 0.6 }}
+      >
         <span>Campaign 01</span>
         <span className="h-px w-10 bg-white/50" />
-        <span>Mediterranean light</span>
-      </div>
+        <span>Lagos light</span>
+      </motion.div>
     </section>
   )
 }

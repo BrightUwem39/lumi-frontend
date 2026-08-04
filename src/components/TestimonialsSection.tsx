@@ -3,6 +3,7 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import { TestimonialCard, type Testimonial } from './TestimonialCard'
+import { MotionReveal } from './MotionReveal'
 
 // Testimonial data is separate from the card so it can later come from an API.
 const testimonials: Testimonial[] = [
@@ -10,8 +11,8 @@ const testimonials: Testimonial[] = [
     id: 'amara-okafor',
     name: 'Amara Okafor',
     location: 'Lagos, Nigeria',
-    image: '/images/lumi-summer-hero.png',
-    imagePosition: 'object-[68%_20%]',
+    image: '/images/editorial/community-amara-v2.jpg',
+    imagePosition: 'object-center',
     rating: 5,
     review:
       'The pieces feel even better than they look online. My linen set has already become the first thing I reach for on warm days.',
@@ -20,8 +21,8 @@ const testimonials: Testimonial[] = [
     id: 'elise-martin',
     name: 'Elise Martin',
     location: 'Paris, France',
-    image: '/images/products/luna-silk-dress.webp',
-    imagePosition: 'object-[center_12%]',
+    image: '/images/editorial/community-elise-v2.jpg',
+    imagePosition: 'object-center',
     rating: 5,
     review:
       'The Luna dress falls beautifully and needed no alterations. It arrived thoughtfully packed, and the fabric feels genuinely special.',
@@ -30,8 +31,8 @@ const testimonials: Testimonial[] = [
     id: 'daniel-brooks',
     name: 'Daniel Brooks',
     location: 'London, United Kingdom',
-    image: '/images/products/charcoal-wool-blazer.webp',
-    imagePosition: 'object-[center_10%]',
+    image: '/images/editorial/community-daniel-v2.jpg',
+    imagePosition: 'object-center',
     rating: 5,
     review:
       'The blazer has the relaxed shape I wanted without losing its structure. I have worn it to work, dinner, and nearly everywhere between.',
@@ -40,8 +41,8 @@ const testimonials: Testimonial[] = [
     id: 'maya-chen',
     name: 'Maya Chen',
     location: 'Toronto, Canada',
-    image: '/images/products/luna-silk-dress.webp',
-    imagePosition: 'object-[center_18%]',
+    image: '/images/editorial/community-maya-v2.jpg',
+    imagePosition: 'object-center',
     rating: 4,
     review:
       'Everything feels considered, from the fit to the small finishing details. The sizing notes were accurate and made ordering simple.',
@@ -56,14 +57,14 @@ export function TestimonialsSection() {
       className="bg-ink px-4 py-12 text-canvas min-[380px]:py-14 sm:px-7 sm:py-20 lg:px-10 lg:py-24"
     >
       <div className="mx-auto max-w-[1440px]">
-        <div className="mb-8 max-w-xl sm:mb-10">
+        <MotionReveal className="mb-8 max-w-xl sm:mb-10">
           <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-canvas/55">
             Worn and loved
           </p>
           <h2 id="testimonials-heading" className="text-3xl sm:text-4xl">
             What our community says
           </h2>
-        </div>
+        </MotionReveal>
 
         {/* Swiper provides touch dragging, keyboard-friendly pagination,
             and breakpoint-specific card counts. */}

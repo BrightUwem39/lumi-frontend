@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { ParallaxProvider } from 'react-scroll-parallax'
 import '@fontsource/inter/latin-400.css'
 import '@fontsource/inter/latin-500.css'
 import './index.css'
@@ -11,7 +12,10 @@ createRoot(document.getElementById('root')!).render(
   // StrictMode highlights unsafe React patterns during local development.
   <StrictMode>
     <BrowserRouter>
-      <App />
+      {/* One provider coordinates all scroll-linked movement across routes. */}
+      <ParallaxProvider>
+        <App />
+      </ParallaxProvider>
     </BrowserRouter>
   </StrictMode>,
 )

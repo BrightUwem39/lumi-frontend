@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { FiArrowRight, FiCheck } from 'react-icons/fi'
+import { LuArrowRight as FiArrowRight, LuCheck as FiCheck } from 'react-icons/lu'
 
 export function NewsletterSection() {
   const [email, setEmail] = useState('')

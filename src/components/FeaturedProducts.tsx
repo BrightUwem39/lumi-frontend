@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { FiArrowRight } from 'react-icons/fi'
+import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
+import { LuArrowRight as FiArrowRight } from 'react-icons/lu'
 import { ProductCard } from './ProductCard'
+import { MotionReveal } from './MotionReveal'
 import type { Product } from '../types/product'
 
 type ProductFilter = 'all' | 'trending' | 'popular' | 'latest'
@@ -17,13 +18,32 @@ const tabs: { label: string; value: ProductFilter }[] = [
   { label: 'Latest', value: 'latest' },
 ]
 
+// The grid reveals once as a group, then hands each card a short staggered delay.
+const productGridVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { staggerChildren: 0.09, delayChildren: 0.06 },
+  },
+}
+
+const productItemVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  },
+}
+
 // Filter metadata controls the tabs without leaking presentation into ProductCard.
 const products: FeaturedProduct[] = [
   {
     id: 'solstice-wool-coat',
     name: 'Solstice Wool Coat',
     category: 'Women · Outerwear',
-    image: '/images/products/solstice-wool-coat.png',
+    image: '/images/editorial/solstice-coat-atelier-v2.jpg',
     price: 295,
     rating: 4.9,
     reviewCount: 42,
@@ -34,7 +54,7 @@ const products: FeaturedProduct[] = [
     id: 'fine-rib-knit-top',
     name: 'Fine-Rib Knit Top',
     category: 'Women · Knitwear',
-    image: '/images/products/fine-rib-knit-top.png',
+    image: '/images/editorial/fine-rib-window-v2.jpg',
     price: 115,
     rating: 4.8,
     reviewCount: 31,
@@ -45,7 +65,7 @@ const products: FeaturedProduct[] = [
     id: 'atelier-wide-leg-trouser',
     name: 'Atelier Wide-Leg Trouser',
     category: 'Women · Tailoring',
-    image: '/images/products/atelier-wide-leg-trouser.png',
+    image: '/images/editorial/atelier-trouser-street-v2.jpg',
     price: 175,
     originalPrice: 210,
     rating: 4.7,
@@ -57,7 +77,7 @@ const products: FeaturedProduct[] = [
     id: 'arc-frame-sunglasses',
     name: 'Arc Frame Sunglasses',
     category: 'Accessories · Eyewear',
-    image: '/images/products/arc-frame-sunglasses.png',
+    image: '/images/editorial/arc-sunglasses-cafe-v2.jpg',
     price: 98,
     rating: 4.8,
     reviewCount: 54,
@@ -69,6 +89,7 @@ const products: FeaturedProduct[] = [
 // Featured products reuses ProductCard and only owns filtering and section layout.
 export function FeaturedProducts() {
   const [activeFilter, setActiveFilter] = useState<ProductFilter>('all')
+  const reduceMotion = useReducedMotion()
   const visibleProducts =
     activeFilter === 'all'
       ? products
@@ -81,7 +102,7 @@ export function FeaturedProducts() {
       className="scroll-mt-[92px] bg-canvas px-4 pb-5 pt-12 text-ink min-[380px]:pt-14 sm:scroll-mt-[108px] sm:px-7 sm:pb-8 sm:pt-20 lg:px-10 lg:pb-10 lg:pt-24 xl:scroll-mt-[120px]"
     >
       <div className="mx-auto max-w-[1440px]">
-        <div className="mb-6 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+        <MotionReveal className="mb-6 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/50">
               Curated for you
@@ -122,7 +143,7 @@ export function FeaturedProducts() {
               )
             })}
           </div>
-        </div>
+        </MotionReveal>
 
         <p className="mb-3 flex items-center justify-end gap-1.5 text-[8px] font-medium uppercase tracking-[0.12em] text-ink/45 sm:hidden">
           Swipe products <FiArrowRight size={12} />
@@ -132,18 +153,21 @@ export function FeaturedProducts() {
           <motion.div
             key={activeFilter}
             role="tabpanel"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+            variants={productGridVariants}
+            initial={reduceMotion ? false : 'hidden'}
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.12 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.22 }}
             className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
           >
             {visibleProducts.map((product) => (
-              <ProductCard
+              <motion.div
                 key={product.id}
-                product={product}
+                variants={productItemVariants}
                 className="w-[76vw] max-w-[320px] shrink-0 snap-start min-[430px]:w-[62vw] sm:w-auto sm:max-w-none"
-              />
+              >
+                <ProductCard product={product} viewportReveal={false} />
+              </motion.div>
             ))}
           </motion.div>
         </AnimatePresence>

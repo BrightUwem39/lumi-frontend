@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { FiCheck, FiPackage, FiTruck } from 'react-icons/fi'
+import { LuCheck as FiCheck, LuPackage as FiPackage, LuTruck as FiTruck } from 'react-icons/lu'
 import { Link, useParams } from 'react-router-dom'
 import { OptimizedImage } from '../components/OptimizedImage'
 import { LAST_ORDER_STORAGE_KEY, type DemoOrder } from '../lib/order'

@@ -2,22 +2,24 @@ import {
   useEffect,
   useId,
   useState,
+  type MouseEventHandler,
   type ReactNode,
 } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
-  FiChevronDown,
-  FiHeart,
-  FiMenu,
-  FiMoon,
-  FiSearch,
-  FiShoppingBag,
-  FiSun,
-  FiUser,
-  FiX,
-} from 'react-icons/fi'
+  LuChevronDown as FiChevronDown,
+  LuHeart as FiHeart,
+  LuMenu as FiMenu,
+  LuMoon as FiMoon,
+  LuSearch as FiSearch,
+  LuShoppingBag as FiShoppingBag,
+  LuSun as FiSun,
+  LuUser as FiUser,
+  LuX as FiX,
+} from 'react-icons/lu'
 import { useShopStore } from '../store/useShopStore'
+import { useCartUiStore } from '../store/useCartUiStore'
 import { SearchModal } from './SearchModal'
 
 // Navigation data lives outside the component so it is not recreated on render.
@@ -40,21 +42,40 @@ type CountIconProps = {
   label: string
   href?: string
   children: ReactNode
+  onClick?: MouseEventHandler<HTMLAnchorElement>
+  cartTarget?: boolean
+  pulseKey?: number
 }
 
 // Reusable accessible icon link with an optional item counter.
-function CountIcon({ count, label, href = '#', children }: CountIconProps) {
+function CountIcon({ count, label, href = '#', children, onClick, cartTarget = false, pulseKey = 0 }: CountIconProps) {
   return (
     <Link
       to={href}
+      onClick={onClick}
+      data-cart-target={cartTarget ? 'navbar' : undefined}
       aria-label={`${label}${count ? `, ${count} item${count === 1 ? '' : 's'}` : ''}`}
       className="relative grid size-10 place-items-center transition-opacity hover:opacity-55"
     >
-      {children}
+      <motion.span
+        key={cartTarget ? pulseKey : 'static-icon'}
+        className="grid place-items-center"
+        initial={cartTarget && pulseKey > 0 ? { scale: 0.8, y: 0, rotate: 0 } : false}
+        animate={cartTarget && pulseKey > 0 ? { scale: [0.8, 1.22, 0.94, 1], y: [0, -4, 1, 0], rotate: [0, -8, 5, 0] } : undefined}
+        transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {children}
+      </motion.span>
       {count > 0 && (
-        <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-ink text-[9px] font-medium text-canvas">
+        <motion.span
+          key={count}
+          initial={{ scale: 0.45, opacity: 0 }}
+          animate={{ scale: [0.45, 1.25, 1], opacity: 1 }}
+          transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-ink text-[9px] font-medium text-canvas"
+        >
           {count > 9 ? '9+' : count}
-        </span>
+        </motion.span>
       )}
     </Link>
   )
@@ -73,6 +94,8 @@ export function Navbar() {
   })
   const cartCount = useShopStore((state) => state.cartCount)
   const wishlistCount = useShopStore((state) => state.wishlistCount)
+  const openCartDrawer = useCartUiStore((state) => state.openDrawer)
+  const cartPulseKey = useCartUiStore((state) => state.pulseKey)
   const mobileMenuId = useId()
 
   // Escape closes any open overlay for keyboard users.
@@ -108,9 +131,12 @@ export function Navbar() {
   return (
     <>
       {/* The header contains the promotion bar and the responsive main navbar. */}
-      <header className="sticky top-0 z-40 bg-canvas text-ink shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+      <header className="sticky top-0 z-40 bg-canvas/95 text-ink shadow-[0_1px_0_rgba(0,0,0,0.04)] backdrop-blur-md">
         {/* Shorter phone copy prevents the promotion from wrapping. */}
-        <Link to="/shop" className="flex h-7 w-full min-w-0 items-center justify-center overflow-hidden whitespace-nowrap bg-ink px-3 text-center text-[8px] font-medium uppercase tracking-[0.16em] text-canvas transition-opacity hover:opacity-90 sm:h-8 sm:px-4 sm:text-[10px] sm:tracking-[0.24em]">
+        <Link
+          to="/shop"
+          className="flex h-7 w-full min-w-0 items-center justify-center overflow-hidden whitespace-nowrap bg-ink px-3 text-center text-[8px] font-medium uppercase tracking-[0.16em] text-canvas transition-opacity hover:opacity-90 sm:h-8 sm:px-4 sm:text-[10px] sm:tracking-[0.24em]"
+        >
           <span className="min-w-0 truncate sm:hidden">Free shipping over $250</span>
           <span className="hidden min-w-0 truncate sm:inline">
             Complimentary shipping on orders over $250
@@ -235,7 +261,17 @@ export function Navbar() {
                 </CountIcon>
               </span>
               <span className="[&>a]:size-10">
-                <CountIcon count={cartCount} label="Shopping bag" href="/cart">
+                <CountIcon
+                  count={cartCount}
+                  label="Shopping bag"
+                  href="/cart"
+                  cartTarget
+                  pulseKey={cartPulseKey}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    openCartDrawer()
+                  }}
+                >
                   <FiShoppingBag size={19} strokeWidth={1.5} />
                 </CountIcon>
               </span>
@@ -364,7 +400,11 @@ export function Navbar() {
                 </Link>
                 <Link
                   to="/cart"
-                  onClick={() => setMobileOpen(false)}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    setMobileOpen(false)
+                    openCartDrawer()
+                  }}
                   className="flex min-w-0 items-center gap-2 border border-line px-3 py-3 text-[9px] font-medium uppercase tracking-[0.12em] sm:px-4 sm:text-[10px] sm:tracking-[0.16em]"
                 >
                   <FiShoppingBag size={16} /> Cart

@@ -1,21 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  FiCheck,
-  FiChevronDown,
-  FiHeart,
-  FiArrowRight,
-  FiMinus,
-  FiPlus,
-  FiShield,
-  FiShoppingBag,
-  FiStar,
-  FiTruck,
-} from 'react-icons/fi'
+  LuCheck as FiCheck,
+  LuChevronDown as FiChevronDown,
+  LuHeart as FiHeart,
+  LuArrowRight as FiArrowRight,
+  LuMinus as FiMinus,
+  LuPlus as FiPlus,
+  LuShieldCheck as FiShield,
+  LuShoppingBag as FiShoppingBag,
+  LuStar as FiStar,
+  LuTruck as FiTruck,
+} from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { ProductCard } from '../components/ProductCard'
 import { ProductGallery } from '../components/ProductGallery'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
+import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
 import type { ShopProduct } from '../types/product'
 
 const currency = new Intl.NumberFormat('en-US', {
@@ -72,6 +73,7 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
   const [added, setAdded] = useState(false)
   const [buying, setBuying] = useState(false)
   const addToCart = useShopStore((state) => state.addToCart)
+  const launchCartFlight = useCartUiStore((state) => state.launchFlight)
   const addRecentlyViewed = useShopStore((state) => state.addRecentlyViewed)
   const toggleWishlist = useShopStore((state) => state.toggleWishlist)
   const isFavorite = useShopStore((state) =>
@@ -135,8 +137,9 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
       }))
     : fallbackGallery
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (source?: Element | null) => {
     addToCart(product.id, quantity)
+    launchCartFlight(createCartFlight(product.image, product.name, source))
     setAdded(true)
     window.setTimeout(() => setAdded(false), 1400)
   }
@@ -246,7 +249,7 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
                 <button
                   type="button"
                   disabled={!product.available}
-                  onClick={handleAddToCart}
+                  onClick={(event) => handleAddToCart(event.currentTarget)}
                   className="flex h-12 flex-1 items-center justify-center gap-2 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {added ? <FiCheck size={15} /> : <FiShoppingBag size={15} />}

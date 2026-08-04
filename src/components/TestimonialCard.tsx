@@ -1,4 +1,4 @@
-import { FiStar } from 'react-icons/fi'
+import { LuCheck as FiCheck, LuStar as FiStar } from 'react-icons/lu'
 
 export type Testimonial = {
   id: string
@@ -17,24 +17,29 @@ type TestimonialCardProps = {
 // Reusable review card; all customer-specific content is supplied as data.
 export function TestimonialCard({ testimonial }: TestimonialCardProps) {
   return (
-    <article className="flex h-full min-h-[260px] flex-col border border-canvas/20 p-5 sm:min-h-[285px] sm:p-6">
-      <div
-        aria-label={`${testimonial.rating} out of 5 stars`}
-        className="flex gap-1 text-canvas"
-      >
-        {Array.from({ length: 5 }, (_, index) => (
-          <FiStar
-            key={index}
-            size={14}
-            strokeWidth={1.4}
-            fill={index < testimonial.rating ? 'currentColor' : 'none'}
-            className={index < testimonial.rating ? '' : 'opacity-30'}
-          />
-        ))}
+    <article className="relative flex h-full min-h-[250px] flex-col overflow-hidden border border-canvas/18 p-5 sm:min-h-[275px] sm:p-6">
+      <span aria-hidden="true" className="absolute right-5 top-2 font-display text-7xl leading-none text-canvas/[0.07]">
+        “
+      </span>
+
+      <div className="relative flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[8px] font-medium uppercase tracking-[0.17em] text-canvas/55">
+          <span className="grid size-4 place-items-center rounded-full border border-canvas/30">
+            <FiCheck size={10} />
+          </span>
+          Verified purchase
+        </div>
+        <div
+          aria-label={`${testimonial.rating} out of 5 stars`}
+          className="flex items-center gap-1.5 text-[10px] text-canvas/75"
+        >
+          <FiStar size={11} fill="currentColor" strokeWidth={1.2} />
+          {testimonial.rating.toFixed(1)}
+        </div>
       </div>
 
-      <blockquote className="my-auto py-5 sm:py-6">
-        <p className="text-base leading-[1.5] sm:text-lg">
+      <blockquote className="relative my-auto py-6 sm:py-7">
+        <p className="text-[15px] leading-[1.6] text-canvas/90 sm:text-[17px]">
           “{testimonial.review}”
         </p>
       </blockquote>
@@ -45,13 +50,13 @@ export function TestimonialCard({ testimonial }: TestimonialCardProps) {
           alt={testimonial.name}
           loading="lazy"
           decoding="async"
-          className={`size-10 rounded-full object-cover sm:size-11 ${testimonial.imagePosition ?? 'object-center'}`}
+          className={`size-10 rounded-full border border-canvas/20 object-cover sm:size-11 ${testimonial.imagePosition ?? 'object-center'}`}
         />
         <div>
           <cite className="not-italic text-sm font-medium">
             {testimonial.name}
           </cite>
-          <p className="mt-1 text-[9px] uppercase tracking-[0.16em] text-canvas/55">
+          <p className="mt-1 text-[8px] uppercase tracking-[0.18em] text-canvas/48">
             {testimonial.location}
           </p>
         </div>

@@ -1,16 +1,16 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import {
-  FiBell,
-  FiCheck,
-  FiChevronRight,
-  FiHeart,
-  FiHome,
-  FiMapPin,
-  FiPackage,
-  FiSettings,
-  FiShoppingBag,
-  FiUser,
-} from 'react-icons/fi'
+  LuBell as FiBell,
+  LuCheck as FiCheck,
+  LuChevronRight as FiChevronRight,
+  LuHeart as FiHeart,
+  LuHouse as FiHome,
+  LuMapPin as FiMapPin,
+  LuPackage as FiPackage,
+  LuSettings as FiSettings,
+  LuShoppingBag as FiShoppingBag,
+  LuUser as FiUser,
+} from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'

@@ -22,18 +22,25 @@ type DummyProduct = {
   discountPercentage: number
   rating: number
   stock: number
-  thumbnail: string
-  images: string[]
   reviews?: Array<{ rating: number }>
 }
 
 type DummyProductsResponse = { products: DummyProduct[] }
 
+// A tightly edited API capsule keeps live catalog data without importing the
+// inconsistent marketplace photography and unrelated labels into LUMI.
+const editorialApiImages: Record<number, string> = {
+  83: '/images/editorial/shop/indigo-check-overshirt-v2.jpg',
+  154: '/images/editorial/shop/black-acetate-sunglasses-v2.jpg',
+  172: '/images/editorial/shop/midnight-shoulder-bag-v2.jpg',
+  177: '/images/editorial/shop/black-column-gown-v2.jpg',
+}
+
 // DummyJSON is normalized once so the rest of the app stays API-agnostic.
 export async function fetchFashionProducts(signal?: AbortSignal) {
   const fields = [
     'id', 'title', 'description', 'category', 'price', 'discountPercentage',
-    'rating', 'stock', 'thumbnail', 'images', 'reviews',
+    'rating', 'stock', 'reviews',
   ].join(',')
   const response = await fetch(
     `https://dummyjson.com/products?limit=0&select=${fields}`,
@@ -44,7 +51,7 @@ export async function fetchFashionProducts(signal?: AbortSignal) {
   const data = (await response.json()) as DummyProductsResponse
 
   return data.products
-    .filter((product) => Boolean(categoryMap[product.category]))
+    .filter((product) => Boolean(editorialApiImages[product.id]))
     .map(normalizeProduct)
 }
 
@@ -61,8 +68,7 @@ function normalizeProduct(product: DummyProduct): ShopProduct {
     id: `dj-${product.id}`,
     name: product.title,
     category,
-    image: product.thumbnail || product.images[0],
-    gallery: product.images,
+    image: editorialApiImages[product.id],
     description: product.description,
     price: product.price,
     originalPrice,

@@ -1,21 +1,26 @@
 import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import Tilt from 'react-parallax-tilt'
+import { createPortal } from 'react-dom'
 import {
-  FiEye,
-  FiHeart,
-  FiLayers,
-  FiShoppingBag,
-  FiStar,
-  FiX,
-} from 'react-icons/fi'
+  LuEye as FiEye,
+  LuHeart as FiHeart,
+  LuLayers as FiLayers,
+  LuPlus as FiPlus,
+  LuShoppingBag as FiShoppingBag,
+  LuX as FiX,
+} from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { useShopStore } from '../store/useShopStore'
+import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
 import type { Product } from '../types/product'
+import { Skeleton } from './LoadingSkeleton'
 import { OptimizedImage } from './OptimizedImage'
 
 type ProductCardProps = {
   product: Product
   className?: string
+  viewportReveal?: boolean
 }
 
 const currency = new Intl.NumberFormat('en-US', {
@@ -25,11 +30,18 @@ const currency = new Intl.NumberFormat('en-US', {
 })
 
 // A reusable commerce card. All product-specific content arrives through props.
-export function ProductCard({ product, className = '' }: ProductCardProps) {
+export function ProductCard({
+  product,
+  className = '',
+  viewportReveal = true,
+}: ProductCardProps) {
   const [quickViewOpen, setQuickViewOpen] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [canTilt, setCanTilt] = useState(false)
+  const reduceMotion = useReducedMotion()
   const addToCart = useShopStore((state) => state.addToCart)
+  const launchCartFlight = useCartUiStore((state) => state.launchFlight)
   const toggleWishlist = useShopStore((state) => state.toggleWishlist)
   const isFavorite = useShopStore((state) =>
     state.wishlistItems.includes(product.id),
@@ -60,155 +72,163 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
     }
   }, [quickViewOpen])
 
-  const handleAddToCart = () => {
+  // Tilt is reserved for mouse/trackpad devices; touch cards retain native swipe.
+  useEffect(() => {
+    const pointerQuery = window.matchMedia('(hover: hover) and (pointer: fine)')
+    const syncPointer = () => setCanTilt(pointerQuery.matches)
+    syncPointer()
+    pointerQuery.addEventListener('change', syncPointer)
+    return () => pointerQuery.removeEventListener('change', syncPointer)
+  }, [])
+
+  const handleAddToCart = (source?: Element | null) => {
+    const sourceImage = source
+      ?.closest('[data-product-card]')
+      ?.querySelector('.product-card-media img') ?? source
     addToCart(product.id)
+    launchCartFlight(createCartFlight(product.image, product.name, sourceImage))
     setJustAdded(true)
     window.setTimeout(() => setJustAdded(false), 1200)
   }
 
+  const handleQuickView = () => {
+    setQuickViewOpen(true)
+  }
+
   return (
     <>
-      <article className={`group min-w-0 ${className}`}>
+      <Tilt
+        className={`min-w-0 ${className}`}
+        tiltEnable={canTilt && !reduceMotion}
+        tiltMaxAngleX={4.5}
+        tiltMaxAngleY={4.5}
+        perspective={1300}
+        scale={1.012}
+        transitionSpeed={850}
+        glareEnable={canTilt && !reduceMotion}
+        glareMaxOpacity={0.11}
+        glareColor="#ffffff"
+        glarePosition="all"
+      >
+        <motion.article
+          className="group min-w-0"
+          data-product-card={product.id}
+          initial={viewportReveal && !reduceMotion ? { opacity: 0, y: 18 } : false}
+          whileInView={viewportReveal && !reduceMotion ? { opacity: 1, y: 0 } : undefined}
+          whileHover={canTilt && !reduceMotion ? { y: -8 } : undefined}
+          viewport={{ once: true, amount: 0.12 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          style={{ willChange: canTilt && !reduceMotion ? 'transform' : 'auto' }}
+        >
         {/* Image area contains merchandising badges and fast product actions. */}
-        <div className="relative aspect-[4/5] overflow-hidden bg-[#e8e5df]">
+        <div className="product-card-media relative aspect-[4/5] overflow-hidden bg-[#e8e5df]">
           {/* The skeleton disappears as soon as the product image is decoded. */}
           {!imageLoaded && (
-            <div className="absolute inset-0 z-10 animate-pulse bg-gradient-to-r from-ink/[0.04] via-ink/[0.09] to-ink/[0.04]" />
+            <Skeleton className="absolute inset-0 z-10" />
           )}
-          <Link to={`/product/${product.id}`} aria-label={`View ${product.name}`}>
+          <Link
+            to={`/product/${product.id}`}
+            aria-label={`View ${product.name}`}
+            className="relative block size-full"
+          >
             <OptimizedImage
               src={product.image}
               alt={product.name}
               loading="lazy"
               decoding="async"
               onLoad={() => setImageLoaded(true)}
-              className={`size-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.025] ${
+              className={`absolute inset-0 size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025] ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
             />
           </Link>
 
-          <div className="absolute left-2 top-2 flex max-w-[calc(100%-3.5rem)] flex-col items-start gap-1 min-[420px]:left-3 min-[420px]:top-3 min-[420px]:gap-1.5">
-            {product.badge && (
-              <span className="bg-ink px-2 py-1 text-[7px] font-medium uppercase tracking-[0.12em] text-canvas min-[420px]:px-2.5 min-[420px]:text-[8px] min-[420px]:tracking-[0.16em]">
-                {product.badge}
-              </span>
-            )}
-            {discount > 0 && (
-              <span className="bg-white px-2 py-1 text-[7px] font-medium uppercase tracking-[0.12em] text-[#171713] min-[420px]:px-2.5 min-[420px]:text-[8px] min-[420px]:tracking-[0.16em]">
-                Save {discount}%
-              </span>
-            )}
-          </div>
-
+          {/* Quick view stays in the upper corner without obscuring the product. */}
           <button
             type="button"
-            aria-label={
-              isFavorite
-                ? `Remove ${product.name} from wishlist`
-                : `Add ${product.name} to wishlist`
-            }
-            aria-pressed={isFavorite}
-            onClick={() => toggleWishlist(product.id)}
-            className="absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-white text-[#171713] shadow-sm transition-transform hover:scale-105 min-[420px]:right-3 min-[420px]:top-3 min-[420px]:size-10"
+            title="Quick view"
+            aria-label={`Quick view ${product.name}`}
+            onClick={handleQuickView}
+            className="absolute right-2 top-2 z-20 grid size-11 place-items-center text-white mix-blend-difference transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-60 sm:right-3 sm:top-3 sm:size-9"
           >
-            <FiHeart
-              size={17}
-              fill={isFavorite ? 'currentColor' : 'none'}
-              strokeWidth={1.5}
-            />
+            <FiEye size={17} strokeWidth={1.4} />
           </button>
 
+          {/* The centered plus is the card's minimal add-to-bag action. */}
           <button
             type="button"
-            title="Compare product"
-            aria-label={
-              isCompared
-                ? `Remove ${product.name} from comparison`
-                : `Compare ${product.name}`
-            }
-            aria-pressed={isCompared}
-            onClick={() => toggleComparison(product.id)}
-            className={`absolute right-2 top-13 grid size-9 place-items-center rounded-full shadow-sm transition-all hover:scale-105 min-[420px]:right-3 min-[420px]:top-16 min-[420px]:size-10 ${
-              isCompared
-                ? 'bg-ink text-canvas'
-                : 'bg-white text-[#171713]'
-            }`}
+            title={justAdded ? 'Added to bag' : 'Add to bag'}
+            aria-label={justAdded ? `${product.name} added to bag` : `Add ${product.name} to bag`}
+            onClick={(event) => handleAddToCart(event.currentTarget)}
+            className="absolute bottom-2 left-1/2 z-20 grid size-11 -translate-x-1/2 place-items-center bg-canvas/90 text-ink shadow-sm backdrop-blur-sm transition-[opacity,transform] hover:-translate-x-1/2 hover:-translate-y-0.5 hover:opacity-80 sm:bottom-3 sm:size-9"
           >
-            <FiLayers size={16} />
+            <FiPlus size={20} strokeWidth={1.35} />
           </button>
 
-          {/* Actions stay visible on touch screens and reveal on hover for desktop. */}
-          <div className="absolute inset-x-2 bottom-2 grid grid-cols-2 gap-1.5 transition-all duration-300 min-[420px]:inset-x-3 min-[420px]:bottom-3 min-[420px]:gap-2 sm:translate-y-3 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100">
-            <button
-              type="button"
-              onClick={() => setQuickViewOpen(true)}
-              className="flex min-h-10 min-w-0 items-center justify-center gap-1 border border-white/70 bg-black/45 px-1.5 text-[7px] font-medium uppercase tracking-[0.08em] text-white backdrop-blur-sm transition-colors hover:bg-black/75 min-[420px]:min-h-11 min-[420px]:gap-2 min-[420px]:px-2 min-[420px]:text-[8px] min-[420px]:tracking-[0.12em]"
-            >
-              <FiEye size={14} />
-              <span className="min-[420px]:hidden">View</span>
-              <span className="hidden min-[420px]:inline">Quick view</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              className="flex min-h-10 min-w-0 items-center justify-center gap-1 bg-white px-1.5 text-[7px] font-medium uppercase tracking-[0.08em] text-[#171713] transition-colors hover:bg-[#171713] hover:text-white min-[420px]:min-h-11 min-[420px]:gap-2 min-[420px]:px-2 min-[420px]:text-[8px] min-[420px]:tracking-[0.12em]"
-            >
-              <FiShoppingBag size={14} />
-              {justAdded ? 'Added' : <><span className="min-[420px]:hidden">Add</span><span className="hidden min-[420px]:inline">Add to cart</span></>}
-            </button>
-          </div>
         </div>
 
-        {/* Product details remain compact so cards work in grids and sliders. */}
-        <div className="pt-3 min-[420px]:pt-4">
-          <div className="flex min-w-0 flex-col gap-1.5 min-[520px]:flex-row min-[520px]:items-start min-[520px]:justify-between min-[520px]:gap-3">
-            <div className="min-w-0">
-              <p className="mb-1 text-[8px] font-medium uppercase tracking-[0.18em] text-ink/50">
-                {product.category}
-              </p>
-              <h3 className="line-clamp-2 text-[14px] leading-5 min-[420px]:text-[15px]">
-                <Link to={`/product/${product.id}`}>{product.name}</Link>
-              </h3>
+        {/* A restrained editorial hierarchy keeps commerce details easy to scan. */}
+        <div className="border-b border-line/70 pb-4 pt-3.5 min-[420px]:pt-4">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-[8px] font-medium uppercase tracking-[0.19em] text-ink/48">
+              {product.category}{product.badge ? ` · ${product.badge}` : ''}
+            </p>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                aria-label={isFavorite ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+                aria-pressed={isFavorite}
+                onClick={() => toggleWishlist(product.id)}
+                className="grid size-10 place-items-center transition-opacity hover:opacity-50 sm:size-8"
+              >
+                <FiHeart size={15} fill={isFavorite ? 'currentColor' : 'none'} strokeWidth={1.4} />
+              </button>
+              <button
+                type="button"
+                title="Compare product"
+                aria-label={isCompared ? `Remove ${product.name} from comparison` : `Compare ${product.name}`}
+                aria-pressed={isCompared}
+                onClick={() => toggleComparison(product.id)}
+                className={`grid size-10 place-items-center transition-opacity hover:opacity-50 sm:size-8 ${isCompared ? 'opacity-100' : 'opacity-45'}`}
+              >
+                <FiLayers size={14} />
+              </button>
             </div>
-            <div className="shrink-0 text-left text-xs min-[520px]:text-right">
-              <span>{currency.format(product.price)}</span>
-              {product.originalPrice && (
-                <span className="ml-2 text-ink/40 line-through">
+          </div>
+
+          <h3 className="mt-2 line-clamp-2 text-[16px] leading-[1.22] tracking-[-0.015em] min-[420px]:text-[18px]">
+            <Link
+              to={`/product/${product.id}`}
+              className="transition-opacity hover:opacity-55"
+            >
+              {product.name}
+            </Link>
+          </h3>
+
+          <div className="mt-3 flex min-h-5 items-center gap-2.5">
+            <span className="text-[13px] font-medium">
+              {currency.format(product.price)}
+            </span>
+            {product.originalPrice && (
+              <>
+                <span className="text-[11px] text-ink/35 line-through">
                   {currency.format(product.originalPrice)}
                 </span>
-              )}
-            </div>
-          </div>
-
-          <div
-            aria-label={`${product.rating} out of 5 stars from ${product.reviewCount} reviews`}
-            className="mt-2.5 flex items-center gap-1"
-          >
-            <span className="flex text-ink">
-              {Array.from({ length: 5 }, (_, index) => (
-                <FiStar
-                  key={index}
-                  size={11}
-                  strokeWidth={1.4}
-                  fill={index < Math.round(product.rating) ? 'currentColor' : 'none'}
-                  className={
-                    index < Math.round(product.rating) ? '' : 'text-ink/25'
-                  }
-                />
-              ))}
-            </span>
-            <span className="text-[9px] text-ink/45">
-              {product.rating.toFixed(1)} ({product.reviewCount})
-            </span>
+                <span className="border border-line px-1.5 py-0.5 text-[7px] font-medium uppercase tracking-[0.13em] text-ink/55">
+                  Save {discount}%
+                </span>
+              </>
+            )}
           </div>
         </div>
-      </article>
+        </motion.article>
+      </Tilt>
 
-      {/* Quick view gives product context without leaving the current page. */}
-      <AnimatePresence>
-        {quickViewOpen && (
-          <div className="fixed inset-0 z-[70] grid place-items-center p-3 sm:p-6">
+      {/* A body-level portal keeps the modal above transformed tilt containers. */}
+      {createPortal(
+        <AnimatePresence>
+          {quickViewOpen && (
+          <div className="fixed inset-0 z-[70] grid place-items-center p-3 [perspective:1400px] sm:p-6">
             <motion.button
               type="button"
               aria-label="Close quick view"
@@ -222,11 +242,22 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
               role="dialog"
               aria-modal="true"
               aria-labelledby={`quick-view-${product.id}`}
-              className="relative z-10 grid max-h-[calc(100svh-1rem)] w-full max-w-4xl overflow-y-auto overscroll-contain bg-canvas text-ink sm:max-h-[92svh] sm:grid-cols-2"
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 18, scale: 0.98 }}
-              transition={{ duration: 0.25 }}
+              className="relative z-10 grid max-h-[calc(100svh-1rem)] w-full max-w-4xl origin-center overflow-y-auto overscroll-contain bg-canvas text-ink [transform-style:preserve-3d] sm:max-h-[92svh] sm:grid-cols-2"
+              initial={
+                reduceMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: 20, scale: 0.965, rotateY: -7 }
+              }
+              animate={{ opacity: 1, y: 0, scale: 1, rotateY: 0 }}
+              exit={
+                reduceMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: 12, scale: 0.98, rotateY: 5 }
+              }
+              transition={{
+                duration: reduceMotion ? 0 : 0.38,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
               <button
                 type="button"
@@ -268,7 +299,10 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
                 </p>
                 <button
                   type="button"
-                  onClick={handleAddToCart}
+                  onClick={(event) => {
+                    handleAddToCart(event.currentTarget)
+                    setQuickViewOpen(false)
+                  }}
                   className="mt-5 flex min-h-12 items-center justify-center gap-3 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.14em] text-canvas sm:mt-8 sm:px-6 sm:text-[10px] sm:tracking-[0.18em]"
                 >
                   <FiShoppingBag size={16} />
@@ -277,8 +311,10 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </>
   )
 }

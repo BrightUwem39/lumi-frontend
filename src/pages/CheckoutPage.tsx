@@ -1,14 +1,16 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  FiArrowLeft,
-  FiCheck,
-  FiCreditCard,
-  FiHome,
-  FiLock,
-} from 'react-icons/fi'
-import { FaApplePay, FaPaypal, FaUniversity } from 'react-icons/fa'
+  LuArrowLeft as FiArrowLeft,
+  LuCheck as FiCheck,
+  LuCreditCard as FiCreditCard,
+  LuHouse as FiHome,
+  LuLandmark as FaUniversity,
+  LuLock as FiLock,
+} from 'react-icons/lu'
+import { FaApplePay, FaPaypal } from 'react-icons/fa'
 import { Link, useNavigate } from 'react-router-dom'
+import { PageLoadingSkeleton } from '../components/LoadingSkeleton'
 import { useCatalog } from '../hooks/useCatalog'
 import {
   LAST_ORDER_STORAGE_KEY,
@@ -147,7 +149,7 @@ export function CheckoutPage() {
         </div>
 
         {catalogStatus === 'loading' && Object.keys(cartItems).length > 0 ? (
-          <div className="grid min-h-[52svh] place-items-center text-sm text-ink/50">Loading checkout…</div>
+          <PageLoadingSkeleton variant="checkout" />
         ) : items.length === 0 ? (
           <div className="grid min-h-[52svh] place-items-center text-center">
             <div>

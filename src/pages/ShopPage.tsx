@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
 import {
-  FiChevronDown,
-  FiFilter,
-  FiSearch,
-  FiX,
-} from 'react-icons/fi'
+  LuChevronDown as FiChevronDown,
+  LuListFilter as FiFilter,
+  LuSearch as FiSearch,
+  LuX as FiX,
+} from 'react-icons/lu'
 import {
   ProductFilters,
   type PriceFilter,
@@ -16,6 +16,20 @@ import { useCatalog } from '../hooks/useCatalog'
 import type { ShopProduct } from '../types/product'
 
 type SortOption = 'featured' | 'latest' | 'price-low' | 'price-high' | 'rating'
+
+const productGridVariants: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.075, delayChildren: 0.05 } },
+}
+
+const productItemVariants: Variants = {
+  hidden: { opacity: 0, y: 22 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.48, ease: [0.22, 1, 0.36, 1] },
+  },
+}
 
 
 const categories = ['All', 'Women', 'Men', 'Accessories', 'Shoes']
@@ -28,6 +42,7 @@ const colors = [
 ]
 export function ShopPage() {
   const { products, status: catalogStatus } = useCatalog()
+  const reduceMotion = useReducedMotion()
   const initialParams = new URLSearchParams(window.location.search)
   const [query, setQuery] = useState(() => initialParams.get('search') ?? '')
   const [category, setCategory] = useState(() => {
@@ -207,8 +222,8 @@ export function ShopPage() {
       <section aria-label="Shop products" className="px-3 py-6 min-[380px]:px-4 min-[380px]:py-8 sm:px-7 lg:px-10 lg:py-10">
         <div className="mx-auto max-w-[1440px]">
           {/* Search, mobile filter, result count, and sort controls. */}
-          <div className="mb-6 grid grid-cols-2 gap-2.5 border-b border-line pb-5 sm:mb-8 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-3 sm:pb-6">
-            <label className="col-span-2 flex min-h-12 items-center gap-3 bg-ink/[0.04] px-4 sm:col-span-1">
+          <div className="mb-6 grid grid-cols-1 gap-2.5 border-b border-line pb-5 min-[380px]:grid-cols-2 sm:mb-8 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-3 sm:pb-6">
+            <label className="flex min-h-12 items-center gap-3 bg-ink/[0.04] px-4 min-[380px]:col-span-2 sm:col-span-1">
               <FiSearch size={17} className="shrink-0 text-ink/55" />
               <span className="sr-only">Search products</span>
               <input
@@ -223,7 +238,7 @@ export function ShopPage() {
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
-              className="flex min-h-12 items-center justify-center gap-2 border border-line px-5 text-[9px] font-medium uppercase tracking-[0.16em] lg:hidden"
+              className="flex min-h-12 min-w-0 items-center justify-center gap-2 border border-line px-3 text-[9px] font-medium uppercase tracking-[0.14em] min-[380px]:px-5 min-[380px]:tracking-[0.16em] lg:hidden"
             >
               <FiFilter size={15} />
               Filters
@@ -234,9 +249,11 @@ export function ShopPage() {
                 type="button"
                 aria-expanded={sortOpen}
                 onClick={() => setSortOpen((open) => !open)}
-                className="flex min-h-12 w-full items-center justify-between gap-4 border border-line px-5 text-[9px] font-medium uppercase tracking-[0.14em] sm:w-auto"
+                className="flex min-h-12 w-full min-w-0 items-center justify-between gap-2 border border-line px-3 text-[9px] font-medium uppercase tracking-[0.12em] min-[380px]:gap-4 min-[380px]:px-5 min-[380px]:tracking-[0.14em] sm:w-auto"
               >
-                {sortOptions.find((option) => option.value === sortBy)?.label}
+                <span className="min-w-0 truncate">
+                  {sortOptions.find((option) => option.value === sortBy)?.label}
+                </span>
                 <FiChevronDown
                   size={14}
                   className={`transition-transform ${sortOpen ? 'rotate-180' : ''}`}
@@ -287,10 +304,16 @@ export function ShopPage() {
               {visibleProducts.length > 0 ? (
                 <motion.div
                   layout
-                className="grid grid-cols-1 gap-x-3 gap-y-8 min-[340px]:grid-cols-2 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-3"
+                  variants={productGridVariants}
+                  initial={reduceMotion ? false : 'hidden'}
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.08 }}
+                  className="grid grid-cols-1 gap-x-3 gap-y-8 min-[340px]:grid-cols-2 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-3"
                 >
                   {visibleProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <motion.div key={product.id} variants={productItemVariants} layout>
+                      <ProductCard product={product} viewportReveal={false} />
+                    </motion.div>
                   ))}
                 </motion.div>
               ) : (
@@ -359,11 +382,14 @@ export function ShopPage() {
             />
             <motion.aside
               aria-label="Product filters"
-              className="fixed inset-y-0 left-0 z-[60] w-[92%] max-w-sm overflow-y-auto overscroll-contain bg-canvas p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-ink min-[380px]:p-5 sm:w-[88%] sm:p-6 lg:hidden"
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ duration: 0.3 }}
+              className="fixed inset-y-0 left-0 z-[60] w-[92%] max-w-sm origin-left overflow-y-auto overscroll-contain bg-canvas p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-ink min-[380px]:p-5 sm:w-[88%] sm:p-6 lg:hidden"
+              initial={reduceMotion ? { opacity: 0 } : { x: '-104%', opacity: 0.7 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={reduceMotion ? { opacity: 0 } : { x: '-104%', opacity: 0.7 }}
+              transition={{
+                duration: reduceMotion ? 0 : 0.4,
+                ease: [0.22, 1, 0.36, 1],
+              }}
               drag="x"
               dragConstraints={{ left: -180, right: 0 }}
               dragElastic={0.08}
@@ -386,7 +412,7 @@ export function ShopPage() {
                   <FiX size={21} />
                 </button>
               </div>
-              <ProductFilters {...filterProps} />
+              <ProductFilters {...filterProps} animated />
               <button
                 type="button"
                 onClick={() => setFiltersOpen(false)}

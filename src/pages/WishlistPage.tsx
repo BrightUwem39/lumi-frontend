@@ -1,13 +1,15 @@
 import { useMemo } from 'react'
 import {
-  FiArrowLeft,
-  FiHeart,
-  FiShoppingBag,
-  FiTrash2,
-} from 'react-icons/fi'
+  LuArrowLeft as FiArrowLeft,
+  LuHeart as FiHeart,
+  LuShoppingBag as FiShoppingBag,
+  LuTrash2 as FiTrash2,
+} from 'react-icons/lu'
 import { Link } from 'react-router-dom'
+import { PageLoadingSkeleton } from '../components/LoadingSkeleton'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
+import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -20,6 +22,7 @@ export function WishlistPage() {
   const wishlistItems = useShopStore((state) => state.wishlistItems)
   const toggleWishlist = useShopStore((state) => state.toggleWishlist)
   const addToCart = useShopStore((state) => state.addToCart)
+  const launchCartFlight = useCartUiStore((state) => state.launchFlight)
 
   // Resolve saved IDs against the frontend catalog until products come from an API.
   const savedProducts = useMemo(
@@ -32,8 +35,15 @@ export function WishlistPage() {
     [products, wishlistItems],
   )
 
-  const moveToCart = (productId: string) => {
+  const moveToCart = (
+    productId: string,
+    image: string,
+    productName: string,
+    source?: Element | null,
+  ) => {
     addToCart(productId)
+    const sourceImage = source?.closest('article')?.querySelector('img') ?? source
+    launchCartFlight(createCartFlight(image, productName, sourceImage))
     toggleWishlist(productId)
   }
 
@@ -64,7 +74,7 @@ export function WishlistPage() {
         </div>
 
         {catalogStatus === 'loading' && wishlistItems.length > 0 ? (
-          <div className="grid min-h-[45svh] place-items-center text-sm text-ink/50">Loading saved products…</div>
+          <PageLoadingSkeleton variant="wishlist" />
         ) : savedProducts.length === 0 ? (
           <EmptyWishlist />
         ) : (
@@ -122,7 +132,14 @@ export function WishlistPage() {
                   <button
                     type="button"
                     disabled={!product.available}
-                    onClick={() => moveToCart(product.id)}
+                    onClick={(event) =>
+                      moveToCart(
+                        product.id,
+                        product.image,
+                        product.name,
+                        event.currentTarget,
+                      )
+                    }
                     className="mt-3 flex min-h-11 w-full items-center justify-center gap-1.5 bg-ink px-2 text-[8px] font-medium uppercase tracking-[0.1em] text-canvas disabled:cursor-not-allowed disabled:opacity-40 min-[420px]:mt-4 min-[420px]:min-h-12 min-[420px]:gap-2 min-[420px]:px-4 min-[420px]:text-[9px] min-[420px]:tracking-[0.15em]"
                   >
                     <FiShoppingBag size={14} />

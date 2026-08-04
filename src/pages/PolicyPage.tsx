@@ -1,4 +1,4 @@
-import { FiArrowLeft, FiMail, FiPhone } from 'react-icons/fi'
+import { LuArrowLeft as FiArrowLeft, LuMail as FiMail, LuPhone as FiPhone } from 'react-icons/lu'
 import { Link, Navigate, useParams } from 'react-router-dom'
 
 type Policy = {
