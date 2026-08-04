@@ -33,8 +33,8 @@ export function ProductGallery({
   }
 
   return (
-    <div className="min-w-0">
-      <div className="relative overflow-hidden bg-[#e8e5df]">
+    <div className="w-full min-w-0 max-w-full overflow-hidden">
+      <div className="relative w-full min-w-0 overflow-hidden bg-[#e8e5df]">
         <Swiper
           modules={[A11y, Keyboard]}
           keyboard={{ enabled: true }}
@@ -45,7 +45,7 @@ export function ProductGallery({
           }}
           onSlideChange={(instance) => setActiveIndex(instance.activeIndex)}
           aria-label={`${productName} image gallery`}
-          className="aspect-[4/5]"
+          className="aspect-[4/5] w-full min-w-0"
         >
           {images.map((image, index) => (
             <SwiperSlide key={`${image.label}-${index}`}>

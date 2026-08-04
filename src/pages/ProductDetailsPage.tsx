@@ -3,7 +3,6 @@ import {
   LuCheck as FiCheck,
   LuChevronDown as FiChevronDown,
   LuHeart as FiHeart,
-  LuArrowRight as FiArrowRight,
   LuMinus as FiMinus,
   LuPlus as FiPlus,
   LuShieldCheck as FiShield,
@@ -14,10 +13,12 @@ import {
 import { Link } from 'react-router-dom'
 import { ProductCard } from '../components/ProductCard'
 import { ProductGallery } from '../components/ProductGallery'
+import { RailIndicator } from '../components/RailIndicator'
 import { useCatalog } from '../hooks/useCatalog'
-import { useShopStore } from '../store/useShopStore'
 import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
+import { useShopStore } from '../store/useShopStore'
 import type { ShopProduct } from '../types/product'
+import { getRailIndex } from '../utils/rail'
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -55,8 +56,17 @@ export function ProductDetailsPage({ productId }: { productId: string }) {
     return (
       <main className="grid min-h-[65svh] place-items-center bg-canvas px-4 text-center text-ink">
         <div>
-          <h1 className="text-3xl">{status === 'loading' ? 'Loading product…' : 'Product not found'}</h1>
-          {status !== 'loading' && <Link to="/shop" className="mt-6 inline-flex min-h-12 items-center bg-ink px-7 text-[9px] uppercase tracking-[0.17em] text-canvas">Return to shop</Link>}
+          <h1 className="text-3xl">
+            {status === 'loading' ? 'Loading product…' : 'Product not found'}
+          </h1>
+          {status !== 'loading' && (
+            <Link
+              to="/shop"
+              className="mt-6 inline-flex min-h-12 items-center bg-ink px-7 text-[9px] uppercase tracking-[0.17em] text-canvas"
+            >
+              Return to shop
+            </Link>
+          )}
         </div>
       </main>
     )
@@ -65,13 +75,19 @@ export function ProductDetailsPage({ productId }: { productId: string }) {
   return <ProductDetailsContent product={product} products={products} />
 }
 
-function ProductDetailsContent({ product, products }: { product: ShopProduct; products: ShopProduct[] }) {
-  const availableSizes =
-    product.sizes[0] === 'One size' ? product.sizes : product.sizes
+function ProductDetailsContent({
+  product,
+  products,
+}: {
+  product: ShopProduct
+  products: ShopProduct[]
+}) {
+  const availableSizes = product.sizes
   const [selectedSize, setSelectedSize] = useState(availableSizes[0])
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
   const [buying, setBuying] = useState(false)
+  const [activeRelatedProduct, setActiveRelatedProduct] = useState(0)
   const addToCart = useShopStore((state) => state.addToCart)
   const launchCartFlight = useCartUiStore((state) => state.launchFlight)
   const addRecentlyViewed = useShopStore((state) => state.addRecentlyViewed)
@@ -97,8 +113,7 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
     [product, products],
   )
 
-  // The current catalog has one studio image per piece; alternate crops provide
-  // useful close-up gallery views until backend media collections are connected.
+  // Alternate crops provide useful detail views until backend media is connected.
   const fallbackGallery = [
     {
       src: product.image,
@@ -154,7 +169,10 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
     <main className="bg-canvas text-ink">
       <section className="px-4 py-6 sm:px-7 sm:py-10 lg:px-10">
         <div className="mx-auto max-w-[1440px]">
-          <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap gap-x-2 gap-y-1 text-[8px] uppercase tracking-[0.12em] text-ink/45 min-[380px]:mb-6 min-[380px]:text-[9px] min-[380px]:tracking-[0.16em]">
+          <nav
+            aria-label="Breadcrumb"
+            className="mb-5 flex flex-wrap gap-x-2 gap-y-1 text-[8px] uppercase tracking-[0.12em] text-ink/45 min-[380px]:mb-6 min-[380px]:text-[9px] min-[380px]:tracking-[0.16em]"
+          >
             <Link to="/shop" className="hover:text-ink">Shop</Link>
             <span>/</span>
             <span>{product.category}</span>
@@ -162,7 +180,7 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
             <span className="min-w-0 break-words text-ink">{product.name}</span>
           </nav>
 
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-12 xl:gap-16">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-12 xl:gap-16">
             <ProductGallery images={galleryImages} productName={product.name} />
 
             {/* Product information remains visible while browsing the tall gallery. */}
@@ -171,7 +189,9 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
                 {product.brand} · {product.category}
               </p>
               <div className="mt-3 flex items-start justify-between gap-4">
-                <h1 className="min-w-0 break-words text-3xl leading-[1.05] min-[380px]:text-4xl sm:text-5xl">{product.name}</h1>
+                <h1 className="min-w-0 break-words text-3xl leading-[1.05] min-[380px]:text-4xl sm:text-5xl">
+                  {product.name}
+                </h1>
                 <button
                   type="button"
                   aria-label={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
@@ -286,15 +306,27 @@ function ProductDetailsContent({ product, products }: { product: ShopProduct; pr
       <section aria-labelledby="related-heading" className="px-4 py-14 sm:px-7 sm:py-20 lg:px-10">
         <div className="mx-auto max-w-[1440px]">
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">You may also like</p>
-          <div className="flex items-end justify-between gap-4">
-            <h2 id="related-heading" className="mt-2 text-3xl sm:text-4xl">Related products</h2>
-            <p className="mb-1 flex shrink-0 items-center gap-1.5 text-[8px] uppercase tracking-[0.12em] text-ink/45 sm:hidden">Swipe <FiArrowRight size={12} /></p>
-          </div>
-          <div className="no-scrollbar -mx-4 mt-8 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
+          <h2 id="related-heading" className="mt-2 text-3xl sm:text-4xl">Related products</h2>
+
+          {/* Phones display one centered, snap-aligned product at a time. */}
+          <div
+            className="no-scrollbar mt-8 flex w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
+            onScroll={(event) =>
+              setActiveRelatedProduct(getRailIndex(event.currentTarget))
+            }
+          >
             {relatedProducts.map((item) => (
-              <ProductCard key={item.id} product={item} className="w-[72vw] max-w-[300px] shrink-0 snap-start min-[430px]:w-[58vw] sm:w-auto sm:max-w-none" />
+              <ProductCard
+                key={item.id}
+                product={item}
+                className="w-full min-w-0 shrink-0 snap-center sm:w-auto sm:shrink"
+              />
             ))}
           </div>
+          <RailIndicator
+            count={relatedProducts.length}
+            activeIndex={activeRelatedProduct}
+          />
         </div>
       </section>
     </main>
@@ -324,14 +356,20 @@ function DeliveryRow({
 
 function Reviews({ product }: { product: ShopProduct }) {
   return (
-    <section id="reviews" aria-labelledby="reviews-heading" className="border-y border-line px-4 py-14 sm:px-7 sm:py-20 lg:px-10">
+    <section
+      id="reviews"
+      aria-labelledby="reviews-heading"
+      className="border-y border-line px-4 py-14 sm:px-7 sm:py-20 lg:px-10"
+    >
       <div className="mx-auto grid max-w-[1440px] gap-10 lg:grid-cols-[280px_1fr] lg:gap-16">
         <div>
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">What people say</p>
           <h2 id="reviews-heading" className="mt-2 text-3xl">Reviews</h2>
           <div className="mt-5 flex items-end gap-3">
             <span className="text-5xl">{product.rating}</span>
-            <span className="pb-1 text-xs text-ink/50">from {product.reviewCount} reviews</span>
+            <span className="pb-1 text-xs text-ink/50">
+              from {product.reviewCount} reviews
+            </span>
           </div>
         </div>
         <div>
@@ -342,16 +380,25 @@ function Reviews({ product }: { product: ShopProduct }) {
                   <h3 className="text-sm">{review.name}</h3>
                   <div className="mt-1 flex gap-0.5">
                     {Array.from({ length: 5 }, (_, index) => (
-                      <FiStar key={index} size={11} fill={index < review.rating ? 'currentColor' : 'none'} />
+                      <FiStar
+                        key={index}
+                        size={11}
+                        fill={index < review.rating ? 'currentColor' : 'none'}
+                      />
                     ))}
                   </div>
                 </div>
                 <time className="text-[9px] text-ink/45">{review.date}</time>
               </div>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-ink/65">{review.text}</p>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-ink/65">
+                {review.text}
+              </p>
             </article>
           ))}
-          <button type="button" className="mt-6 border-b border-ink pb-1 text-[9px] uppercase tracking-[0.16em]">
+          <button
+            type="button"
+            className="mt-6 border-b border-ink pb-1 text-[9px] uppercase tracking-[0.16em]"
+          >
             Read all reviews
           </button>
         </div>

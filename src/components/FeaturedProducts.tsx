@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
 import { ProductCard } from './ProductCard'
 import { MotionReveal } from './MotionReveal'
+import { RailIndicator } from './RailIndicator'
+import { getRailIndex } from '../utils/rail'
 import type { Product } from '../types/product'
 
 type ProductFilter = 'all' | 'trending' | 'popular' | 'latest'
@@ -88,6 +90,7 @@ const products: FeaturedProduct[] = [
 // Featured products reuses ProductCard and only owns filtering and section layout.
 export function FeaturedProducts() {
   const [activeFilter, setActiveFilter] = useState<ProductFilter>('all')
+  const [activeCard, setActiveCard] = useState(0)
   const reduceMotion = useReducedMotion()
   const visibleProducts =
     activeFilter === 'all'
@@ -126,7 +129,10 @@ export function FeaturedProducts() {
                   type="button"
                   role="tab"
                   aria-selected={isActive}
-                  onClick={() => setActiveFilter(tab.value)}
+                  onClick={() => {
+                    setActiveFilter(tab.value)
+                    setActiveCard(0)
+                  }}
                   className={`relative shrink-0 pb-3 text-[9px] font-medium uppercase tracking-[0.16em] transition-opacity ${
                     isActive ? 'opacity-100' : 'opacity-45 hover:opacity-75'
                   }`}
@@ -153,6 +159,7 @@ export function FeaturedProducts() {
             whileInView="visible"
             viewport={{ once: true, amount: 0.12 }}
             exit={{ opacity: 0, y: -8 }}
+            onScroll={(event) => setActiveCard(getRailIndex(event.currentTarget))}
             className="no-scrollbar flex w-full snap-x snap-mandatory items-stretch gap-3 overflow-x-auto overscroll-x-contain pb-4 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
           >
             {visibleProducts.map((product) => (
@@ -166,6 +173,7 @@ export function FeaturedProducts() {
             ))}
           </motion.div>
         </AnimatePresence>
+        <RailIndicator count={visibleProducts.length} activeIndex={activeCard} />
       </div>
     </section>
   )
