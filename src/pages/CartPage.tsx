@@ -90,7 +90,7 @@ export function CartPage() {
         ) : items.length === 0 ? (
           <EmptyCart />
         ) : (
-          <div className="mt-8 grid gap-12 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start xl:gap-20">
+          <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-12 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start xl:gap-20">
             <section aria-label="Cart products">
               {/* Column labels only appear when the row has a table-like layout. */}
               <div className="hidden grid-cols-[1fr_100px_130px_44px] gap-4 border-b border-line pb-3 text-[8px] uppercase tracking-[0.16em] text-ink/45 sm:grid">

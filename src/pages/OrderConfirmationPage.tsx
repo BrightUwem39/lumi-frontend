@@ -60,7 +60,7 @@ export function OrderConfirmationPage() {
           </p>
         </header>
 
-        <div className="mt-8 grid min-w-0 gap-8 min-[900px]:grid-cols-[minmax(0,1fr)_320px] min-[900px]:items-start min-[900px]:gap-9 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12">
+        <div className="mt-8 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 min-[900px]:grid-cols-[minmax(0,1fr)_320px] min-[900px]:items-start min-[900px]:gap-9 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12">
           <section aria-labelledby="ordered-items-heading" className="min-w-0">
             <h2 id="ordered-items-heading" className="text-2xl">What you ordered</h2>
             <div className="mt-5 divide-y divide-line border-y border-line">

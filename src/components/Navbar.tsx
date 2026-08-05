@@ -144,7 +144,7 @@ export function Navbar() {
         </Link>
 
         <div className="border-b border-line">
-          <div className="relative mx-auto flex h-16 max-w-[1440px] items-center px-3 min-[360px]:px-4 sm:h-[76px] sm:px-7 lg:px-10 xl:h-[88px]">
+          <div className="relative mx-auto flex h-[60px] max-w-[1440px] items-center px-3 min-[360px]:px-4 sm:h-[70px] sm:px-7 lg:px-10 xl:h-20">
             {/* Phone and tablet use a deliberately minimal two-item header:
                 menu control on the left and wordmark on the right. */}
             <button
@@ -163,7 +163,7 @@ export function Navbar() {
             <Link
               to="/"
               aria-label="Lumi home"
-              className="absolute right-4 top-1/2 -translate-y-1/2 font-display text-[24px] leading-none tracking-[0.14em] sm:right-7 sm:text-[27px] xl:static xl:order-none xl:ml-0 xl:translate-y-0 xl:text-[32px]"
+              className="order-2 ml-auto shrink-0 font-display text-[24px] leading-none tracking-[0.14em] sm:text-[27px] xl:order-none xl:ml-0 xl:text-[32px]"
             >
               LUMI
             </Link>
@@ -296,7 +296,7 @@ export function Navbar() {
 
       {/* A fixed header needs an equal-height spacer so page content starts
           below it at every responsive navbar height. */}
-      <div aria-hidden="true" className="h-[92px] sm:h-[108px] xl:h-[120px]" />
+      <div aria-hidden="true" className="h-[88px] sm:h-[102px] xl:h-28" />
 
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
@@ -317,7 +317,7 @@ export function Navbar() {
             <motion.aside
               id={mobileMenuId}
               aria-label="Mobile navigation"
-              className="fixed bottom-0 left-0 top-[92px] z-30 flex w-full flex-col overflow-y-auto overscroll-contain bg-canvas px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 text-ink min-[380px]:px-5 sm:top-[108px] sm:w-[88%] sm:max-w-sm sm:px-6 sm:pb-8 sm:pt-8 xl:hidden"
+              className="fixed bottom-0 left-0 top-[88px] z-30 flex w-full flex-col overflow-y-auto overscroll-contain bg-canvas px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 text-ink min-[380px]:px-5 sm:top-[102px] sm:w-[88%] sm:max-w-sm sm:px-6 sm:pb-8 sm:pt-8 xl:hidden"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}

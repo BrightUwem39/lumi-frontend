@@ -24,7 +24,7 @@ export function NewsletterSection() {
       className="overflow-hidden bg-canvas px-4 py-12 text-ink sm:px-7 sm:py-16 lg:px-10 lg:py-20"
     >
       <motion.div
-        className="mx-auto grid max-w-[1440px] gap-10 border-b border-ink/18 pb-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] lg:items-end lg:gap-20 lg:pb-16"
+        className="mx-auto grid grid-cols-[minmax(0,1fr)] gap-10 border-b border-ink/18 pb-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] lg:items-end lg:gap-20 lg:pb-16"
         initial={{ opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.25 }}

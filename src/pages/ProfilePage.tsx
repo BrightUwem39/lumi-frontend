@@ -59,12 +59,12 @@ export function ProfilePage() {
           <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
             My account
           </p>
-          <h1 className="text-3xl min-[380px]:text-4xl sm:text-5xl">
+          <h1 className="max-w-full break-words text-[clamp(1.85rem,9vw,2.25rem)] leading-[1.05] sm:text-5xl">
             Welcome back, Amara.
           </h1>
         </div>
 
-        <div className="mt-5 grid min-w-0 gap-7 sm:mt-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
+        <div className="mt-5 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-7 sm:mt-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
           {/* A compact native selector avoids clipped horizontal tabs on phones.
               The full account navigation becomes a sidebar on desktop. */}
           <label className="block lg:hidden">

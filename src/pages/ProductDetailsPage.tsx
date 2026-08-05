@@ -189,7 +189,7 @@ function ProductDetailsContent({
                 {product.brand} · {product.category}
               </p>
               <div className="mt-3 flex items-start justify-between gap-4">
-                <h1 className="min-w-0 break-words text-3xl leading-[1.05] min-[380px]:text-4xl sm:text-5xl">
+                <h1 className="w-full min-w-0 max-w-full break-words text-3xl leading-[1.05] min-[380px]:text-4xl sm:text-5xl">
                   {product.name}
                 </h1>
                 <button
@@ -361,7 +361,7 @@ function Reviews({ product }: { product: ShopProduct }) {
       aria-labelledby="reviews-heading"
       className="border-y border-line px-4 py-14 sm:px-7 sm:py-20 lg:px-10"
     >
-      <div className="mx-auto grid max-w-[1440px] gap-10 lg:grid-cols-[280px_1fr] lg:gap-16">
+      <div className="mx-auto grid grid-cols-[minmax(0,1fr)] max-w-[1440px] gap-10 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-16">
         <div>
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">What people say</p>
           <h2 id="reviews-heading" className="mt-2 text-3xl">Reviews</h2>

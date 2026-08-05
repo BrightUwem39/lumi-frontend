@@ -17,7 +17,7 @@ export function Hero() {
     // Viewport-based heights fill the screen after each responsive navbar height.
     <section
       aria-labelledby="hero-heading"
-      className="relative isolate min-h-[calc(100svh-92px)] overflow-hidden bg-[#9b8c7c] text-white sm:min-h-[calc(100svh-108px)] xl:min-h-[calc(100svh-120px)]"
+      className="relative isolate min-h-[calc(100svh-88px)] overflow-hidden bg-[#9b8c7c] text-white sm:min-h-[calc(100svh-102px)] xl:min-h-[calc(100svh-112px)]"
     >
       {/* The campaign image is content, so it has descriptive alt text.
           Object positions keep the model visible as the viewport narrows. */}
@@ -51,7 +51,7 @@ export function Hero() {
       {/* The foreground travels slightly faster than the campaign image,
           creating depth while keeping every CTA easy to interact with. */}
       <Parallax speed={reduceMotion ? 0 : 4} className="relative">
-        <div className="relative mx-auto flex min-h-[calc(100svh-92px)] max-w-[1440px] items-end px-4 pb-6 pt-14 min-[380px]:px-5 min-[380px]:pb-8 sm:min-h-[calc(100svh-108px)] sm:items-center sm:px-8 sm:pb-14 sm:pt-14 lg:px-12 xl:min-h-[calc(100svh-120px)] xl:px-16">
+        <div className="relative mx-auto flex min-h-[calc(100svh-88px)] max-w-[1440px] items-end px-4 pb-6 pt-14 min-[380px]:px-5 min-[380px]:pb-8 sm:min-h-[calc(100svh-102px)] sm:items-center sm:px-8 sm:pb-14 sm:pt-14 lg:px-12 xl:min-h-[calc(100svh-112px)] xl:px-16">
         <motion.div
           className="w-full max-w-xl sm:max-w-lg lg:max-w-2xl"
             initial={reduceMotion ? false : 'hidden'}

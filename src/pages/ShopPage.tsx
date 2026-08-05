@@ -334,7 +334,7 @@ export function ShopPage() {
             </div>
           </div>
 
-          <div className="grid min-w-0 gap-8 lg:grid-cols-[250px_minmax(0,1fr)] xl:gap-12">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[250px_minmax(0,1fr)] xl:gap-12">
             <aside className="hidden lg:block">
               <div className="sticky top-32">
                 <ProductFilters {...filterProps} />
@@ -356,7 +356,7 @@ export function ShopPage() {
                   initial={reduceMotion ? false : 'hidden'}
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.08 }}
-                  className="mx-auto grid w-full grid-cols-2 gap-x-3 gap-y-8 px-1 min-[420px]:px-0 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-3"
+                  className="mx-auto grid w-full min-w-0 grid-cols-[repeat(2,minmax(0,1fr))] gap-x-3 gap-y-8 px-1 min-[420px]:px-0 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-3"
                 >
                   {visibleProducts.map((product) => (
                     <motion.div key={product.id} variants={productItemVariants} layout>

@@ -168,7 +168,7 @@ function CartDrawer() {
                 ) : (
                   <div className="divide-y divide-line">
                     {items.map(({ product, quantity }) => (
-                      <motion.article key={product.id} layout className="grid grid-cols-[72px_1fr_auto] gap-3 py-5">
+                      <motion.article key={product.id} layout className="grid grid-cols-[72px_minmax(0,1fr)_auto] gap-3 py-5">
                         <img src={product.image} alt={product.name} className="aspect-[4/5] w-[72px] object-cover" />
                         <div className="min-w-0">
                           <p className="text-[8px] uppercase tracking-[0.14em] text-ink/45">{product.category}</p>
