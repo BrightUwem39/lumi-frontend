@@ -74,7 +74,7 @@ export function PolicyPage() {
 
   return (
     <main className="w-full min-w-0 overflow-hidden bg-canvas text-ink">
-      <header className="w-full border-b border-line px-4 py-8 min-[480px]:py-10 sm:px-6 sm:py-12 md:px-8 lg:px-10 lg:py-14 xl:py-16">
+      <header className="w-full border-b border-line px-4 py-6 min-[480px]:py-8 sm:px-6 md:px-8 lg:px-10 lg:py-10 xl:py-12">
         <div className="mx-auto w-full min-w-0 max-w-[1180px]">
           <Link to="/" className="inline-flex min-h-10 items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-ink/55 hover:text-ink">
             <FiArrowLeft size={14} /> Back to Lumi
@@ -87,10 +87,10 @@ export function PolicyPage() {
       </header>
 
       {/* Phones, tablets, and laptops stay stacked; only wide desktops split. */}
-      <div className="mx-auto grid w-full max-w-[1180px] min-w-0 grid-cols-1 gap-8 px-4 py-8 min-[480px]:py-10 sm:gap-10 sm:px-6 sm:py-12 md:px-8 lg:px-10 lg:py-14 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start xl:gap-14 xl:py-16">
+      <div className="mx-auto grid w-full max-w-[1180px] min-w-0 grid-cols-1 gap-6 px-4 py-6 min-[480px]:py-8 sm:gap-8 sm:px-6 md:px-8 lg:px-10 lg:py-10 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start xl:gap-10 xl:py-12">
         <article className="w-full min-w-0 divide-y divide-line border-y border-line">
           {policy.sections.map((section, index) => (
-            <section key={section.heading} className="grid w-full min-w-0 grid-cols-1 gap-2 py-5 min-[480px]:py-6 sm:grid-cols-[32px_minmax(0,1fr)] sm:gap-4 sm:py-7 md:grid-cols-[40px_minmax(0,1fr)] md:gap-5 md:py-8">
+            <section key={section.heading} className="grid w-full min-w-0 grid-cols-1 gap-2 py-4 min-[480px]:py-5 sm:grid-cols-[32px_minmax(0,1fr)] sm:gap-4 sm:py-6 md:grid-cols-[40px_minmax(0,1fr)] md:gap-5">
               <span className="text-[9px] text-ink/35">{String(index + 1).padStart(2, '0')}</span>
               <div className="min-w-0">
                 <h2 className="break-words text-lg leading-tight min-[380px]:text-xl md:text-2xl">{section.heading}</h2>

@@ -33,7 +33,7 @@ export function ProductGallery({
   }
 
   return (
-    <div className="w-full min-w-0 max-w-full overflow-hidden">
+    <div className="grid w-full min-w-0 max-w-full gap-3 overflow-hidden md:grid-cols-[minmax(0,1fr)_72px] md:gap-4">
       <div className="relative w-full min-w-0 overflow-hidden bg-[#e8e5df]">
         <Swiper
           modules={[A11y, Keyboard]}
@@ -45,7 +45,7 @@ export function ProductGallery({
           }}
           onSlideChange={(instance) => setActiveIndex(instance.activeIndex)}
           aria-label={`${productName} image gallery`}
-          className="aspect-[4/5] w-full min-w-0"
+          className="aspect-[4/5] w-full min-w-0 md:h-[500px] md:aspect-auto"
         >
           {images.map((image, index) => (
             <SwiperSlide key={`${image.label}-${index}`}>
@@ -92,42 +92,34 @@ export function ProductGallery({
         )}
       </div>
 
-      {/* Thumbnail selection changes the main image immediately. */}
-      <Swiper
-        slidesPerView={3.5}
-        spaceBetween={8}
-        breakpoints={{
-          480: { slidesPerView: 4.5, spaceBetween: 10 },
-          768: { slidesPerView: 5, spaceBetween: 12 },
-        }}
-        className="mt-3"
-      >
+      {/* Thumbnails remain swipeable on phones, then stand in a compact
+          vertical column beside the main image on tablets and desktops. */}
+      <div className="no-scrollbar flex snap-x gap-2 overflow-x-auto pb-1 md:col-start-2 md:row-start-1 md:h-full md:flex-col md:overflow-visible md:pb-0">
         {images.map((image, index) => (
-          <SwiperSlide key={`thumbnail-${image.label}-${index}`}>
-            <button
-              type="button"
-              aria-label={`Show ${image.label}`}
-              aria-pressed={activeIndex === index}
-              onClick={() => selectImage(index)}
-              className={`aspect-[4/5] w-full overflow-hidden border-2 ${
-                activeIndex === index
-                  ? 'border-ink opacity-100'
-                  : 'border-transparent opacity-60 hover:opacity-100'
-              }`}
-            >
-              <OptimizedImage
-                src={image.src}
-                alt=""
-                className="size-full object-cover"
-                style={{
-                  objectPosition: image.objectPosition ?? 'center',
-                  transform: `scale(${image.imageScale ?? 1})`,
-                }}
-              />
-            </button>
-          </SwiperSlide>
+          <button
+            key={`thumbnail-${image.label}-${index}`}
+            type="button"
+            aria-label={`Show ${image.label}`}
+            aria-pressed={activeIndex === index}
+            onClick={() => selectImage(index)}
+            className={`aspect-[4/5] w-[22%] min-w-16 shrink-0 snap-start overflow-hidden border-2 md:aspect-auto md:min-h-0 md:w-full md:min-w-0 md:flex-1 ${
+              activeIndex === index
+                ? 'border-ink opacity-100'
+                : 'border-transparent opacity-60 hover:opacity-100'
+            }`}
+          >
+            <OptimizedImage
+              src={image.src}
+              alt=""
+              className="size-full object-cover"
+              style={{
+                objectPosition: image.objectPosition ?? 'center',
+                transform: `scale(${image.imageScale ?? 1})`,
+              }}
+            />
+          </button>
         ))}
-      </Swiper>
+      </div>
     </div>
   )
 }

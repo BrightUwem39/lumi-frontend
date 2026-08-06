@@ -48,7 +48,7 @@ export function WishlistPage() {
   }
 
   return (
-    <main className="min-h-[65svh] bg-canvas px-3 py-8 text-ink min-[380px]:px-4 min-[380px]:py-10 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
+    <main className="min-h-[65svh] bg-canvas px-3 py-6 text-ink min-[380px]:px-4 min-[380px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
       <div className="mx-auto max-w-[1440px]">
         <Link
           to="/shop"
@@ -82,7 +82,7 @@ export function WishlistPage() {
              the editorial grid once there is enough horizontal space. */
           <section
             aria-label="Saved products"
-            className="mt-7 grid grid-cols-1 gap-x-3 gap-y-5 min-[520px]:grid-cols-2 min-[520px]:gap-y-9 sm:mt-8 sm:gap-x-4 sm:gap-y-10 lg:grid-cols-3 xl:grid-cols-4"
+            className="mt-6 grid grid-cols-1 gap-x-3 gap-y-5 min-[520px]:grid-cols-2 min-[520px]:gap-y-7 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4"
           >
             {savedProducts.map((product) => (
               <article

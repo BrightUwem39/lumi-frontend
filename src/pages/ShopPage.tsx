@@ -226,7 +226,7 @@ export function ShopPage() {
 
   return (
     <main className="bg-canvas text-ink">
-      <header className="border-b border-line px-4 py-9 min-[380px]:py-10 sm:px-7 sm:py-16 lg:px-10">
+      <header className="border-b border-line px-4 py-7 min-[380px]:py-8 sm:px-7 sm:py-10 lg:px-10">
         <div className="mx-auto max-w-[1440px]">
           <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50">
             Lumi collection
@@ -334,7 +334,7 @@ export function ShopPage() {
             </div>
           </div>
 
-          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[250px_minmax(0,1fr)] xl:gap-12">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[250px_minmax(0,1fr)] xl:gap-8">
             <aside className="hidden lg:block">
               <div className="sticky top-32">
                 <ProductFilters {...filterProps} />
@@ -356,7 +356,7 @@ export function ShopPage() {
                   initial={reduceMotion ? false : 'hidden'}
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.08 }}
-                  className="mx-auto grid w-full min-w-0 grid-cols-[repeat(2,minmax(0,1fr))] gap-x-3 gap-y-8 px-1 min-[420px]:px-0 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-3"
+                  className="mx-auto grid w-full min-w-0 grid-cols-[repeat(2,minmax(0,1fr))] gap-x-3 gap-y-6 px-1 min-[420px]:px-0 sm:gap-x-4 sm:gap-y-8 xl:grid-cols-3"
                 >
                   {visibleProducts.map((product) => (
                     <motion.div key={product.id} variants={productItemVariants} layout>
@@ -386,7 +386,7 @@ export function ShopPage() {
               {totalPages > 1 && (
                 <nav
                   aria-label="Product pagination"
-                  className="mt-12 flex items-center justify-center gap-2 border-t border-line pt-8"
+                  className="mt-9 flex items-center justify-center gap-2 border-t border-line pt-6"
                 >
                   <button
                     type="button"

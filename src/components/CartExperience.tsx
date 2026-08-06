@@ -159,7 +159,7 @@ function CartDrawer() {
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6">
                 {items.length === 0 ? (
-                  <div className="grid h-full place-items-center py-14 text-center">
+                  <div className="grid h-full place-items-center py-10 text-center">
                     <div>
                       <FiShoppingBag size={25} className="mx-auto text-ink/40" />
                       <p className="mt-4 text-lg">Your bag is empty.</p>

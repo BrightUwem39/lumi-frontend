@@ -167,11 +167,11 @@ function ProductDetailsContent({
 
   return (
     <main className="bg-canvas text-ink">
-      <section className="px-4 py-6 sm:px-7 sm:py-10 lg:px-10">
+      <section className="px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
         <div className="mx-auto max-w-[1440px]">
           <nav
             aria-label="Breadcrumb"
-            className="mb-5 flex flex-wrap gap-x-2 gap-y-1 text-[8px] uppercase tracking-[0.12em] text-ink/45 min-[380px]:mb-6 min-[380px]:text-[9px] min-[380px]:tracking-[0.16em]"
+            className="mb-4 flex flex-wrap gap-x-2 gap-y-1 text-[8px] uppercase tracking-[0.12em] text-ink/45 min-[380px]:mb-5 min-[380px]:text-[9px] min-[380px]:tracking-[0.16em]"
           >
             <Link to="/shop" className="hover:text-ink">Shop</Link>
             <span>/</span>
@@ -180,49 +180,49 @@ function ProductDetailsContent({
             <span className="min-w-0 break-words text-ink">{product.name}</span>
           </nav>
 
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-12 xl:gap-16">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-8 xl:gap-10">
             <ProductGallery images={galleryImages} productName={product.name} />
 
             {/* Product information remains visible while browsing the tall gallery. */}
-            <div className="lg:sticky lg:top-32 lg:self-start">
-              <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50">
+            <div className="no-scrollbar lg:sticky lg:top-32 lg:h-[500px] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pr-2">
+              <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50 lg:text-[8px]">
                 {product.brand} · {product.category}
               </p>
               <div className="mt-3 flex items-start justify-between gap-4">
-                <h1 className="w-full min-w-0 max-w-full break-words text-3xl leading-[1.05] min-[380px]:text-4xl sm:text-5xl">
+                <h1 className="w-full min-w-0 max-w-full break-words text-3xl leading-[1.05] min-[380px]:text-4xl sm:text-5xl lg:text-3xl xl:text-4xl">
                   {product.name}
                 </h1>
                 <button
                   type="button"
                   aria-label={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
                   onClick={() => toggleWishlist(product.id)}
-                  className="grid size-11 shrink-0 place-items-center rounded-full border border-line"
+                  className="grid size-11 shrink-0 place-items-center rounded-full border border-line lg:size-9"
                 >
                   <FiHeart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
                 </button>
               </div>
 
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <span className="text-lg">{currency.format(product.price)}</span>
+              <div className="mt-5 flex flex-wrap items-center gap-3 lg:mt-3 lg:gap-2">
+                <span className="text-lg lg:text-base">{currency.format(product.price)}</span>
                 {product.originalPrice && (
-                  <span className="text-sm text-ink/40 line-through">
+                  <span className="text-sm text-ink/40 line-through lg:text-xs">
                     {currency.format(product.originalPrice)}
                   </span>
                 )}
-                <a href="#reviews" className="ml-auto flex items-center gap-1.5 text-xs">
+                <a href="#reviews" className="ml-auto flex items-center gap-1.5 text-xs lg:text-[10px]">
                   <FiStar size={13} fill="currentColor" />
                   {product.rating} ({product.reviewCount})
                 </a>
               </div>
 
-              <p className="mt-7 max-w-full break-words border-t border-line pt-6 text-sm leading-7 text-ink/65">
+              <p className="mt-7 max-w-full break-words border-t border-line pt-6 text-sm leading-7 text-ink/65 lg:mt-4 lg:pt-4 lg:text-[11px] lg:leading-[1.65]">
                 {product.description ?? 'Designed for repeat wear, with a clean silhouette and quietly considered details. Finished in the Lumi studio for an easy, confident fit.'}
               </p>
 
-              <div className="mt-7">
+              <div className="mt-7 lg:mt-4">
                 <div className="mb-3 flex justify-between">
-                  <span className="text-[9px] font-medium uppercase tracking-[0.17em]">Select size</span>
-                  <button type="button" className="border-b border-ink text-[9px]">Size guide</button>
+                  <span className="text-[9px] font-medium uppercase tracking-[0.17em] lg:text-[8px]">Select size</span>
+                  <button type="button" className="border-b border-ink text-[9px] lg:text-[8px]">Size guide</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {availableSizes.map((size) => (
@@ -231,7 +231,7 @@ function ProductDetailsContent({
                       type="button"
                       aria-pressed={selectedSize === size}
                       onClick={() => setSelectedSize(size)}
-                      className={`min-h-12 min-w-14 flex-1 border px-3 text-xs sm:max-w-24 ${
+                      className={`min-h-12 min-w-14 flex-1 border px-3 text-xs sm:max-w-24 lg:min-h-9 lg:min-w-10 lg:px-2 lg:text-[9px] ${
                         selectedSize === size
                           ? 'border-ink bg-ink text-canvas'
                           : 'border-line hover:border-ink'
@@ -243,15 +243,15 @@ function ProductDetailsContent({
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-end">
+              <div className="mt-6 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-end lg:mt-4 lg:gap-2">
                 <div>
-                  <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.17em]">Quantity</p>
-                  <div className="flex h-12 items-center border border-line">
+                  <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.17em] lg:mb-2 lg:text-[8px]">Quantity</p>
+                  <div className="flex h-12 items-center border border-line lg:h-10">
                     <button
                       type="button"
                       aria-label="Decrease quantity"
                       onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                      className="grid size-11 place-items-center"
+                      className="grid size-11 place-items-center lg:size-9"
                     >
                       <FiMinus size={14} />
                     </button>
@@ -260,7 +260,7 @@ function ProductDetailsContent({
                       type="button"
                       aria-label="Increase quantity"
                       onClick={() => setQuantity((value) => Math.min(10, value + 1))}
-                      className="grid size-11 place-items-center"
+                      className="grid size-11 place-items-center lg:size-9"
                     >
                       <FiPlus size={14} />
                     </button>
@@ -270,7 +270,7 @@ function ProductDetailsContent({
                   type="button"
                   disabled={!product.available}
                   onClick={(event) => handleAddToCart(event.currentTarget)}
-                  className="flex h-12 flex-1 items-center justify-center gap-2 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-12 flex-1 items-center justify-center gap-2 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas disabled:cursor-not-allowed disabled:opacity-40 lg:h-10 lg:text-[8px]"
                 >
                   {added ? <FiCheck size={15} /> : <FiShoppingBag size={15} />}
                   {product.available ? (added ? 'Added to cart' : 'Add to cart') : 'Out of stock'}
@@ -280,13 +280,13 @@ function ProductDetailsContent({
                 type="button"
                 disabled={!product.available}
                 onClick={handleBuyNow}
-                className="mt-3 min-h-12 w-full border border-ink px-5 text-[9px] font-medium uppercase tracking-[0.17em] disabled:opacity-40"
+                className="mt-3 min-h-12 w-full border border-ink px-5 text-[9px] font-medium uppercase tracking-[0.17em] disabled:opacity-40 lg:mt-2 lg:min-h-10 lg:text-[8px]"
               >
                 {buying ? 'Added — checkout coming next' : 'Buy now'}
               </button>
 
               {/* Native disclosure controls keep delivery information accessible. */}
-              <div className="mt-7 border-t border-line">
+              <div className="mt-7 border-t border-line lg:mt-4">
                 <DeliveryRow icon={<FiTruck />} title="Delivery & returns">
                   Free standard delivery over $150. Returns are accepted within
                   30 days in their original condition.
@@ -303,14 +303,14 @@ function ProductDetailsContent({
 
       <Reviews product={product} />
 
-      <section aria-labelledby="related-heading" className="px-4 py-14 sm:px-7 sm:py-20 lg:px-10">
+      <section aria-labelledby="related-heading" className="px-4 py-10 sm:px-7 sm:py-14 lg:px-10">
         <div className="mx-auto max-w-[1440px]">
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">You may also like</p>
           <h2 id="related-heading" className="mt-2 text-3xl sm:text-4xl">Related products</h2>
 
           {/* Phones display one centered, snap-aligned product at a time. */}
           <div
-            className="no-scrollbar mt-8 flex w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
+            className="no-scrollbar mt-6 flex w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-8 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
             onScroll={(event) =>
               setActiveRelatedProduct(getRailIndex(event.currentTarget))
             }
@@ -344,12 +344,12 @@ function DeliveryRow({
 }) {
   return (
     <details className="group border-b border-line">
-      <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 text-xs">
+      <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 text-xs lg:min-h-12 lg:text-[10px]">
         <span className="text-base">{icon}</span>
         {title}
         <FiChevronDown className="ml-auto transition-transform group-open:rotate-180" />
       </summary>
-      <p className="pb-5 pl-7 text-xs leading-6 text-ink/60">{children}</p>
+      <p className="pb-5 pl-7 text-xs leading-6 text-ink/60 lg:pb-3 lg:text-[10px] lg:leading-5">{children}</p>
     </details>
   )
 }
@@ -359,9 +359,9 @@ function Reviews({ product }: { product: ShopProduct }) {
     <section
       id="reviews"
       aria-labelledby="reviews-heading"
-      className="border-y border-line px-4 py-14 sm:px-7 sm:py-20 lg:px-10"
+      className="border-y border-line px-4 py-10 sm:px-7 sm:py-14 lg:px-10"
     >
-      <div className="mx-auto grid grid-cols-[minmax(0,1fr)] max-w-[1440px] gap-10 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-16">
+      <div className="mx-auto grid grid-cols-[minmax(0,1fr)] max-w-[1440px] gap-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
         <div>
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">What people say</p>
           <h2 id="reviews-heading" className="mt-2 text-3xl">Reviews</h2>

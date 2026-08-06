@@ -53,7 +53,7 @@ export function ProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('profile')
 
   return (
-    <main className="min-h-[70svh] bg-canvas px-4 py-8 text-ink sm:px-7 sm:py-12 lg:px-10 lg:py-16">
+    <main className="min-h-[70svh] bg-canvas px-4 py-6 text-ink sm:px-7 sm:py-8 lg:px-10 lg:py-10">
       <div className="mx-auto max-w-[1280px]">
         <div className="border-b border-line pb-6">
           <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
@@ -64,7 +64,7 @@ export function ProfilePage() {
           </h1>
         </div>
 
-        <div className="mt-5 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-7 sm:mt-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
+        <div className="mt-5 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
           {/* A compact native selector avoids clipped horizontal tabs on phones.
               The full account navigation becomes a sidebar on desktop. */}
           <label className="block lg:hidden">

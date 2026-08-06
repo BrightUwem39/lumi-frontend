@@ -25,7 +25,7 @@ export function OrderConfirmationPage() {
 
   if (!order || order.orderNumber !== orderNumber) {
     return (
-      <main className="grid min-h-[65svh] place-items-center bg-canvas px-4 py-16 text-center text-ink">
+      <main className="grid min-h-[65svh] place-items-center bg-canvas px-4 py-10 text-center text-ink">
         <div className="max-w-md">
           <FiPackage className="mx-auto text-3xl" />
           <h1 className="mt-5 text-3xl sm:text-4xl">Order not found</h1>
@@ -41,13 +41,13 @@ export function OrderConfirmationPage() {
   }
 
   return (
-    <main className="bg-canvas px-4 py-9 text-ink min-[480px]:py-11 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
+    <main className="bg-canvas px-4 py-7 text-ink min-[480px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         className="mx-auto max-w-[1100px]"
       >
-        <header className="border-b border-line pb-8 text-center sm:pb-10">
+        <header className="border-b border-line pb-6 text-center sm:pb-8">
           <span className="mx-auto grid size-14 place-items-center rounded-full bg-ink text-canvas sm:size-16">
             <FiCheck size={24} />
           </span>
@@ -60,7 +60,7 @@ export function OrderConfirmationPage() {
           </p>
         </header>
 
-        <div className="mt-8 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 min-[900px]:grid-cols-[minmax(0,1fr)_320px] min-[900px]:items-start min-[900px]:gap-9 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12">
+        <div className="mt-6 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 min-[900px]:grid-cols-[minmax(0,1fr)_320px] min-[900px]:items-start min-[900px]:gap-7 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
           <section aria-labelledby="ordered-items-heading" className="min-w-0">
             <h2 id="ordered-items-heading" className="text-2xl">What you ordered</h2>
             <div className="mt-5 divide-y divide-line border-y border-line">

@@ -21,10 +21,10 @@ export function NewsletterSection() {
     <section
       id="newsletter"
       aria-labelledby="newsletter-heading"
-      className="overflow-hidden bg-canvas px-4 py-12 text-ink sm:px-7 sm:py-16 lg:px-10 lg:py-20"
+      className="overflow-hidden bg-canvas px-4 py-9 text-ink sm:px-7 sm:py-12 lg:px-10 lg:py-14"
     >
       <motion.div
-        className="mx-auto grid grid-cols-[minmax(0,1fr)] gap-10 border-b border-ink/18 pb-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] lg:items-end lg:gap-20 lg:pb-16"
+        className="mx-auto grid grid-cols-[minmax(0,1fr)] gap-7 border-b border-ink/18 pb-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] lg:items-end lg:gap-12 lg:pb-10"
         initial={{ opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.25 }}

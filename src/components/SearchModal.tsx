@@ -207,7 +207,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
                 </button>
               </form>
 
-              <div className="mt-5 grid min-w-0 gap-7 min-[380px]:mt-6 min-[380px]:gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:gap-12">
+              <div className="mt-5 grid min-w-0 gap-6 min-[380px]:mt-6 lg:grid-cols-[0.75fr_1.25fr] lg:gap-8">
                 <div className="min-w-0">
                   {/* Popular searches double as fast, touch-friendly query chips. */}
                   <SearchGroupTitle icon={<FiTrendingUp />} title="Popular searches" />

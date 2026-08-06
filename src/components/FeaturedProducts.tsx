@@ -101,10 +101,10 @@ export function FeaturedProducts() {
     <section
       id="products"
       aria-labelledby="featured-products-heading"
-      className="scroll-mt-[92px] bg-canvas px-4 pb-5 pt-12 text-ink min-[380px]:pt-14 sm:scroll-mt-[108px] sm:px-7 sm:pb-8 sm:pt-20 lg:px-10 lg:pb-10 lg:pt-24 xl:scroll-mt-[120px]"
+      className="scroll-mt-[92px] bg-canvas px-4 pb-4 pt-8 text-ink min-[380px]:pt-10 sm:scroll-mt-[108px] sm:px-7 sm:pb-6 sm:pt-12 lg:px-10 lg:pb-8 lg:pt-14 xl:scroll-mt-[120px]"
     >
       <div className="mx-auto max-w-[1440px]">
-        <MotionReveal className="mb-6 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+        <MotionReveal className="mb-5 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/50">
               Curated for you

@@ -15,6 +15,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Original photography and footage are kept locally. Only optimized,
+# production-ready selections belong in public/ and Git.
+media-source/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

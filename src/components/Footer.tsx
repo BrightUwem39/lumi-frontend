@@ -41,17 +41,17 @@ export function Footer() {
         <Link
           to="/"
           aria-label="Lumi home"
-          className="block border-b border-canvas/18 py-9 font-display text-[clamp(4.5rem,20vw,14rem)] leading-[0.72] tracking-[-0.055em] sm:py-14"
+          className="block border-b border-canvas/18 py-6 font-display text-[clamp(4.5rem,20vw,14rem)] leading-[0.72] tracking-[-0.055em] sm:py-8"
         >
           LUMI
         </Link>
 
-        <div className="border-b border-canvas/18 py-8 sm:grid sm:grid-cols-2 sm:gap-x-10 sm:gap-y-11 sm:py-14 lg:grid-cols-[1.15fr_0.7fr_0.9fr_0.85fr] lg:gap-12">
-          <div className="min-w-0 pb-8 sm:col-span-2 sm:pb-0 lg:col-span-1">
+        <div className="border-b border-canvas/18 py-6 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-8 sm:py-8 lg:grid-cols-[1.15fr_0.7fr_0.9fr_0.85fr] lg:gap-9">
+          <div className="min-w-0 pb-6 sm:col-span-2 sm:pb-0 lg:col-span-1">
             <p className="max-w-xs text-sm leading-6 text-canvas/60">
               Clothes for real days, made with a little more thought.
             </p>
-            <address className="mt-7 space-y-4 text-xs not-italic text-canvas/65">
+            <address className="mt-5 space-y-3 text-xs not-italic text-canvas/65">
               <p className="flex items-start gap-3"><FiMapPin size={14} className="mt-0.5 shrink-0" />18 Kingsway, Lagos, Nigeria</p>
               <a href="mailto:hello@lumi.com" className="flex items-center gap-3 transition-colors hover:text-canvas"><FiMail size={14} />hello@lumi.com</a>
               <a href="tel:+2348005864000" className="flex items-center gap-3 transition-colors hover:text-canvas"><FiPhone size={14} />+234 800 LUMI 000</a>

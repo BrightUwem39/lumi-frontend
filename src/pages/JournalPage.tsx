@@ -32,7 +32,7 @@ const stories = [
 export function JournalPage() {
   return (
     <main className="bg-canvas text-ink">
-      <header className="border-b border-line px-4 py-10 min-[480px]:py-12 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
+      <header className="border-b border-line px-4 py-7 min-[480px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
         <div className="mx-auto max-w-[1440px]">
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">Stories from Lumi</p>
           <h1 className="mt-3 text-[clamp(2.75rem,13vw,4rem)] leading-none">Journal</h1>
@@ -40,9 +40,9 @@ export function JournalPage() {
         </div>
       </header>
 
-      <section aria-label="Journal stories" className="px-4 py-9 min-[480px]:py-10 sm:px-7 sm:py-12 lg:px-10 lg:py-16">
+      <section aria-label="Journal stories" className="px-4 py-7 min-[480px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
         {/* Tablet cards switch to two columns before the conventional 768px breakpoint. */}
-        <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-x-5 gap-y-10 min-[680px]:grid-cols-2 min-[680px]:gap-y-12 xl:grid-cols-3 xl:gap-x-8">
+        <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-x-5 gap-y-8 min-[680px]:grid-cols-2 min-[680px]:gap-y-10 xl:grid-cols-3 xl:gap-x-8">
           {stories.map((story, index) => (
             <motion.article
               id={story.id}
@@ -72,7 +72,7 @@ export function JournalPage() {
             </motion.article>
           ))}
         </div>
-        <div className="mx-auto mt-11 max-w-[1440px] border-t border-line pt-7 text-center sm:mt-14 sm:pt-8">
+        <div className="mx-auto mt-8 max-w-[1440px] border-t border-line pt-6 text-center sm:mt-10">
           <Link to="/shop" className="inline-flex min-h-12 w-full items-center justify-center bg-ink px-7 text-[9px] uppercase tracking-[0.17em] text-canvas min-[420px]:w-auto">Explore the collection</Link>
         </div>
       </section>

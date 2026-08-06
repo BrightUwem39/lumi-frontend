@@ -18,7 +18,7 @@ export function PageLoadingSkeleton({ variant }: PageLoadingSkeletonProps) {
       <section
         role="status"
         aria-label="Loading saved products"
-        className="mt-7 grid grid-cols-2 gap-x-3 gap-y-8 sm:mt-8 sm:gap-x-4 lg:grid-cols-3 xl:grid-cols-4"
+        className="mt-6 grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-4 lg:grid-cols-3 xl:grid-cols-4"
       >
         <span className="sr-only">Loading saved products…</span>
         {[0, 1, 2, 3].map((item) => (
@@ -37,7 +37,7 @@ export function PageLoadingSkeleton({ variant }: PageLoadingSkeletonProps) {
       <div
         role="status"
         aria-label="Loading checkout"
-        className="mt-8 grid gap-10 xl:grid-cols-[minmax(0,1fr)_390px] xl:gap-16"
+        className="mt-6 grid gap-8 xl:grid-cols-[minmax(0,1fr)_390px] xl:gap-10"
       >
         <span className="sr-only">Loading checkout…</span>
         <div className="space-y-7">
@@ -63,7 +63,7 @@ export function PageLoadingSkeleton({ variant }: PageLoadingSkeletonProps) {
     <div
       role="status"
       aria-label="Loading shopping bag"
-      className="mt-8 grid gap-12 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-20"
+      className="mt-6 grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-12"
     >
       <span className="sr-only">Loading your bag…</span>
       <div className="space-y-5">
