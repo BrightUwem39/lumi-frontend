@@ -155,6 +155,11 @@ export function ShopPage() {
     sortBy,
   ])
 
+  // Keep pagination valid if an asynchronous catalogue update changes the page count.
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages))
+  }, [totalPages])
+
   useEffect(() => {
     document.body.style.overflow = filtersOpen ? 'hidden' : ''
     return () => {
@@ -352,6 +357,7 @@ export function ShopPage() {
 
               {visibleProducts.length > 0 ? (
                 <motion.div
+                  key={`shop-page-${page}`}
                   layout
                   variants={productGridVariants}
                   initial={reduceMotion ? false : 'hidden'}

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { LuArrowRight as FiArrowRight, LuCheck as FiCheck } from 'react-icons/lu'
+import { BlurText } from './reactbits/BlurText'
 
 export function NewsletterSection() {
   const [email, setEmail] = useState('')
@@ -38,7 +39,11 @@ export function NewsletterSection() {
             id="newsletter-heading"
             className="mt-4 max-w-[12ch] text-[clamp(2.15rem,7vw,4.75rem)] leading-[0.94] tracking-[-0.03em]"
           >
-            See what’s next before it arrives.
+            <BlurText
+              text="See what’s next before it arrives."
+              delay={75}
+              direction="bottom"
+            />
           </h2>
           <p className="mt-5 max-w-lg text-[13px] leading-6 text-ink/58 sm:text-sm">
             New work, restocks, and the occasional note from behind the scenes.

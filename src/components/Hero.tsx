@@ -3,6 +3,8 @@ import { Parallax } from 'react-scroll-parallax'
 import { LuArrowDownRight as FiArrowDownRight, LuArrowRight as FiArrowRight } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { OptimizedImage } from './OptimizedImage'
+import { Magnet } from './reactbits/Magnet'
+import { SplitText } from './reactbits/SplitText'
 
 // Shared entrance style keeps the text elements moving consistently.
 const reveal = {
@@ -89,14 +91,26 @@ export function Hero() {
           </motion.div>
 
           {/* One H1 communicates the page's primary campaign message. */}
-          <motion.h1
-            id="hero-heading"
-            variants={reveal}
-            transition={{ duration: 0.75 }}
-            className="max-w-[10ch] break-words font-hero text-[clamp(2.45rem,12.5vw,4rem)] leading-[0.92] tracking-[-0.035em] min-[380px]:text-[clamp(2.8rem,12vw,4.5rem)] sm:text-[clamp(4.5rem,8vw,7rem)] lg:max-w-[10ch]"
-          >
-            ELEVATE YOUR EVERYDAY STYLE
-          </motion.h1>
+          {reduceMotion ? (
+            <h1
+              id="hero-heading"
+              className="max-w-[10ch] break-words font-hero text-[clamp(2.45rem,12.5vw,4rem)] leading-[0.92] tracking-[-0.035em] min-[380px]:text-[clamp(2.8rem,12vw,4.5rem)] sm:text-[clamp(4.5rem,8vw,7rem)] lg:max-w-[10ch]"
+            >
+              ELEVATE YOUR EVERYDAY STYLE
+            </h1>
+          ) : (
+            <SplitText
+              id="hero-heading"
+              tag="h1"
+              text="ELEVATE YOUR EVERYDAY STYLE"
+              splitType="words"
+              delay={70}
+              duration={0.9}
+              from={{ opacity: 0, y: 54 }}
+              to={{ opacity: 1, y: 0 }}
+              className="max-w-[10ch] break-words font-hero text-[clamp(2.45rem,12.5vw,4rem)] leading-[0.92] tracking-[-0.035em] min-[380px]:text-[clamp(2.8rem,12vw,4.5rem)] sm:text-[clamp(4.5rem,8vw,7rem)] lg:max-w-[10ch]"
+            />
+          )}
 
           {/* Supporting copy gives the collection a more human brand voice. */}
           <motion.p
@@ -115,26 +129,38 @@ export function Hero() {
             transition={{ duration: 0.65 }}
             className="mt-5 flex max-w-full flex-col gap-2 min-[380px]:mt-6 sm:mt-8 sm:flex-row sm:flex-wrap sm:gap-3"
           >
-            <Link
-              to="/shop"
-              className="group flex min-h-12 w-full items-center justify-center gap-3 bg-white px-5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#171713] transition-colors hover:bg-[#171713] hover:text-white sm:w-auto sm:min-w-48 sm:px-6 sm:tracking-[0.18em]"
+            <Magnet
+              disabled={Boolean(reduceMotion)}
+              wrapperClassName="w-full sm:w-auto"
+              innerClassName="w-full"
             >
-              Shop the edit
-              <FiArrowRight
-                size={15}
-                className="transition-transform group-hover:translate-x-1"
-              />
-            </Link>
-            <Link
-              to="/#products"
-              className="group flex min-h-12 w-full items-center justify-center gap-3 border border-white/70 bg-black/5 px-5 text-[10px] font-medium uppercase tracking-[0.16em] text-white backdrop-blur-[2px] transition-colors hover:bg-white hover:text-[#171713] sm:w-auto sm:min-w-48 sm:px-6 sm:tracking-[0.18em]"
+              <Link
+                to="/shop"
+                className="group flex min-h-12 w-full items-center justify-center gap-3 bg-white px-5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#171713] transition-colors hover:bg-[#171713] hover:text-white sm:min-w-48 sm:px-6 sm:tracking-[0.18em]"
+              >
+                Shop the edit
+                <FiArrowRight
+                  size={15}
+                  className="transition-transform group-hover:translate-x-1"
+                />
+              </Link>
+            </Magnet>
+            <Magnet
+              disabled={Boolean(reduceMotion)}
+              wrapperClassName="w-full sm:w-auto"
+              innerClassName="w-full"
             >
-              See what’s new
-              <FiArrowDownRight
-                size={15}
-                className="transition-transform group-hover:translate-x-0.5 group-hover:translate-y-0.5"
-              />
-            </Link>
+              <Link
+                to="/#products"
+                className="group flex min-h-12 w-full items-center justify-center gap-3 border border-white/70 bg-black/5 px-5 text-[10px] font-medium uppercase tracking-[0.16em] text-white backdrop-blur-[2px] transition-colors hover:bg-white hover:text-[#171713] sm:min-w-48 sm:px-6 sm:tracking-[0.18em]"
+              >
+                See what’s new
+                <FiArrowDownRight
+                  size={15}
+                  className="transition-transform group-hover:translate-x-0.5 group-hover:translate-y-0.5"
+                />
+              </Link>
+            </Magnet>
           </motion.div>
 
           {/* Tertiary link offers a quieter path to the complete collection. */}
