@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { LuArrowRight as FiArrowRight, LuMinus as FiMinus, LuPlus as FiPlus, LuShoppingBag as FiShoppingBag, LuTrash2 as FiTrash2, LuX as FiX } from 'react-icons/lu'
@@ -90,6 +90,7 @@ function findVisibleCartTarget() {
 }
 
 function CartDrawer() {
+  const [mobileSwipe, setMobileSwipe] = useState(false)
   const open = useCartUiStore((state) => state.drawerOpen)
   const closeDrawer = useCartUiStore((state) => state.closeDrawer)
   const cartItems = useShopStore((state) => state.cartItems)
@@ -97,6 +98,16 @@ function CartDrawer() {
   const removeFromCart = useShopStore((state) => state.removeFromCart)
   const { products } = useCatalog()
   const reduceMotion = useReducedMotion()
+
+  // Match the navbar drawer gesture on touch-sized screens. The cart enters
+  // from the right, so its dismiss direction is the mirrored rightward swipe.
+  useEffect(() => {
+    const mobileQuery = window.matchMedia('(max-width: 767px)')
+    const syncMobileSwipe = () => setMobileSwipe(mobileQuery.matches)
+    syncMobileSwipe()
+    mobileQuery.addEventListener('change', syncMobileSwipe)
+    return () => mobileQuery.removeEventListener('change', syncMobileSwipe)
+  }, [])
 
   const items = useMemo(
     () => Object.entries(cartItems)
@@ -146,6 +157,16 @@ function CartDrawer() {
               animate={{ x: 0, rotateY: 0, opacity: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { x: '104%', rotateY: -8, opacity: 0.65 }}
               transition={{ duration: reduceMotion ? 0.01 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+              drag={mobileSwipe ? 'x' : false}
+              dragConstraints={{ left: 0, right: 180 }}
+              dragElastic={0.08}
+              dragMomentum={false}
+              dragDirectionLock
+              onDragEnd={(_, info) => {
+                if (info.offset.x > 70 || info.velocity.x > 450) {
+                  closeDrawer()
+                }
+              }}
             >
               <header className="flex min-h-20 items-center justify-between border-b border-line px-4 sm:px-6">
                 <div>
