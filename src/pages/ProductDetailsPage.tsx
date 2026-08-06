@@ -3,8 +3,6 @@ import {
   LuCheck as FiCheck,
   LuChevronDown as FiChevronDown,
   LuHeart as FiHeart,
-  LuMinus as FiMinus,
-  LuPlus as FiPlus,
   LuShieldCheck as FiShield,
   LuShoppingBag as FiShoppingBag,
   LuStar as FiStar,
@@ -19,6 +17,7 @@ import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
 import { useShopStore } from '../store/useShopStore'
 import type { ShopProduct } from '../types/product'
 import { getRailIndex } from '../utils/rail'
+import { getExpandedSizes } from '../utils/sizes'
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -82,11 +81,9 @@ function ProductDetailsContent({
   product: ShopProduct
   products: ShopProduct[]
 }) {
-  const availableSizes = product.sizes
+  const availableSizes = getExpandedSizes(product.sizes)
   const [selectedSize, setSelectedSize] = useState(availableSizes[0])
-  const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
-  const [buying, setBuying] = useState(false)
   const [activeRelatedProduct, setActiveRelatedProduct] = useState(0)
   const addToCart = useShopStore((state) => state.addToCart)
   const launchCartFlight = useCartUiStore((state) => state.launchFlight)
@@ -153,16 +150,10 @@ function ProductDetailsContent({
     : fallbackGallery
 
   const handleAddToCart = (source?: Element | null) => {
-    addToCart(product.id, quantity)
+    addToCart(product.id, 1)
     launchCartFlight(createCartFlight(product.image, product.name, source))
     setAdded(true)
     window.setTimeout(() => setAdded(false), 1400)
-  }
-
-  const handleBuyNow = () => {
-    addToCart(product.id, quantity)
-    setBuying(true)
-    window.setTimeout(() => setBuying(false), 1600)
   }
 
   return (
@@ -243,47 +234,17 @@ function ProductDetailsContent({
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-end lg:mt-4 lg:gap-2">
-                <div>
-                  <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.17em] lg:mb-2 lg:text-[8px]">Quantity</p>
-                  <div className="flex h-12 items-center border border-line lg:h-10">
-                    <button
-                      type="button"
-                      aria-label="Decrease quantity"
-                      onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                      className="grid size-11 place-items-center lg:size-9"
-                    >
-                      <FiMinus size={14} />
-                    </button>
-                    <span className="min-w-8 text-center text-xs">{quantity}</span>
-                    <button
-                      type="button"
-                      aria-label="Increase quantity"
-                      onClick={() => setQuantity((value) => Math.min(10, value + 1))}
-                      className="grid size-11 place-items-center lg:size-9"
-                    >
-                      <FiPlus size={14} />
-                    </button>
-                  </div>
-                </div>
+              <div className="mt-6 lg:mt-4">
                 <button
                   type="button"
                   disabled={!product.available}
                   onClick={(event) => handleAddToCart(event.currentTarget)}
-                  className="flex h-12 flex-1 items-center justify-center gap-2 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas disabled:cursor-not-allowed disabled:opacity-40 lg:h-10 lg:text-[8px]"
+                  className="flex h-12 w-full items-center justify-center gap-2 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas disabled:cursor-not-allowed disabled:opacity-40 lg:h-10 lg:text-[8px]"
                 >
                   {added ? <FiCheck size={15} /> : <FiShoppingBag size={15} />}
                   {product.available ? (added ? 'Added to cart' : 'Add to cart') : 'Out of stock'}
                 </button>
               </div>
-              <button
-                type="button"
-                disabled={!product.available}
-                onClick={handleBuyNow}
-                className="mt-3 min-h-12 w-full border border-ink px-5 text-[9px] font-medium uppercase tracking-[0.17em] disabled:opacity-40 lg:mt-2 lg:min-h-10 lg:text-[8px]"
-              >
-                {buying ? 'Added — checkout coming next' : 'Buy now'}
-              </button>
 
               {/* Native disclosure controls keep delivery information accessible. */}
               <div className="mt-7 border-t border-line lg:mt-4">

@@ -35,26 +35,26 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer id="site-footer" className="overflow-hidden bg-ink px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-canvas sm:px-7 sm:pb-8 lg:px-10">
+    <footer id="site-footer" className="overflow-hidden bg-footer px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-footer-ink sm:px-7 sm:pb-8 lg:px-10">
       <div className="mx-auto max-w-[1440px]">
         {/* The oversized wordmark gives the footer a recognizable fashion-house finish. */}
         <Link
           to="/"
           aria-label="Lumi home"
-          className="block border-b border-canvas/18 py-6 font-display text-[clamp(4.5rem,20vw,14rem)] leading-[0.72] tracking-[-0.055em] sm:py-8"
+          className="block border-b border-footer-ink/18 py-6 font-display text-[clamp(4.5rem,20vw,14rem)] leading-[0.72] tracking-[-0.055em] sm:py-8"
         >
           LUMI
         </Link>
 
-        <div className="border-b border-canvas/18 py-6 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-8 sm:py-8 lg:grid-cols-[1.15fr_0.7fr_0.9fr_0.85fr] lg:gap-9">
+        <div className="border-b border-footer-ink/18 py-6 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-8 sm:py-8 lg:grid-cols-[1.15fr_0.7fr_0.9fr_0.85fr] lg:gap-9">
           <div className="min-w-0 pb-6 sm:col-span-2 sm:pb-0 lg:col-span-1">
-            <p className="max-w-xs text-sm leading-6 text-canvas/60">
+            <p className="max-w-xs text-sm leading-6 text-footer-ink">
               Clothes for real days, made with a little more thought.
             </p>
-            <address className="mt-5 space-y-3 text-xs not-italic text-canvas/65">
+            <address className="mt-5 space-y-3 text-xs not-italic text-footer-ink">
               <p className="flex items-start gap-3"><FiMapPin size={14} className="mt-0.5 shrink-0" />18 Kingsway, Lagos, Nigeria</p>
-              <a href="mailto:hello@lumi.com" className="flex items-center gap-3 transition-colors hover:text-canvas"><FiMail size={14} />hello@lumi.com</a>
-              <a href="tel:+2348005864000" className="flex items-center gap-3 transition-colors hover:text-canvas"><FiPhone size={14} />+234 800 LUMI 000</a>
+              <a href="mailto:hello@lumi.com" className="flex items-center gap-3 transition-opacity hover:opacity-60"><FiMail size={14} />hello@lumi.com</a>
+              <a href="tel:+2348005864000" className="flex items-center gap-3 transition-opacity hover:opacity-60"><FiPhone size={14} />+234 800 LUMI 000</a>
             </address>
           </div>
 
@@ -63,22 +63,22 @@ export function Footer() {
 
           <div className="min-w-0 sm:col-span-2 lg:col-span-1">
             {/* Social links collapse on phones and remain fully visible above them. */}
-            <details className="group border-t border-canvas/18 sm:hidden">
-              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between text-[9px] uppercase tracking-[0.18em] text-canvas/70 [&::-webkit-details-marker]:hidden">
-                Follow
+            <details className="group border-t border-footer-ink/18 sm:hidden">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between text-[9px] uppercase tracking-[0.18em] text-footer-ink [&::-webkit-details-marker]:hidden">
+                Connect
                 <FiChevronDown size={15} className="transition-transform duration-300 group-open:rotate-180" />
               </summary>
               <SocialLinks className="pb-3" />
             </details>
 
             <div className="hidden sm:block">
-              <h2 className="mb-4 text-[9px] uppercase tracking-[0.18em] text-canvas/45">Follow</h2>
+              <h2 className="mb-4 text-[9px] uppercase tracking-[0.18em] text-footer-ink">Connect</h2>
               <SocialLinks />
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-5 pt-6 text-[8px] uppercase tracking-[0.14em] text-canvas/42 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-5 pt-6 text-[8px] uppercase tracking-[0.14em] text-footer-ink sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             <p>© {new Date().getFullYear()} Lumi</p>
             <p>Lagos · Nigeria</p>
@@ -87,7 +87,7 @@ export function Footer() {
             id="footer-back-to-top"
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="group flex min-h-10 w-fit items-center gap-3 border border-canvas/20 px-4 text-canvas/65 transition-colors hover:border-canvas hover:text-canvas"
+            className="group flex min-h-10 w-fit items-center gap-3 border border-footer-ink/20 px-4 text-footer-ink transition-colors hover:border-footer-ink"
           >
             Back to top
             <FiArrowUp size={13} className="transition-transform group-hover:-translate-y-1" />
@@ -100,9 +100,9 @@ export function Footer() {
 
 function SocialLinks({ className = '' }: { className?: string }) {
   return (
-    <div className={`divide-y divide-canvas/15 border-y border-canvas/15 ${className}`}>
+    <div className={`divide-y divide-footer-ink/15 border-y border-footer-ink/15 ${className}`}>
               {socialLinks.map(({ label, href, icon: Icon }) => (
-                <a key={label} href={href} target="_blank" rel="noreferrer" className="group flex min-h-11 items-center gap-3 text-xs text-canvas/65 transition-colors hover:text-canvas">
+                <a key={label} href={href} target="_blank" rel="noreferrer" className="group flex min-h-11 items-center gap-3 text-xs text-footer-ink transition-opacity hover:opacity-60">
                   <Icon size={14} />
                   <span className="flex-1">{label}</span>
                   <FiArrowUpRight size={13} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
@@ -124,8 +124,8 @@ function FooterNav({
   return (
     <>
       {/* Native details keep mobile dropdowns keyboard-accessible without extra state. */}
-      <details className="group border-t border-canvas/18 sm:hidden">
-        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between text-[9px] uppercase tracking-[0.18em] text-canvas/70 [&::-webkit-details-marker]:hidden">
+      <details className="group border-t border-footer-ink/18 sm:hidden">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between text-[9px] uppercase tracking-[0.18em] text-footer-ink [&::-webkit-details-marker]:hidden">
           {title}
           <FiChevronDown size={15} className="transition-transform duration-300 group-open:rotate-180" />
         </summary>
@@ -133,7 +133,7 @@ function FooterNav({
       </details>
 
       <nav aria-label={label} className="hidden min-w-0 sm:block">
-        <h2 className="mb-4 text-[9px] uppercase tracking-[0.18em] text-canvas/45">{title}</h2>
+        <h2 className="mb-4 text-[9px] uppercase tracking-[0.18em] text-footer-ink">{title}</h2>
         <FooterLinkList links={links} />
       </nav>
     </>
@@ -145,7 +145,7 @@ function FooterLinkList({ links, className = '' }: { links: { label: string; to:
     <ul className={`space-y-3 ${className}`}>
       {links.map((link) => (
         <li key={link.label}>
-          <Link to={link.to} className="text-xs leading-5 text-canvas/62 transition-colors hover:text-canvas">
+          <Link to={link.to} className="text-xs leading-5 text-footer-ink transition-opacity hover:opacity-60">
             {link.label}
           </Link>
         </li>

@@ -54,11 +54,11 @@ export function TestimonialsSection() {
     <section
       id="testimonials"
       aria-labelledby="testimonials-heading"
-      className="bg-ink px-4 py-10 text-canvas min-[380px]:py-12 sm:px-7 sm:py-14 lg:px-10 lg:py-16"
+      className="bg-canvas px-4 py-10 text-ink min-[380px]:py-12 sm:px-7 sm:py-14 lg:px-10 lg:py-16"
     >
       <div className="mx-auto max-w-[1440px]">
         <MotionReveal className="mb-6 max-w-xl sm:mb-8">
-          <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-canvas/55">
+          <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/55">
             Worn and loved
           </p>
           <h2 id="testimonials-heading" className="text-3xl sm:text-4xl">

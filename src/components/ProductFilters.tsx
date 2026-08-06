@@ -93,6 +93,8 @@ export function ProductFilters({
   animated = false,
 }: ProductFilterProps) {
   const reduceMotion = useReducedMotion()
+  const apparelSizes = sizes.filter((size) => !/^\d+$/.test(size))
+  const shoeSizes = sizes.filter((size) => /^\d+$/.test(size))
   const activeCount =
     (category === 'All' ? 0 : 1) +
     (price === 'all' ? 0 : 1) +
@@ -159,31 +161,46 @@ export function ProductFilters({
       </FilterGroup>
 
       <FilterGroup title="Size" count={selectedSizes.length} initiallyOpen>
-        <div className="grid grid-cols-3 gap-2">
-          {sizes.map((size) => {
-            const selected = selectedSizes.includes(size)
-            return (
-              <motion.button
-                key={size}
-                variants={filterOptionVariants}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => toggleSize(size)}
-                className={`min-h-11 border text-[10px] transition-[background-color,border-color,color] ${
-                  selected
-                    ? 'border-ink bg-ink text-canvas'
-                    : 'border-line hover:border-ink'
-                }`}
+        <div className="space-y-4">
+          {[
+            { label: 'Clothing', values: apparelSizes },
+            { label: 'Shoes', values: shoeSizes },
+          ].map((group) => (
+            <div key={group.label}>
+              <p className="mb-2 text-[8px] uppercase tracking-[0.14em] text-ink/40">
+                {group.label}
+              </p>
+              <div
+                className="grid gap-1.5"
+                style={{ gridTemplateColumns: `repeat(${group.values.length}, minmax(0, 1fr))` }}
               >
-                {size}
-              </motion.button>
-            )
-          })}
+                {group.values.map((size) => {
+                  const selected = selectedSizes.includes(size)
+                  return (
+                    <motion.button
+                      key={size}
+                      variants={filterOptionVariants}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => toggleSize(size)}
+                      className={`min-h-10 min-w-0 border px-0.5 text-[9px] transition-[background-color,border-color,color] ${
+                        selected
+                          ? 'border-ink bg-ink text-canvas'
+                          : 'border-line hover:border-ink'
+                      }`}
+                    >
+                      {size}
+                    </motion.button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </FilterGroup>
 
       <FilterGroup title="Color" count={selectedColors.length}>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+        <div className="grid grid-cols-4 gap-1.5">
           {colors.map((color) => {
             const selected = selectedColors.includes(color.name)
             return (
@@ -191,12 +208,13 @@ export function ProductFilters({
                 key={color.name}
                 variants={filterOptionVariants}
                 type="button"
+                aria-label={`Filter by ${color.name}`}
                 aria-pressed={selected}
                 onClick={() => toggleColor(color.name)}
-                className={`flex min-h-11 items-center gap-2.5 border px-3 text-left text-xs transition-colors ${selected ? 'border-ink bg-ink/[0.04]' : 'border-line hover:border-ink'}`}
+                className={`flex min-h-11 min-w-0 items-center justify-center border transition-colors ${selected ? 'border-ink bg-ink/[0.04]' : 'border-line hover:border-ink'}`}
               >
                 <span
-                  className={`grid size-4 shrink-0 place-items-center rounded-full border ${
+                  className={`grid size-6 shrink-0 place-items-center rounded-full border ${
                     selected ? 'border-ink ring-1 ring-ink ring-offset-2 ring-offset-canvas' : 'border-line'
                   }`}
                   style={{ backgroundColor: color.hex }}
@@ -208,7 +226,6 @@ export function ProductFilters({
                     />
                   )}
                 </span>
-                {color.name}
               </motion.button>
             )
           })}

@@ -18,6 +18,7 @@ import {
 import { ProductCard } from '../components/ProductCard'
 import { useCatalog } from '../hooks/useCatalog'
 import type { ShopProduct } from '../types/product'
+import { getExpandedSizes, SHOP_SIZE_OPTIONS } from '../utils/sizes'
 
 type SortOption = 'featured' | 'latest' | 'price-low' | 'price-high' | 'rating'
 
@@ -37,7 +38,7 @@ const productItemVariants: Variants = {
 
 
 const categories = ['All', 'Women', 'Men', 'Accessories', 'Shoes']
-const sizes = ['XS', 'S', 'M', 'L', 'XL', '38', '39', '40', '41', 'One size']
+const sizes = SHOP_SIZE_OPTIONS
 const colors = [
   { name: 'Black', hex: '#171713' },
   { name: 'White', hex: '#f5f3ee' },
@@ -90,7 +91,7 @@ export function ShopPage() {
         (priceFilter === 'over-250' && product.price > 250)
       const matchesSize =
         selectedSizes.length === 0 ||
-        selectedSizes.some((size) => product.sizes.includes(size))
+        selectedSizes.some((size) => getExpandedSizes(product.sizes).includes(size))
       const matchesColor =
         selectedColors.length === 0 || selectedColors.includes(product.color)
       const matchesAvailability =

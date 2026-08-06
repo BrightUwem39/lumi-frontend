@@ -21,6 +21,8 @@
   --color-ink: #171713;
   --color-canvas: #f8f7f3;
   --color-line: #d8d5cd;
+  --color-footer: #ebebeb;
+  --color-footer-ink: #171713;
 }
 
 /* Dark mode swaps the same semantic tokens, so component markup stays simple. */
@@ -28,6 +30,8 @@
   --color-ink: #f2efe8;
   --color-canvas: #121210;
   --color-line: #34332f;
+  --color-footer: #1c1c1a;
+  --color-footer-ink: #f2efe8;
   color-scheme: dark;
 }
 
@@ -186,11 +190,11 @@ input:focus-visible {
   }
 }
 
-/* Match Swiper's testimonial pagination to the active inverse theme. */
+/* Match Swiper's testimonial pagination to the default page theme. */
 .testimonial-swiper .swiper-pagination-bullet {
   width: 6px;
   height: 6px;
-  background: var(--color-canvas);
+  background: var(--color-ink);
   opacity: 0.35;
 }
 
