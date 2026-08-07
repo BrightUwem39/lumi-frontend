@@ -21,9 +21,9 @@ export function Hero() {
       aria-labelledby="hero-heading"
       className="relative isolate min-h-[calc(100svh-88px)] overflow-hidden bg-[#9b8c7c] text-white sm:min-h-[calc(100svh-102px)] xl:min-h-[calc(100svh-112px)]"
     >
-      {/* One campaign film is shared across every viewport for a consistent
-          visual story. Object-cover handles the responsive crop, while the
-          still image is reserved for visitors who request reduced motion. */}
+      {/* One optimized campaign image is shared across every viewport. The
+          responsive image component serves an appropriately sized file while
+          object-cover maintains the editorial crop. */}
       <Parallax
         speed={reduceMotion ? 0 : -12}
         className="absolute -inset-y-12 inset-x-0"
@@ -35,32 +35,15 @@ export function Hero() {
           animate={{ scale: 1 }}
           transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
         >
-          {reduceMotion ? (
-            <OptimizedImage
-              src="/images/editorial/lumi-lagos-campaign-v2.jpg"
-              alt=""
-              fetchPriority="high"
-              decoding="async"
-              eager
-              responsiveWidths={[640, 960, 1280, 1600, 1920]}
-              className="size-full object-cover object-[67%_center] sm:object-[65%_center] lg:object-center"
-            />
-          ) : (
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              disablePictureInPicture
-              preload="auto"
-              className="size-full object-cover object-center"
-            >
-              <source
-                src="/videos/lumi-hero-desktop.mp4"
-                type="video/mp4"
-              />
-            </video>
-          )}
+          <OptimizedImage
+            src="/images/editorial/lumi-lagos-campaign-v2.jpg"
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            eager
+            responsiveWidths={[640, 960, 1280, 1600, 1920]}
+            className="size-full object-cover object-[67%_center] sm:object-[65%_center] lg:object-center"
+          />
         </motion.div>
       </Parallax>
 
