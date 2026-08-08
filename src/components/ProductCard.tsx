@@ -306,7 +306,7 @@ export function ProductCard({
                   className="mt-5 flex min-h-12 items-center justify-center gap-3 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.14em] text-canvas sm:mt-8 sm:px-6 sm:text-[10px] sm:tracking-[0.18em]"
                 >
                   <FiShoppingBag size={16} />
-                  {justAdded ? 'Added to cart' : 'Add to cart'}
+                  {justAdded ? 'Added' : 'Add'}
                 </button>
               </div>
             </motion.div>

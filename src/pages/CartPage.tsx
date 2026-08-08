@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   LuArrowLeft as FiArrowLeft,
   LuCheck as FiCheck,
@@ -10,6 +10,7 @@ import {
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { PageLoadingSkeleton } from '../components/LoadingSkeleton'
+import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
 
@@ -63,33 +64,36 @@ export function CartPage() {
   }
 
   return (
-    <main className="bg-canvas px-3 py-6 text-ink min-[380px]:px-4 min-[380px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
+    <main className="w-full min-w-0 overflow-x-clip bg-canvas px-3 py-6 text-ink min-[380px]:px-4 min-[380px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
       <div className="mx-auto max-w-[1440px]">
-        <Link
-          to="/shop"
-          className="inline-flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.16em] text-ink/55 hover:text-ink"
-        >
-          <FiArrowLeft size={14} />
-          Continue shopping
-        </Link>
+        <PageReveal>
+          <Link
+            to="/shop"
+            className="inline-flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.16em] text-ink/55 hover:text-ink"
+          >
+            <FiArrowLeft size={14} />
+            Continue shopping
+          </Link>
 
-        <div className="mt-6 flex items-end justify-between gap-4 border-b border-line pb-6">
-          <div>
-            <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
-              Your selection
+          <div className="mt-6 flex min-w-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line pb-6">
+            <div>
+              <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
+                Your selection
+              </p>
+              <h1 className="text-4xl sm:text-5xl">Shopping bag</h1>
+            </div>
+            <p className="shrink-0 pb-1 text-xs text-ink/50">
+              {itemCount} {itemCount === 1 ? 'item' : 'items'}
             </p>
-            <h1 className="text-4xl sm:text-5xl">Shopping bag</h1>
           </div>
-          <p className="shrink-0 text-xs text-ink/50">
-            {itemCount} {itemCount === 1 ? 'item' : 'items'}
-          </p>
-        </div>
+        </PageReveal>
 
-        {catalogStatus === 'loading' && Object.keys(cartItems).length > 0 ? (
-          <PageLoadingSkeleton variant="cart" />
-        ) : items.length === 0 ? (
-          <EmptyCart />
-        ) : (
+        <PageReveal delay={0.08}>
+          {catalogStatus === 'loading' && Object.keys(cartItems).length > 0 ? (
+            <PageLoadingSkeleton variant="cart" />
+          ) : items.length === 0 ? (
+            <EmptyCart />
+          ) : (
           <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-8 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start xl:gap-12">
             <section aria-label="Cart products">
               {/* Column labels only appear when the row has a table-like layout. */}
@@ -101,9 +105,15 @@ export function CartPage() {
               </div>
 
               <div className="divide-y divide-line">
-                {items.map(({ product, quantity }) => (
-                  <article
+                <AnimatePresence initial={!reduceMotion}>
+                {items.map(({ product, quantity }, index) => (
+                  <motion.article
                     key={product.id}
+                    layout
+                    initial={reduceMotion ? false : { opacity: 0, x: -14 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 14 }}
+                    transition={{ duration: 0.28, delay: reduceMotion ? 0 : index * 0.035 }}
                     className="grid grid-cols-[80px_minmax(0,1fr)_40px] gap-x-3 gap-y-3 py-5 min-[380px]:grid-cols-[88px_minmax(0,1fr)_40px] min-[380px]:gap-x-4 min-[380px]:gap-y-4 min-[380px]:py-6 sm:grid-cols-[1fr_100px_130px_44px] sm:items-center sm:gap-4"
                   >
                     <div className="col-span-2 flex min-w-0 gap-3 min-[380px]:gap-4 sm:col-span-1">
@@ -175,8 +185,9 @@ export function CartPage() {
                     >
                       <FiTrash2 size={16} />
                     </button>
-                  </article>
+                  </motion.article>
                 ))}
+                </AnimatePresence>
               </div>
             </section>
 
@@ -262,7 +273,8 @@ export function CartPage() {
               </Link>
             </aside>
           </div>
-        )}
+          )}
+        </PageReveal>
       </div>
     </main>
   )

@@ -18,6 +18,7 @@ import {
 import { FaApplePay, FaPaypal } from 'react-icons/fa'
 import { Link, useNavigate } from 'react-router-dom'
 import { PageLoadingSkeleton } from '../components/LoadingSkeleton'
+import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import { LAST_ORDER_STORAGE_KEY, type DemoOrder } from '../lib/order'
 import { useShopStore } from '../store/useShopStore'
@@ -235,9 +236,9 @@ export function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-[calc(100svh-88px)] overflow-x-clip bg-canvas px-3 py-5 text-ink min-[380px]:px-4 sm:min-h-[calc(100svh-102px)] sm:px-7 sm:py-7 lg:px-10 xl:min-h-[calc(100svh-112px)]">
+    <main className="min-h-[calc(100svh-78px)] overflow-x-clip bg-canvas px-3 py-5 text-ink min-[380px]:px-4 sm:min-h-[calc(100svh-92px)] sm:px-7 sm:py-7 lg:px-10 xl:min-h-[calc(100svh-102px)]">
       <div className="mx-auto max-w-[1380px]">
-        <div className="flex items-end justify-between gap-5 border-b border-line pb-4">
+        <PageReveal className="flex items-end justify-between gap-5 border-b border-line pb-4">
           <div>
             <Link
               to="/cart"
@@ -253,7 +254,7 @@ export function CheckoutPage() {
           <p className="hidden items-center gap-2 text-[8px] uppercase tracking-[0.16em] text-ink/45 sm:flex">
             <FiLock size={12} /> Secure checkout
           </p>
-        </div>
+        </PageReveal>
 
         {catalogStatus === 'loading' && Object.keys(cartItems).length > 0 ? (
           <PageLoadingSkeleton variant="checkout" />
@@ -571,13 +572,13 @@ function StepTab({
       aria-selected={active}
       aria-controls={`checkout-${step}-panel`}
       onClick={() => onSelect(step)}
-      className={`relative flex min-h-[72px] min-w-0 items-center gap-2 px-2 text-left transition-colors min-[380px]:gap-2.5 min-[380px]:px-3 sm:min-h-20 sm:gap-4 sm:px-5 ${
+      className={`relative flex min-h-[78px] min-w-0 flex-col items-start justify-center gap-1 px-3 text-left transition-colors min-[380px]:min-h-20 min-[380px]:px-4 sm:flex-row sm:items-center sm:justify-start sm:gap-4 sm:px-5 ${
         step === 'payment' ? 'border-l border-line' : ''
       } ${active ? 'text-ink' : 'text-ink/42 hover:text-ink/70'}`}
     >
-      <span className="text-[8px]">{complete ? <FiCheck size={12} /> : number}</span>
+      <span className="text-[8px] text-ink/50">{complete ? <FiCheck size={12} /> : number}</span>
       <span className="hidden text-lg sm:block">{icon}</span>
-      <span className="min-w-0 break-words font-display text-[11px] font-medium leading-tight tracking-[-0.01em] min-[360px]:text-[12px] min-[400px]:whitespace-nowrap min-[400px]:text-sm sm:text-xl">
+      <span className="min-w-0 break-words font-display text-[13px] font-medium leading-tight tracking-[-0.01em] min-[380px]:text-sm sm:text-xl">
         {label}
       </span>
       {active && (

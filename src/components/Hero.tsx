@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Parallax } from 'react-scroll-parallax'
-import { LuArrowDownRight as FiArrowDownRight, LuArrowRight as FiArrowRight } from 'react-icons/lu'
+import { LuArrowRight as FiArrowRight } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { OptimizedImage } from './OptimizedImage'
 import { Magnet } from './reactbits/Magnet'
@@ -19,21 +19,23 @@ export function Hero() {
     // Viewport-based heights fill the screen after each responsive navbar height.
     <section
       aria-labelledby="hero-heading"
-      className="relative isolate min-h-[calc(100svh-88px)] overflow-hidden bg-[#9b8c7c] text-white sm:min-h-[calc(100svh-102px)] xl:min-h-[calc(100svh-112px)]"
+      className="relative isolate min-h-[calc(100svh-78px)] overflow-hidden bg-[#7f837d] text-white sm:min-h-[calc(100svh-92px)] xl:min-h-[calc(100svh-102px)]"
     >
-      {/* One optimized campaign image is shared across every viewport. The
-          responsive image component serves an appropriately sized file while
-          object-cover maintains the editorial crop. */}
-      <Parallax
-        speed={reduceMotion ? 0 : -12}
-        className="absolute -inset-y-12 inset-x-0"
-        aria-hidden="true"
-      >
+      {/* One optimized campaign image is shared across every viewport. Its
+          responsive fit preserves the full pose on wide screens and uses a
+          model-focused horizontal crop on portrait screens. */}
+      <div className="absolute inset-0" aria-hidden="true">
+        {/* A sharp, height-matched wall extension fills the narrow space beside
+            the contained photograph without blurring or enlarging the model. */}
+        <div
+          className="absolute inset-0 bg-left bg-no-repeat [background-size:auto_100%] portrait:hidden"
+          style={{ backgroundImage: "url('/images/editorial/lumi-lagos-campaign-v2.jpg')" }}
+        />
         <motion.div
-          className="size-full"
-          initial={reduceMotion ? false : { scale: 1.075 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+          className="relative size-full"
+          initial={reduceMotion ? false : { opacity: 0.82 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
         >
           <OptimizedImage
             src="/images/editorial/lumi-lagos-campaign-v2.jpg"
@@ -42,10 +44,10 @@ export function Hero() {
             decoding="async"
             eager
             responsiveWidths={[640, 960, 1280, 1600, 1920]}
-            className="size-full object-cover object-[67%_center] sm:object-[65%_center] lg:object-center"
+            className="size-full object-contain object-center portrait:object-cover portrait:object-[72%_center] lg:object-contain lg:object-right"
           />
         </motion.div>
-      </Parallax>
+      </div>
 
       {/* Responsive overlays preserve text contrast without hiding the photograph. */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/15 sm:bg-gradient-to-r sm:from-black/55 sm:via-black/15 sm:to-transparent" />
@@ -54,25 +56,13 @@ export function Hero() {
       {/* The foreground travels slightly faster than the campaign image,
           creating depth while keeping every CTA easy to interact with. */}
       <Parallax speed={reduceMotion ? 0 : 4} className="relative">
-        <div className="relative mx-auto flex min-h-[calc(100svh-88px)] max-w-[1440px] items-end px-4 pb-6 pt-14 min-[380px]:px-5 min-[380px]:pb-8 sm:min-h-[calc(100svh-102px)] sm:items-center sm:px-8 sm:pb-14 sm:pt-14 lg:px-12 xl:min-h-[calc(100svh-112px)] xl:px-16">
+        <div className="relative mx-auto flex min-h-[calc(100svh-78px)] max-w-[1440px] items-end px-4 pb-6 pt-14 min-[380px]:px-5 min-[380px]:pb-8 sm:min-h-[calc(100svh-92px)] sm:items-center sm:px-8 sm:pb-14 sm:pt-14 lg:px-12 xl:min-h-[calc(100svh-102px)] xl:px-16">
         <motion.div
           className="w-full max-w-xl sm:max-w-lg lg:max-w-2xl"
             initial={reduceMotion ? false : 'hidden'}
             animate="visible"
           transition={{ staggerChildren: 0.12, delayChildren: 0.25 }}
         >
-          {/* Eyebrow identifies the featured seasonal release. */}
-          <motion.div
-            variants={reveal}
-            transition={{ duration: 0.65 }}
-            className="mb-4 flex items-center gap-3 sm:mb-6"
-          >
-            <span className="h-px w-8 bg-white/75" />
-            <p className="text-[9px] font-medium uppercase tracking-[0.25em] sm:text-[10px]">
-              Just in · The summer edit
-            </p>
-          </motion.div>
-
           {/* One H1 communicates the page's primary campaign message. */}
           {reduceMotion ? (
             <h1
@@ -105,8 +95,7 @@ export function Hero() {
             with modern elegance.
           </motion.p>
 
-          {/* Primary and secondary CTAs stack on narrow phones and share a row
-              when enough width is available. */}
+          {/* The primary CTA uses a restrained magnetic interaction on precise pointers. */}
           <motion.div
             variants={reveal}
             transition={{ duration: 0.65 }}
@@ -121,59 +110,17 @@ export function Hero() {
                 to="/shop"
                 className="group flex min-h-12 w-full items-center justify-center gap-3 bg-white px-5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#171713] transition-colors hover:bg-[#171713] hover:text-white sm:min-w-48 sm:px-6 sm:tracking-[0.18em]"
               >
-                Shop the edit
+                Go to shop
                 <FiArrowRight
                   size={15}
                   className="transition-transform group-hover:translate-x-1"
                 />
               </Link>
             </Magnet>
-            <Magnet
-              disabled={Boolean(reduceMotion)}
-              wrapperClassName="w-full sm:w-auto"
-              innerClassName="w-full"
-            >
-              <Link
-                to="/#products"
-                className="group flex min-h-12 w-full items-center justify-center gap-3 border border-white/70 bg-black/5 px-5 text-[10px] font-medium uppercase tracking-[0.16em] text-white backdrop-blur-[2px] transition-colors hover:bg-white hover:text-[#171713] sm:min-w-48 sm:px-6 sm:tracking-[0.18em]"
-              >
-                See what’s new
-                <FiArrowDownRight
-                  size={15}
-                  className="transition-transform group-hover:translate-x-0.5 group-hover:translate-y-0.5"
-                />
-              </Link>
-            </Magnet>
-          </motion.div>
-
-          {/* Tertiary link offers a quieter path to the complete collection. */}
-          <motion.div
-            variants={reveal}
-            transition={{ duration: 0.65 }}
-            className="mt-5"
-          >
-            <Link
-              to="/shop?sort=latest"
-              className="hidden max-w-full whitespace-normal border-b border-white/65 pb-1 text-[9px] font-medium uppercase leading-4 tracking-[0.15em] transition-opacity hover:opacity-60 min-[420px]:inline-flex sm:tracking-[0.2em]"
-            >
-              Explore the full summer collection
-            </Link>
           </motion.div>
         </motion.div>
         </div>
       </Parallax>
-
-      {/* Editorial campaign metadata is decorative and only shown when space allows. */}
-      <motion.div
-        className="absolute bottom-8 right-8 hidden items-center gap-3 text-[9px] uppercase tracking-[0.2em] text-white/70 lg:flex"
-        initial={reduceMotion ? false : { opacity: 0, x: 18 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.9, duration: 0.6 }}
-      >
-        <span>Campaign 01</span>
-        <span className="h-px w-10 bg-white/50" />
-        <span>Lagos light</span>
-      </motion.div>
     </section>
   )
 }

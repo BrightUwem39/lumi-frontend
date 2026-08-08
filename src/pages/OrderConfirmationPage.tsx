@@ -41,7 +41,7 @@ export function OrderConfirmationPage() {
   }
 
   return (
-    <main className="bg-canvas px-4 py-7 text-ink min-[480px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
+    <main className="w-full min-w-0 overflow-x-clip bg-canvas px-4 py-7 text-ink min-[480px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

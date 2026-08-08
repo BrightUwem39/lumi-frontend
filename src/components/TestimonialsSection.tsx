@@ -54,7 +54,7 @@ export function TestimonialsSection() {
     <section
       id="testimonials"
       aria-labelledby="testimonials-heading"
-      className="bg-canvas px-4 py-10 text-ink min-[380px]:py-12 sm:px-7 sm:py-14 lg:px-10 lg:py-16"
+      className="bg-canvas px-4 pb-4 pt-4 text-ink sm:px-7 sm:pb-6 sm:pt-6 lg:px-10 lg:pb-8 lg:pt-8"
     >
       <div className="mx-auto max-w-[1440px]">
         <MotionReveal className="mb-6 max-w-xl sm:mb-8">

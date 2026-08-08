@@ -290,7 +290,7 @@ function ComparisonModal({
                       }}
                       className="min-h-11 w-full bg-ink px-3 text-[8px] uppercase tracking-[0.13em] text-canvas disabled:opacity-35"
                     >
-                      Add to cart
+                      Add
                     </button>
                   </div>
                 ))}

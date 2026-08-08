@@ -11,7 +11,6 @@ export type GalleryImage = {
   alt: string
   label: string
   objectPosition?: string
-  imageScale?: number
 }
 
 type ProductGalleryProps = {
@@ -33,7 +32,7 @@ export function ProductGallery({
   }
 
   return (
-    <div className="grid w-full min-w-0 max-w-full gap-3 overflow-hidden md:grid-cols-[minmax(0,1fr)_72px] md:gap-4">
+    <div className="grid w-full min-w-0 max-w-full gap-3 overflow-hidden md:w-[488px] md:grid-cols-[400px_72px] md:justify-self-center md:gap-4">
       <div className="relative w-full min-w-0 overflow-hidden bg-[#e8e5df]">
         <Swiper
           modules={[A11y, Keyboard]}
@@ -53,10 +52,9 @@ export function ProductGallery({
                 src={image.src}
                 alt={image.alt}
                 draggable={false}
-                className="size-full select-none object-cover"
+                className="size-full select-none object-contain"
                 style={{
                   objectPosition: image.objectPosition ?? 'center',
-                  transform: `scale(${image.imageScale ?? 1})`,
                 }}
               />
             </SwiperSlide>
@@ -114,7 +112,6 @@ export function ProductGallery({
               className="size-full object-cover"
               style={{
                 objectPosition: image.objectPosition ?? 'center',
-                transform: `scale(${image.imageScale ?? 1})`,
               }}
             />
           </button>

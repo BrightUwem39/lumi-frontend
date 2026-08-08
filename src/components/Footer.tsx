@@ -10,6 +10,7 @@ import {
 } from 'react-icons/lu'
 import { FaPinterestP } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
+import { MotionReveal } from './MotionReveal'
 
 const quickLinks = [
   { label: 'New arrivals', to: '/shop?sort=latest' },
@@ -36,7 +37,7 @@ const socialLinks = [
 export function Footer() {
   return (
     <footer id="site-footer" className="overflow-hidden bg-footer px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-footer-ink sm:px-7 sm:pb-8 lg:px-10">
-      <div className="mx-auto max-w-[1440px]">
+      <MotionReveal className="mx-auto max-w-[1440px]">
         {/* The oversized wordmark gives the footer a recognizable fashion-house finish. */}
         <Link
           to="/"
@@ -93,7 +94,7 @@ export function Footer() {
             <FiArrowUp size={13} className="transition-transform group-hover:-translate-y-1" />
           </button>
         </div>
-      </div>
+      </MotionReveal>
     </footer>
   )
 }

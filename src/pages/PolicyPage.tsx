@@ -1,5 +1,6 @@
 import { LuArrowLeft as FiArrowLeft, LuMail as FiMail, LuPhone as FiPhone } from 'react-icons/lu'
 import { Link, Navigate, useParams } from 'react-router-dom'
+import { PageReveal } from '../components/PageReveal'
 
 type Policy = {
   eyebrow: string
@@ -73,9 +74,9 @@ export function PolicyPage() {
   if (!policy) return <Navigate to="/" replace />
 
   return (
-    <main className="w-full min-w-0 overflow-hidden bg-canvas text-ink">
+    <main className="w-full min-w-0 overflow-x-clip bg-canvas text-ink">
       <header className="w-full border-b border-line px-4 py-6 min-[480px]:py-8 sm:px-6 md:px-8 lg:px-10 lg:py-10 xl:py-12">
-        <div className="mx-auto w-full min-w-0 max-w-[1180px]">
+        <PageReveal className="mx-auto w-full min-w-0 max-w-[1180px]">
           <Link to="/" className="inline-flex min-h-10 items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-ink/55 hover:text-ink">
             <FiArrowLeft size={14} /> Back to Lumi
           </Link>
@@ -83,34 +84,38 @@ export function PolicyPage() {
           <h1 className="mt-3 w-full max-w-full break-words text-3xl leading-[1.02] min-[380px]:text-4xl sm:max-w-[15ch] md:text-5xl xl:text-6xl">{policy.title}</h1>
           <p className="mt-4 max-w-2xl break-words text-[13px] leading-6 text-ink/60 sm:mt-5 sm:text-sm md:text-base md:leading-7">{policy.introduction}</p>
           <p className="mt-4 text-[8px] uppercase tracking-[0.12em] text-ink/40 sm:mt-5 sm:text-[9px] sm:tracking-[0.14em]">Last reviewed · July 2026</p>
-        </div>
+        </PageReveal>
       </header>
 
       {/* Phones, tablets, and laptops stay stacked; only wide desktops split. */}
       <div className="mx-auto grid w-full max-w-[1180px] min-w-0 grid-cols-1 gap-6 px-4 py-6 min-[480px]:py-8 sm:gap-8 sm:px-6 md:px-8 lg:px-10 lg:py-10 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start xl:gap-10 xl:py-12">
-        <article className="w-full min-w-0 divide-y divide-line border-y border-line">
-          {policy.sections.map((section, index) => (
-            <section key={section.heading} className="grid w-full min-w-0 grid-cols-1 gap-2 py-4 min-[480px]:py-5 sm:grid-cols-[32px_minmax(0,1fr)] sm:gap-4 sm:py-6 md:grid-cols-[40px_minmax(0,1fr)] md:gap-5">
-              <span className="text-[9px] text-ink/35">{String(index + 1).padStart(2, '0')}</span>
-              <div className="min-w-0">
-                <h2 className="break-words text-lg leading-tight min-[380px]:text-xl md:text-2xl">{section.heading}</h2>
-                {section.paragraphs.map((paragraph) => <p key={paragraph} className="mt-3 max-w-3xl break-words text-[13px] leading-6 text-ink/60 sm:text-sm">{paragraph}</p>)}
-              </div>
-            </section>
-          ))}
-        </article>
+        <PageReveal>
+          <article className="w-full min-w-0 divide-y divide-line border-y border-line">
+            {policy.sections.map((section, index) => (
+              <section key={section.heading} className="grid w-full min-w-0 grid-cols-1 gap-2 py-4 min-[480px]:py-5 sm:grid-cols-[32px_minmax(0,1fr)] sm:gap-4 sm:py-6 md:grid-cols-[40px_minmax(0,1fr)] md:gap-5">
+                <span className="text-[9px] text-ink/35">{String(index + 1).padStart(2, '0')}</span>
+                <div className="min-w-0">
+                  <h2 className="break-words text-lg leading-tight min-[380px]:text-xl md:text-2xl">{section.heading}</h2>
+                  {section.paragraphs.map((paragraph) => <p key={paragraph} className="mt-3 max-w-3xl break-words text-[13px] leading-6 text-ink/60 sm:text-sm">{paragraph}</p>)}
+                </div>
+              </section>
+            ))}
+          </article>
+        </PageReveal>
 
-        <aside className="grid w-full min-w-0 grid-cols-1 gap-5 border border-line p-4 min-[380px]:p-5 sm:grid-cols-2 sm:items-center sm:gap-8 sm:p-6 xl:sticky xl:top-32 xl:block">
-          <div className="min-w-0">
-            <p className="text-[9px] uppercase tracking-[0.18em] text-ink/45">Still need help?</p>
-            <h2 className="mt-2 text-2xl">Talk to our team</h2>
-            <p className="mt-3 text-xs leading-5 text-ink/55">Client services are available Monday to Friday.</p>
-          </div>
-          <div className="min-w-0 xl:mt-6">
-            <a href="mailto:hello@lumi.com" className="flex min-h-11 min-w-0 items-center gap-3 border-t border-line pt-3 text-xs"><FiMail className="shrink-0" /><span className="min-w-0 break-all">hello@lumi.com</span></a>
-            <a href="tel:+2348005864000" className="flex min-h-11 min-w-0 items-center gap-3 border-t border-line pt-3 text-xs"><FiPhone className="shrink-0" /><span className="min-w-0 break-words">+234 800 LUMI 000</span></a>
-          </div>
-        </aside>
+        <PageReveal delay={0.08} className="xl:sticky xl:top-32 xl:self-start">
+          <aside className="grid w-full min-w-0 grid-cols-1 gap-5 border border-line p-4 min-[380px]:p-5 sm:grid-cols-2 sm:items-center sm:gap-8 sm:p-6 xl:block">
+            <div className="min-w-0">
+              <p className="text-[9px] uppercase tracking-[0.18em] text-ink/45">Still need help?</p>
+              <h2 className="mt-2 text-2xl">Talk to our team</h2>
+              <p className="mt-3 text-xs leading-5 text-ink/55">Client services are available Monday to Friday.</p>
+            </div>
+            <div className="min-w-0 xl:mt-6">
+              <a href="mailto:hello@lumi.com" className="flex min-h-11 min-w-0 items-center gap-3 border-t border-line pt-3 text-xs"><FiMail className="shrink-0" /><span className="min-w-0 break-all">hello@lumi.com</span></a>
+              <a href="tel:+2348005864000" className="flex min-h-11 min-w-0 items-center gap-3 border-t border-line pt-3 text-xs"><FiPhone className="shrink-0" /><span className="min-w-0 break-words">+234 800 LUMI 000</span></a>
+            </div>
+          </aside>
+        </PageReveal>
       </div>
     </main>
   )

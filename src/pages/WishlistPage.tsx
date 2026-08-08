@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   LuArrowLeft as FiArrowLeft,
   LuHeart as FiHeart,
@@ -7,6 +8,7 @@ import {
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { PageLoadingSkeleton } from '../components/LoadingSkeleton'
+import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
 import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
@@ -18,6 +20,7 @@ const currency = new Intl.NumberFormat('en-US', {
 })
 
 export function WishlistPage() {
+  const reduceMotion = useReducedMotion()
   const { products, status: catalogStatus } = useCatalog()
   const wishlistItems = useShopStore((state) => state.wishlistItems)
   const toggleWishlist = useShopStore((state) => state.toggleWishlist)
@@ -48,45 +51,54 @@ export function WishlistPage() {
   }
 
   return (
-    <main className="min-h-[65svh] bg-canvas px-3 py-6 text-ink min-[380px]:px-4 min-[380px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
+    <main className="min-h-[65svh] w-full min-w-0 overflow-x-clip bg-canvas px-3 py-6 text-ink min-[380px]:px-4 min-[380px]:py-8 sm:px-7 sm:py-10 lg:px-10 lg:py-12">
       <div className="mx-auto max-w-[1440px]">
-        <Link
-          to="/shop"
-          className="inline-flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.16em] text-ink/55 hover:text-ink"
-        >
-          <FiArrowLeft size={14} />
-          Continue shopping
-        </Link>
+        <PageReveal>
+          <Link
+            to="/shop"
+            className="inline-flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.16em] text-ink/55 hover:text-ink"
+          >
+            <FiArrowLeft size={14} />
+            Continue shopping
+          </Link>
 
-        <div className="mt-6 flex items-end justify-between gap-4 border-b border-line pb-6">
-          <div className="min-w-0">
-            <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
-              Saved for later
+          <div className="mt-6 flex min-w-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line pb-6">
+            <div className="min-w-0">
+              <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
+                Saved for later
+              </p>
+              <h1 className="text-3xl min-[380px]:text-4xl sm:text-5xl">
+                Your wishlist
+              </h1>
+            </div>
+            <p className="shrink-0 pb-1 text-xs text-ink/50">
+              {savedProducts.length}{' '}
+              {savedProducts.length === 1 ? 'item' : 'items'}
             </p>
-            <h1 className="text-3xl min-[380px]:text-4xl sm:text-5xl">
-              Your wishlist
-            </h1>
           </div>
-          <p className="shrink-0 text-xs text-ink/50">
-            {savedProducts.length}{' '}
-            {savedProducts.length === 1 ? 'item' : 'items'}
-          </p>
-        </div>
+        </PageReveal>
 
-        {catalogStatus === 'loading' && wishlistItems.length > 0 ? (
-          <PageLoadingSkeleton variant="wishlist" />
-        ) : savedProducts.length === 0 ? (
-          <EmptyWishlist />
-        ) : (
+        <PageReveal delay={0.08}>
+          {catalogStatus === 'loading' && wishlistItems.length > 0 ? (
+            <PageLoadingSkeleton variant="wishlist" />
+          ) : savedProducts.length === 0 ? (
+            <EmptyWishlist />
+          ) : (
           /* Compact media rows are easier to scan on phones; cards expand into
              the editorial grid once there is enough horizontal space. */
           <section
             aria-label="Saved products"
             className="mt-6 grid grid-cols-1 gap-x-3 gap-y-5 min-[520px]:grid-cols-2 min-[520px]:gap-y-7 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4"
           >
-            {savedProducts.map((product) => (
-              <article
+            <AnimatePresence initial={!reduceMotion}>
+            {savedProducts.map((product, index) => (
+              <motion.article
                 key={product.id}
+                layout
+                initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.32, delay: reduceMotion ? 0 : index * 0.04 }}
                 className="group grid min-w-0 grid-cols-[104px_minmax(0,1fr)] gap-3 border-b border-line pb-5 min-[380px]:grid-cols-[116px_minmax(0,1fr)] min-[520px]:block min-[520px]:border-0 min-[520px]:pb-0"
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-[#e8e5df]">
@@ -150,10 +162,12 @@ export function WishlistPage() {
                     {product.available ? 'Move to cart' : 'Out of stock'}
                   </button>
                 </div>
-              </article>
+              </motion.article>
             ))}
+            </AnimatePresence>
           </section>
-        )}
+          )}
+        </PageReveal>
       </div>
     </main>
   )

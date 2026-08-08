@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   LuBell as FiBell,
   LuCheck as FiCheck,
@@ -12,6 +13,7 @@ import {
   LuUser as FiUser,
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
+import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
 
@@ -51,20 +53,23 @@ const orderHistory = [
 
 export function ProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('profile')
+  const reduceMotion = useReducedMotion()
 
   return (
-    <main className="min-h-[70svh] bg-canvas px-4 py-6 text-ink sm:px-7 sm:py-8 lg:px-10 lg:py-10">
+    <main className="min-h-[70svh] w-full min-w-0 overflow-x-clip bg-canvas px-4 py-6 text-ink sm:px-7 sm:py-8 lg:px-10 lg:py-10">
       <div className="mx-auto max-w-[1280px]">
-        <div className="border-b border-line pb-6">
-          <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
-            My account
-          </p>
-          <h1 className="max-w-full break-words text-[clamp(1.85rem,9vw,2.25rem)] leading-[1.05] sm:text-5xl">
-            Welcome back, Amara.
-          </h1>
-        </div>
+        <PageReveal>
+          <div className="border-b border-line pb-6">
+            <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
+              My account
+            </p>
+            <h1 className="max-w-full break-words text-[clamp(1.85rem,9vw,2.25rem)] leading-[1.05] sm:text-5xl">
+              Welcome back, Amara.
+            </h1>
+          </div>
+        </PageReveal>
 
-        <div className="mt-5 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
+        <PageReveal delay={0.08} className="mt-5 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
           {/* A compact native selector avoids clipped horizontal tabs on phones.
               The full account navigation becomes a sidebar on desktop. */}
           <label className="block lg:hidden">
@@ -114,13 +119,23 @@ export function ProfilePage() {
             }
             className="min-w-0"
           >
-            {activeTab === 'profile' && <UserInformation />}
-            {activeTab === 'orders' && <OrderHistory />}
-            {activeTab === 'addresses' && <SavedAddresses />}
-            {activeTab === 'wishlist' && <WishlistPreview />}
-            {activeTab === 'settings' && <AccountSettings />}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={activeTab}
+                initial={reduceMotion ? false : { opacity: 0, x: 14 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -10 }}
+                transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {activeTab === 'profile' && <UserInformation />}
+                {activeTab === 'orders' && <OrderHistory />}
+                {activeTab === 'addresses' && <SavedAddresses />}
+                {activeTab === 'wishlist' && <WishlistPreview />}
+                {activeTab === 'settings' && <AccountSettings />}
+              </motion.div>
+            </AnimatePresence>
           </section>
-        </div>
+        </PageReveal>
       </div>
     </main>
   )
@@ -446,7 +461,7 @@ function SettingRow({
   setChecked: (checked: boolean) => void
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-4 py-5">
+    <label className="flex min-w-0 cursor-pointer items-center gap-3 py-5 min-[380px]:gap-4">
       <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line">
         {icon}
       </span>

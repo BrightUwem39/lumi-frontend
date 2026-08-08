@@ -144,7 +144,7 @@ export function Navbar() {
         </Link>
 
         <div className="border-b border-line">
-          <div className="relative mx-auto flex h-[60px] max-w-[1440px] items-center px-3 min-[360px]:px-4 sm:h-[70px] sm:px-7 lg:px-10 xl:h-20">
+          <div className="relative mx-auto flex h-[50px] max-w-[1440px] items-center px-3 min-[360px]:px-4 sm:h-[60px] sm:px-7 lg:px-10 xl:h-[70px]">
             {/* Phone and tablet use a deliberately minimal two-item header:
                 menu control on the left and wordmark on the right. */}
             <button
@@ -296,7 +296,7 @@ export function Navbar() {
 
       {/* A fixed header needs an equal-height spacer so page content starts
           below it at every responsive navbar height. */}
-      <div aria-hidden="true" className="h-[88px] sm:h-[102px] xl:h-28" />
+      <div aria-hidden="true" className="h-[78px] sm:h-[92px] xl:h-[102px]" />
 
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
@@ -317,7 +317,7 @@ export function Navbar() {
             <motion.aside
               id={mobileMenuId}
               aria-label="Mobile navigation"
-              className="fixed bottom-0 left-0 top-[88px] z-30 flex w-full flex-col overflow-y-auto overscroll-contain bg-canvas px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 text-ink min-[380px]:px-5 sm:top-[102px] sm:w-[88%] sm:max-w-sm sm:px-6 sm:pb-8 sm:pt-8 xl:hidden"
+              className="fixed bottom-0 left-0 top-[78px] z-30 flex w-full flex-col overflow-y-auto overscroll-contain bg-canvas px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 text-ink min-[380px]:px-5 sm:top-[92px] sm:w-[88%] sm:max-w-sm sm:px-6 sm:pb-8 sm:pt-8 xl:hidden"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}

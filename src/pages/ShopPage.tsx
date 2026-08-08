@@ -16,6 +16,7 @@ import {
   type ProductFilterProps,
 } from '../components/ProductFilters'
 import { ProductCard } from '../components/ProductCard'
+import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import type { ShopProduct } from '../types/product'
 import { getExpandedSizes, SHOP_SIZE_OPTIONS } from '../utils/sizes'
@@ -231,9 +232,9 @@ export function ShopPage() {
   ]
 
   return (
-    <main className="bg-canvas text-ink">
+    <main className="w-full min-w-0 overflow-x-clip bg-canvas text-ink">
       <header className="border-b border-line px-4 py-7 min-[380px]:py-8 sm:px-7 sm:py-10 lg:px-10">
-        <div className="mx-auto max-w-[1440px]">
+        <PageReveal className="mx-auto max-w-[1440px]">
           <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/50">
             Lumi collection
           </p>
@@ -242,13 +243,13 @@ export function ShopPage() {
             Everyday pieces, considered details, and the latest from our
             studio.
           </p>
-        </div>
+        </PageReveal>
       </header>
 
       <section aria-label="Shop products" className="px-4 py-6 min-[380px]:py-8 sm:px-7 lg:px-10 lg:py-10">
         <div className="mx-auto max-w-[1440px]">
           {/* Search, mobile filter, result count, and sort controls. */}
-          <div className="mb-6 grid grid-cols-2 gap-2.5 border-b border-line pb-5 sm:mb-8 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-3 sm:pb-6">
+          <PageReveal delay={0.06} className="mb-6 grid grid-cols-2 gap-2.5 border-b border-line pb-5 sm:mb-8 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-3 sm:pb-6">
             <label className="col-span-2 flex min-h-12 items-center gap-3 bg-ink/[0.04] px-4 sm:col-span-1">
               <FiSearch size={17} className="shrink-0 text-ink/55" />
               <span className="sr-only">Search products</span>
@@ -338,7 +339,7 @@ export function ShopPage() {
                 )}
               </AnimatePresence>
             </div>
-          </div>
+          </PageReveal>
 
           <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[250px_minmax(0,1fr)] xl:gap-8">
             <aside className="hidden lg:block">
@@ -366,7 +367,7 @@ export function ShopPage() {
                   className="mx-auto grid w-full min-w-0 grid-cols-[repeat(2,minmax(0,1fr))] gap-x-3 gap-y-6 px-1 min-[420px]:px-0 sm:gap-x-4 sm:gap-y-8 xl:grid-cols-3"
                 >
                   {visibleProducts.map((product) => (
-                    <motion.div key={product.id} variants={productItemVariants} layout>
+                    <motion.div key={product.id} variants={productItemVariants} layout className="min-w-0">
                       <ProductCard product={product} viewportReveal={false} />
                     </motion.div>
                   ))}

@@ -101,7 +101,7 @@ export function FeaturedProducts() {
     <section
       id="products"
       aria-labelledby="featured-products-heading"
-      className="scroll-mt-[92px] bg-canvas px-4 pb-4 pt-8 text-ink min-[380px]:pt-10 sm:scroll-mt-[108px] sm:px-7 sm:pb-6 sm:pt-12 lg:px-10 lg:pb-8 lg:pt-14 xl:scroll-mt-[120px]"
+      className="scroll-mt-[82px] bg-canvas px-4 pb-4 pt-8 text-ink min-[380px]:pt-10 sm:scroll-mt-[98px] sm:px-7 sm:pb-6 sm:pt-12 lg:px-10 lg:pb-8 lg:pt-14 xl:scroll-mt-[110px]"
     >
       <div className="mx-auto max-w-[1440px]">
         <MotionReveal className="mb-5 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
@@ -160,13 +160,13 @@ export function FeaturedProducts() {
             viewport={{ once: true, amount: 0.12 }}
             exit={{ opacity: 0, y: -8 }}
             onScroll={(event) => setActiveCard(getRailIndex(event.currentTarget))}
-            className="no-scrollbar flex w-full snap-x snap-mandatory items-stretch gap-3 overflow-x-auto overscroll-x-contain pb-4 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
+            className="no-scrollbar flex w-full snap-x snap-mandatory items-stretch gap-3 overflow-x-auto overscroll-x-contain pb-2 sm:gap-4 lg:grid lg:grid-cols-4 lg:gap-x-5 lg:gap-y-10 lg:overflow-visible lg:pb-0"
           >
             {visibleProducts.map((product) => (
               <motion.div
                 key={product.id}
                 variants={productItemVariants}
-                className="w-full min-w-0 shrink-0 snap-center self-stretch sm:w-auto sm:shrink"
+                className="w-[82vw] max-w-[340px] min-w-0 shrink-0 snap-start self-stretch sm:w-[42vw] lg:w-auto lg:max-w-none lg:shrink"
               >
                 <ProductCard product={product} viewportReveal={false} />
               </motion.div>

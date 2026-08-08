@@ -11,6 +11,7 @@ import {
 import { Link } from 'react-router-dom'
 import { ProductCard } from '../components/ProductCard'
 import { ProductGallery } from '../components/ProductGallery'
+import { PageReveal } from '../components/PageReveal'
 import { RailIndicator } from '../components/RailIndicator'
 import { useCatalog } from '../hooks/useCatalog'
 import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
@@ -110,7 +111,8 @@ function ProductDetailsContent({
     [product, products],
   )
 
-  // Alternate crops provide useful detail views until backend media is connected.
+  // Alternate focal points provide detail views without enlarging the source
+  // image, keeping every gallery frame sharp until backend media is connected.
   const fallbackGallery = [
     {
       src: product.image,
@@ -123,21 +125,18 @@ function ProductDetailsContent({
       alt: `${product.name}, upper detail`,
       label: 'Upper detail',
       objectPosition: '50% 22%',
-      imageScale: 1.28,
     },
     {
       src: product.image,
       alt: `${product.name}, fabric detail`,
       label: 'Fabric detail',
       objectPosition: '42% 48%',
-      imageScale: 1.55,
     },
     {
       src: product.image,
       alt: `${product.name}, lower detail`,
       label: 'Lower detail',
       objectPosition: '50% 78%',
-      imageScale: 1.3,
     },
   ]
   const galleryImages = product.gallery?.length
@@ -157,9 +156,9 @@ function ProductDetailsContent({
   }
 
   return (
-    <main className="bg-canvas text-ink">
+    <main className="w-full min-w-0 overflow-x-clip bg-canvas text-ink">
       <section className="px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
-        <div className="mx-auto max-w-[1440px]">
+        <PageReveal className="mx-auto max-w-[1440px]">
           <nav
             aria-label="Breadcrumb"
             className="mb-4 flex flex-wrap gap-x-2 gap-y-1 text-[8px] uppercase tracking-[0.12em] text-ink/45 min-[380px]:mb-5 min-[380px]:text-[9px] min-[380px]:tracking-[0.16em]"
@@ -171,7 +170,7 @@ function ProductDetailsContent({
             <span className="min-w-0 break-words text-ink">{product.name}</span>
           </nav>
 
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-8 xl:gap-10">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[488px_minmax(360px,500px)] lg:justify-center lg:gap-8 xl:gap-10">
             <ProductGallery images={galleryImages} productName={product.name} />
 
             {/* Product information remains visible while browsing the tall gallery. */}
@@ -242,7 +241,7 @@ function ProductDetailsContent({
                   className="flex h-12 w-full items-center justify-center gap-2 bg-ink px-4 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas disabled:cursor-not-allowed disabled:opacity-40 lg:h-10 lg:text-[8px]"
                 >
                   {added ? <FiCheck size={15} /> : <FiShoppingBag size={15} />}
-                  {product.available ? (added ? 'Added to cart' : 'Add to cart') : 'Out of stock'}
+                  {product.available ? (added ? 'Added' : 'Add') : 'Out of stock'}
                 </button>
               </div>
 
@@ -259,17 +258,17 @@ function ProductDetailsContent({
               </div>
             </div>
           </div>
-        </div>
+        </PageReveal>
       </section>
 
       <Reviews product={product} />
 
       <section aria-labelledby="related-heading" className="px-4 py-10 sm:px-7 sm:py-14 lg:px-10">
-        <div className="mx-auto max-w-[1440px]">
+        <PageReveal className="mx-auto max-w-[1440px]">
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">You may also like</p>
           <h2 id="related-heading" className="mt-2 text-3xl sm:text-4xl">Related products</h2>
 
-          {/* Phones display one centered, snap-aligned product at a time. */}
+          {/* Phones use the same bounded, snap-aligned rail as homepage products. */}
           <div
             className="no-scrollbar mt-6 flex w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-8 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
             onScroll={(event) =>
@@ -280,7 +279,7 @@ function ProductDetailsContent({
               <ProductCard
                 key={item.id}
                 product={item}
-                className="w-full min-w-0 shrink-0 snap-center sm:w-auto sm:shrink"
+                className="w-[82vw] max-w-[340px] min-w-0 shrink-0 snap-start sm:w-auto sm:max-w-none sm:shrink"
               />
             ))}
           </div>
@@ -288,7 +287,7 @@ function ProductDetailsContent({
             count={relatedProducts.length}
             activeIndex={activeRelatedProduct}
           />
-        </div>
+        </PageReveal>
       </section>
     </main>
   )
@@ -322,7 +321,7 @@ function Reviews({ product }: { product: ShopProduct }) {
       aria-labelledby="reviews-heading"
       className="border-y border-line px-4 py-10 sm:px-7 sm:py-14 lg:px-10"
     >
-      <div className="mx-auto grid grid-cols-[minmax(0,1fr)] max-w-[1440px] gap-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
+      <PageReveal className="mx-auto grid max-w-[1440px] grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
         <div>
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">What people say</p>
           <h2 id="reviews-heading" className="mt-2 text-3xl">Reviews</h2>
@@ -363,7 +362,7 @@ function Reviews({ product }: { product: ShopProduct }) {
             Read all reviews
           </button>
         </div>
-      </div>
+      </PageReveal>
     </section>
   )
 }
