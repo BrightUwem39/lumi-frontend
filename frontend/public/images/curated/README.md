@@ -10,4 +10,5 @@ Original filenames retain the photographer and Unsplash photo identifier:
 - `bags-edit.jpg` — Arno Senoner (`iUvQRvdIhsY`)
 
 The full-resolution originals are intentionally kept outside `public/` in the
-ignored `media-source/unsplash/` directory so they are not copied into builds.
+ignored `frontend/media-source/unsplash/` directory so they are not copied into
+builds.

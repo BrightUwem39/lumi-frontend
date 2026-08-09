@@ -10,14 +10,18 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.vite
+backend/coverage
+backend/src/generated
+backend/*.tsbuildinfo
 *.local
 .env
 .env.*
 !.env.example
 
 # Original photography and footage are kept locally. Only optimized,
-# production-ready selections belong in public/ and Git.
-media-source/
+# production-ready selections belong in frontend/public/ and Git.
+frontend/media-source/
 
 # Editor directories and files
 .vscode/*
