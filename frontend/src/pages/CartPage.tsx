@@ -12,18 +12,14 @@ import { Link } from 'react-router-dom'
 import { PageLoadingSkeleton } from '../components/LoadingSkeleton'
 import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
+import { commerceTerms, formatMoney } from '../lib/currency'
 import { useShopStore } from '../store/useShopStore'
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 2,
-})
 
 export function CartPage() {
   const reduceMotion = useReducedMotion()
   const { products, status: catalogStatus } = useCatalog()
   const cartItems = useShopStore((state) => state.cartItems)
+  const cartSizes = useShopStore((state) => state.cartSizes)
   const updateCartQuantity = useShopStore((state) => state.updateCartQuantity)
   const removeFromCart = useShopStore((state) => state.removeFromCart)
   const [coupon, setCoupon] = useState('')
@@ -47,10 +43,12 @@ export function CartPage() {
     0,
   )
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  const cartCurrency = items[0]?.product.currency ?? 'NGN'
+  const terms = commerceTerms(cartCurrency)
   const discount = subtotal * discountRate
-  const shipping = subtotal === 0 || subtotal >= 250 ? 0 : 18
+  const shipping = subtotal === 0 || subtotal >= terms.freeShippingThreshold ? 0 : terms.shipping
   const total = subtotal - discount + shipping
-  const remainingForFreeShipping = Math.max(0, 250 - subtotal)
+  const remainingForFreeShipping = Math.max(0, terms.freeShippingThreshold - subtotal)
 
   const applyCoupon = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -138,12 +136,13 @@ export function CartPage() {
                         </h2>
                         <p className="mt-2 text-[10px] text-ink/50">
                           Color: {product.color}
+                          {cartSizes[product.id] ? ` · Size: ${cartSizes[product.id]}` : ''}
                         </p>
                       </div>
                     </div>
 
                     <p className="col-start-2 text-sm sm:col-auto">
-                      {currency.format(product.price)}
+                      {formatMoney(product.price, product.currency)}
                     </p>
 
                     <div className="col-start-2 flex h-11 w-fit items-center border border-line sm:col-auto">
@@ -229,22 +228,22 @@ export function CartPage() {
               </form>
 
               <div className="mt-2 space-y-4 border-y border-line py-5 text-xs">
-                <SummaryRow label="Subtotal" value={currency.format(subtotal)} />
+                <SummaryRow label="Subtotal" value={formatMoney(subtotal, cartCurrency)} />
                 {discount > 0 && (
                   <SummaryRow
                     label="Coupon discount"
-                    value={`−${currency.format(discount)}`}
+                    value={`−${formatMoney(discount, cartCurrency)}`}
                   />
                 )}
                 <SummaryRow
                   label="Shipping"
-                  value={shipping === 0 ? 'Free' : currency.format(shipping)}
+                  value={shipping === 0 ? 'Free' : formatMoney(shipping, cartCurrency)}
                 />
               </div>
 
               {remainingForFreeShipping > 0 ? (
                 <p className="mt-4 text-[10px] leading-5 text-ink/55">
-                  Add {currency.format(remainingForFreeShipping)} more for free
+                  Add {formatMoney(remainingForFreeShipping, cartCurrency)} more for free
                   shipping.
                 </p>
               ) : (
@@ -257,7 +256,7 @@ export function CartPage() {
               <div className="mt-6 flex min-w-0 items-end justify-between gap-3">
                 <span className="text-sm">Total</span>
                 <strong className="min-w-0 text-right font-display text-2xl font-medium min-[380px]:text-3xl">
-                  {currency.format(total)}
+                  {formatMoney(total, cartCurrency)}
                 </strong>
               </div>
               <p className="mt-2 text-right text-[9px] text-ink/45">

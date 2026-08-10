@@ -1,19 +1,33 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+  removeWishlistProduct,
+  saveWishlistProduct,
+} from '../services/wishlist'
+import { useAuthStore } from './useAuthStore'
+import {
+  cartMutationsReady,
+  clearServerCart,
+  removeCartProduct,
+  setCartProduct,
+} from '../services/cart'
 
 // The shape of the shared shopping state used across unrelated components.
 type ShopState = {
   cartCount: number
   wishlistCount: number
   cartItems: Record<string, number>
+  cartSizes: Record<string, string>
   wishlistItems: string[]
   comparisonItems: string[]
   recentlyViewedItems: string[]
-  addToCart: (productId: string, quantity?: number) => void
+  addToCart: (productId: string, quantity?: number, size?: string) => void
   updateCartQuantity: (productId: string, quantity: number) => void
   removeFromCart: (productId: string) => void
   clearCart: () => void
+  setCartItems: (items: Record<string, number>, sizes?: Record<string, string>) => void
   toggleWishlist: (productId: string) => void
+  setWishlistItems: (productIds: string[]) => void
   toggleComparison: (productId: string) => void
   clearComparison: () => void
   addRecentlyViewed: (productId: string) => void
@@ -27,47 +41,155 @@ export const useShopStore = create<ShopState>()(
       cartCount: 0,
       wishlistCount: 0,
       cartItems: {},
+      cartSizes: {},
       wishlistItems: [],
       comparisonItems: [],
       recentlyViewedItems: [],
-      addToCart: (productId, quantity = 1) =>
+      addToCart: (productId, quantity = 1, size) => {
+        let previousQuantity = 0
+        let nextQuantity = 0
+        let previousSize: string | undefined
+        let nextSize: string | undefined
         set((state) => {
+          previousQuantity = state.cartItems[productId] ?? 0
+          previousSize = state.cartSizes[productId]
+          nextSize = size ?? previousSize
+          nextQuantity = Math.min(10, previousQuantity + quantity)
           const cartItems = {
             ...state.cartItems,
-            [productId]: (state.cartItems[productId] ?? 0) + quantity,
+            [productId]: nextQuantity,
           }
 
           return {
             cartItems,
+            cartSizes: nextSize
+              ? { ...state.cartSizes, [productId]: nextSize }
+              : state.cartSizes,
             cartCount: countCartItems(cartItems),
           }
-        }),
-      updateCartQuantity: (productId, quantity) =>
+        })
+        if (cartMutationsReady()) {
+          void setCartProduct(productId, nextQuantity, nextSize).catch(() => {
+            set((state) => rollbackCartQuantity(
+              state,
+              productId,
+              nextQuantity,
+              previousQuantity,
+              previousSize,
+            ))
+          })
+        }
+      },
+      updateCartQuantity: (productId, quantity) => {
+        let previousQuantity = 0
+        let previousSize: string | undefined
+        const nextQuantity = Math.min(quantity, 10)
         set((state) => {
+          previousQuantity = state.cartItems[productId] ?? 0
+          previousSize = state.cartSizes[productId]
           const cartItems = { ...state.cartItems }
-          if (quantity <= 0) delete cartItems[productId]
-          else cartItems[productId] = Math.min(quantity, 10)
+          const cartSizes = { ...state.cartSizes }
+          if (nextQuantity <= 0) delete cartItems[productId]
+          else cartItems[productId] = nextQuantity
+          if (nextQuantity <= 0) delete cartSizes[productId]
 
-          return { cartItems, cartCount: countCartItems(cartItems) }
-        }),
-      removeFromCart: (productId) =>
+          return { cartItems, cartSizes, cartCount: countCartItems(cartItems) }
+        })
+        if (cartMutationsReady()) {
+          const request = nextQuantity <= 0
+            ? removeCartProduct(productId)
+            : setCartProduct(productId, nextQuantity, useShopStore.getState().cartSizes[productId])
+          void request.catch(() => {
+            set((state) => rollbackCartQuantity(
+              state,
+              productId,
+              Math.max(0, nextQuantity),
+              previousQuantity,
+              previousSize,
+            ))
+          })
+        }
+      },
+      removeFromCart: (productId) => {
+        let previousQuantity = 0
+        let previousSize: string | undefined
         set((state) => {
+          previousQuantity = state.cartItems[productId] ?? 0
+          previousSize = state.cartSizes[productId]
           const cartItems = { ...state.cartItems }
+          const cartSizes = { ...state.cartSizes }
           delete cartItems[productId]
-          return { cartItems, cartCount: countCartItems(cartItems) }
-        }),
-      clearCart: () => set({ cartItems: {}, cartCount: 0 }),
-      toggleWishlist: (productId) =>
+          delete cartSizes[productId]
+          return { cartItems, cartSizes, cartCount: countCartItems(cartItems) }
+        })
+        if (cartMutationsReady()) {
+          void removeCartProduct(productId).catch(() => {
+            set((state) => rollbackCartQuantity(
+              state,
+              productId,
+              0,
+              previousQuantity,
+              previousSize,
+            ))
+          })
+        }
+      },
+      clearCart: () => {
+        let previousItems: Record<string, number> = {}
+        let previousSizes: Record<string, string> = {}
         set((state) => {
-          const wishlistItems = state.wishlistItems.includes(productId)
-            ? state.wishlistItems.filter((id) => id !== productId)
-            : [...state.wishlistItems, productId]
+          previousItems = state.cartItems
+          previousSizes = state.cartSizes
+          return { cartItems: {}, cartSizes: {}, cartCount: 0 }
+        })
+        if (cartMutationsReady()) {
+          void clearServerCart().catch(() => {
+            set((state) =>
+              Object.keys(state.cartItems).length === 0
+                ? {
+                    cartItems: previousItems,
+                    cartSizes: previousSizes,
+                    cartCount: countCartItems(previousItems),
+                  }
+                : state,
+            )
+          })
+        }
+      },
+      setCartItems: (items, sizes = {}) =>
+        set({ cartItems: items, cartSizes: sizes, cartCount: countCartItems(items) }),
+      toggleWishlist: (productId) => {
+        let adding = false
+        set((state) => {
+          adding = !state.wishlistItems.includes(productId)
+          const wishlistItems = adding
+            ? [...state.wishlistItems, productId]
+            : state.wishlistItems.filter((id) => id !== productId)
 
           return {
             wishlistItems,
             wishlistCount: wishlistItems.length,
           }
-        }),
+        })
+
+        if (useAuthStore.getState().status === 'authenticated') {
+          const request = adding
+            ? saveWishlistProduct(productId)
+            : removeWishlistProduct(productId)
+          void request.catch(() => {
+            set((state) => {
+              const currentlySaved = state.wishlistItems.includes(productId)
+              if (currentlySaved !== adding) return state
+              const wishlistItems = adding
+                ? state.wishlistItems.filter((id) => id !== productId)
+                : [...state.wishlistItems, productId]
+              return { wishlistItems, wishlistCount: wishlistItems.length }
+            })
+          })
+        }
+      },
+      setWishlistItems: (productIds) =>
+        set({ wishlistItems: productIds, wishlistCount: productIds.length }),
       toggleComparison: (productId) =>
         set((state) => ({
           comparisonItems: state.comparisonItems.includes(productId)
@@ -94,4 +216,22 @@ function countCartItems(cartItems: Record<string, number>) {
     (total, quantity) => total + quantity,
     0,
   )
+}
+
+function rollbackCartQuantity(
+  state: ShopState,
+  productId: string,
+  expectedQuantity: number,
+  previousQuantity: number,
+  previousSize?: string,
+) {
+  const currentQuantity = state.cartItems[productId] ?? 0
+  if (currentQuantity !== expectedQuantity) return state
+  const cartItems = { ...state.cartItems }
+  const cartSizes = { ...state.cartSizes }
+  if (previousQuantity <= 0) delete cartItems[productId]
+  else cartItems[productId] = previousQuantity
+  if (previousQuantity <= 0) delete cartSizes[productId]
+  else if (previousSize) cartSizes[productId] = previousSize
+  return { cartItems, cartSizes, cartCount: countCartItems(cartItems) }
 }

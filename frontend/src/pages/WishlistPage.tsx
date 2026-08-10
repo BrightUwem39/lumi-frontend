@@ -10,14 +10,9 @@ import { Link } from 'react-router-dom'
 import { PageLoadingSkeleton } from '../components/LoadingSkeleton'
 import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
+import { formatMoney } from '../lib/currency'
 import { useShopStore } from '../store/useShopStore'
 import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
 
 export function WishlistPage() {
   const reduceMotion = useReducedMotion()
@@ -136,10 +131,10 @@ export function WishlistPage() {
                       <Link to={`/product/${product.id}`}>{product.name}</Link>
                     </h2>
                     <div className="shrink-0 text-left text-xs min-[520px]:text-right">
-                      <span>{currency.format(product.price)}</span>
+                      <span>{formatMoney(product.price, product.currency)}</span>
                       {product.originalPrice && (
                         <span className="ml-1.5 text-ink/35 line-through">
-                          {currency.format(product.originalPrice)}
+                          {formatMoney(product.originalPrice, product.currency)}
                         </span>
                       )}
                     </div>

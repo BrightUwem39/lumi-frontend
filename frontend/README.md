@@ -2,6 +2,34 @@
 
 React/Vite frontend for the Lumi premium-fashion ecommerce experience.
 
+The storefront reads its catalog from the local Lumi API at `/api/v1/products`.
+During development, Vite proxies `/api` to `http://127.0.0.1:3000`. Curated
+local product data remains available as an offline fallback.
+
+Catalog and fallback prices use NGN, matching the Nigerian Paystack merchant.
+Currency travels with each product and order; UI formatters do not assume a
+global currency. Shipping is ₦25,000 and becomes free at ₦345,000, matching the
+authoritative checkout calculation.
+
+The profile route bootstraps the server-side cookie session and provides
+registration, email verification, sign-in, and sign-out flows. Guest wishlist
+items are merged into the authenticated wishlist at sign-in; subsequent
+mutations use the readable CSRF cookie and remain server-owned.
+
+The local cart is reconciled with `GET /api/v1/cart` after session bootstrap.
+Cart changes are optimistic, validated by the API against published products,
+sizes, and inventory, and rolled back when the server rejects a mutation.
+
+Authenticated profile order history comes from `/api/v1/orders`. Draft orders
+can be reopened and cancelled from the account UI; guest receipts remain bound
+to the signed cart cookie that created them.
+
+Order confirmation checks the backend payment-availability endpoint before it
+offers Paystack. Starting payment creates a server-owned session and redirects
+only to a validated Paystack HTTPS URL. The `/payment-return` route resolves the
+provider reference through the owner-authorized API and displays the resulting
+order state; callback query parameters are never treated as proof of payment.
+
 ## Structure
 
 - `src/components` — reusable storefront UI and commerce interactions

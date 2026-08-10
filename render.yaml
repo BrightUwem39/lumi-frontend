@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/renderinc/render-blueprint-schema/main/render.yaml.json
+
+services:
+  - type: pserv
+    name: lumi-api
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    autoDeployTrigger: commit
+    healthCheckPath: /api/v1/health/ready
+    preDeployCommand: npm run prisma:migrate:deploy
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: API_DOCS_ENABLED
+        value: "false"
+      - key: AUTH_DEV_TOKENS_ENABLED
+        value: "false"
+      - key: LOG_LEVEL
+        value: info
+      - key: TRUST_PROXY
+        value: "2"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: COOKIE_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lumi-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: lumi-key-value
+          property: connectionString
+      - key: PAYSTACK_ENABLED
+        value: "false"
+      - key: PAYSTACK_MODE
+        value: test
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_CALLBACK_URL
+        sync: false
+      - key: PAYSTACK_ALLOWED_CURRENCIES
+        value: NGN
+      - key: PAYMENT_RECONCILIATION_INTERVAL_SECONDS
+        value: "60"
+      - key: PAYMENT_RECONCILIATION_BATCH_SIZE
+        value: "25"
+
+  - type: web
+    name: lumi-storefront
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    autoDeployTrigger: commit
+    healthCheckPath: /healthz
+    envVars:
+      - key: BACKEND_UPSTREAM
+        fromService:
+          type: pserv
+          name: lumi-api
+          property: hostport
+
+  - type: keyvalue
+    name: lumi-key-value
+    plan: starter
+    region: frankfurt
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+    persistenceMode: journal-snapshot
+
+databases:
+  - name: lumi-postgres
+    plan: basic-256mb
+    region: frankfurt
+    databaseName: lumi
+    ipAllowList: []

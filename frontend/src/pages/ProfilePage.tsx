@@ -1,8 +1,7 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   LuBell as FiBell,
-  LuCheck as FiCheck,
   LuChevronRight as FiChevronRight,
   LuHeart as FiHeart,
   LuHouse as FiHome,
@@ -10,12 +9,18 @@ import {
   LuPackage as FiPackage,
   LuSettings as FiSettings,
   LuShoppingBag as FiShoppingBag,
+  LuLogOut as FiLogOut,
   LuUser as FiUser,
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
+import { ApiError } from '../services/api'
+import type { AuthUser } from '../services/auth'
+import { useAuthStore } from '../store/useAuthStore'
+import { formatMoney } from '../lib/currency'
+import { cancelOrder, fetchOrders, type OrderSummary } from '../services/orders'
 
 type ProfileTab = 'profile' | 'orders' | 'addresses' | 'wishlist' | 'settings'
 
@@ -27,45 +32,36 @@ const accountTabs: { id: ProfileTab; label: string; icon: ReactNode }[] = [
   { id: 'settings', label: 'Settings', icon: <FiSettings /> },
 ]
 
-const orderHistory = [
-  {
-    id: 'LUM-10482',
-    date: 'July 24, 2026',
-    status: 'Delivered',
-    items: 2,
-    total: '$354.00',
-  },
-  {
-    id: 'LUM-10311',
-    date: 'June 08, 2026',
-    status: 'Delivered',
-    items: 1,
-    total: '$245.00',
-  },
-  {
-    id: 'LUM-09876',
-    date: 'March 19, 2026',
-    status: 'Returned',
-    items: 3,
-    total: '$472.00',
-  },
-]
-
 export function ProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('profile')
   const reduceMotion = useReducedMotion()
+  const authStatus = useAuthStore((state) => state.status)
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+
+  if (authStatus === 'loading') return <AccountLoading />
+  if (authStatus === 'guest' || !user) return <AuthenticationPanel />
 
   return (
     <main className="min-h-[70svh] w-full min-w-0 overflow-x-clip bg-canvas px-4 py-6 text-ink sm:px-7 sm:py-8 lg:px-10 lg:py-10">
       <div className="mx-auto max-w-[1280px]">
         <PageReveal>
-          <div className="border-b border-line pb-6">
-            <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
-              My account
-            </p>
-            <h1 className="max-w-full break-words text-[clamp(1.85rem,9vw,2.25rem)] leading-[1.05] sm:text-5xl">
-              Welcome back, Amara.
-            </h1>
+          <div className="flex flex-wrap items-end justify-between gap-5 border-b border-line pb-6">
+            <div>
+              <p className="mb-2 text-[9px] uppercase tracking-[0.2em] text-ink/50">
+                My account
+              </p>
+              <h1 className="max-w-full break-words text-[clamp(1.85rem,9vw,2.25rem)] leading-[1.05] sm:text-5xl">
+                Welcome back, {user.firstName ?? 'there'}.
+              </h1>
+            </div>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="inline-flex min-h-11 items-center gap-2 border border-line px-5 text-[9px] font-medium uppercase tracking-[0.14em] hover:border-ink"
+            >
+              <FiLogOut size={14} /> Sign out
+            </button>
           </div>
         </PageReveal>
 
@@ -127,7 +123,7 @@ export function ProfilePage() {
                 exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -10 }}
                 transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
               >
-                {activeTab === 'profile' && <UserInformation />}
+                {activeTab === 'profile' && <UserInformation user={user} />}
                 {activeTab === 'orders' && <OrderHistory />}
                 {activeTab === 'addresses' && <SavedAddresses />}
                 {activeTab === 'wishlist' && <WishlistPreview />}
@@ -141,108 +137,288 @@ export function ProfilePage() {
   )
 }
 
-function UserInformation() {
-  const [saved, setSaved] = useState(false)
+type AuthenticationMode = 'login' | 'register' | 'verify'
 
-  const saveProfile = (event: FormEvent<HTMLFormElement>) => {
+function AuthenticationPanel() {
+  const [mode, setMode] = useState<AuthenticationMode>('login')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const login = useAuthStore((state) => state.login)
+  const register = useAuthStore((state) => state.register)
+  const verifyEmail = useAuthStore((state) => state.verifyEmail)
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSaved(true)
+    setBusy(true)
+    setError('')
+    setMessage('')
+    const data = new FormData(event.currentTarget)
+
+    try {
+      if (mode === 'login') {
+        await login(String(data.get('email')), String(data.get('password')))
+        return
+      }
+
+      if (mode === 'verify') {
+        const result = await verifyEmail(String(data.get('token')))
+        setMessage(result.message)
+        setMode('login')
+        return
+      }
+
+      const result = await register({
+        firstName: String(data.get('firstName')),
+        lastName: String(data.get('lastName')),
+        email: String(data.get('email')),
+        password: String(data.get('password')),
+      })
+      if (result.development?.verificationToken) {
+        const verified = await verifyEmail(result.development.verificationToken)
+        setMessage(verified.message)
+        setMode('login')
+      } else {
+        setMessage(result.message)
+        setMode('verify')
+      }
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError
+          ? caught.message
+          : 'The account service is temporarily unavailable.',
+      )
+    } finally {
+      setBusy(false)
+    }
   }
 
+  const selectMode = (nextMode: AuthenticationMode) => {
+    setMode(nextMode)
+    setError('')
+    setMessage('')
+  }
+
+  return (
+    <main className="grid min-h-[70svh] place-items-center bg-canvas px-4 py-10 text-ink sm:px-7">
+      <PageReveal className="w-full max-w-lg border border-line p-6 sm:p-9">
+        <p className="text-[9px] uppercase tracking-[0.2em] text-ink/45">
+          Lumi account
+        </p>
+        <h1 className="mt-2 text-3xl sm:text-4xl">
+          {mode === 'login'
+            ? 'Welcome back.'
+            : mode === 'register'
+              ? 'Create your account.'
+              : 'Verify your email.'}
+        </h1>
+        <p className="mt-3 text-xs leading-5 text-ink/55">
+          {mode === 'login'
+            ? 'Sign in to keep your wishlist private and available across devices.'
+            : mode === 'register'
+              ? 'Use a passphrase of at least 15 characters.'
+              : 'Paste the single-use token from your verification email.'}
+        </p>
+
+        <form onSubmit={submit} className="mt-7 space-y-4">
+          {mode === 'register' && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <AuthField label="First name" name="firstName" autoComplete="given-name" />
+              <AuthField label="Last name" name="lastName" autoComplete="family-name" />
+            </div>
+          )}
+          {mode !== 'verify' && (
+            <AuthField label="Email address" name="email" type="email" autoComplete="email" />
+          )}
+          {mode !== 'verify' && (
+            <AuthField
+              label="Password"
+              name="password"
+              type="password"
+              minLength={mode === 'register' ? 15 : undefined}
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+            />
+          )}
+          {mode === 'verify' && (
+            <AuthField label="Verification token" name="token" minLength={43} autoComplete="one-time-code" />
+          )}
+
+          {(error || message) && (
+            <p
+              role={error ? 'alert' : 'status'}
+              className={`text-xs leading-5 ${error ? 'text-red-700' : 'text-ink/60'}`}
+            >
+              {error || message}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={busy}
+            className="min-h-12 w-full bg-ink px-6 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas disabled:cursor-wait disabled:opacity-50"
+          >
+            {busy
+              ? 'Please wait…'
+              : mode === 'login'
+                ? 'Sign in'
+                : mode === 'register'
+                  ? 'Create account'
+                  : 'Verify email'}
+          </button>
+        </form>
+
+        <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-3 border-t border-line pt-5 text-[8px] font-medium uppercase tracking-[0.13em]">
+          {mode !== 'login' && (
+            <button type="button" onClick={() => selectMode('login')}>Sign in</button>
+          )}
+          {mode !== 'register' && (
+            <button type="button" onClick={() => selectMode('register')}>Create account</button>
+          )}
+          {mode !== 'verify' && (
+            <button type="button" onClick={() => selectMode('verify')}>Verify email</button>
+          )}
+        </div>
+      </PageReveal>
+    </main>
+  )
+}
+
+function AuthField({
+  label,
+  name,
+  type = 'text',
+  minLength,
+  autoComplete,
+}: {
+  label: string
+  name: string
+  type?: string
+  minLength?: number
+  autoComplete: string
+}) {
+  return (
+    <label className="block">
+      <FieldLabel>{label}</FieldLabel>
+      <input
+        name={name}
+        type={type}
+        minLength={minLength}
+        autoComplete={autoComplete}
+        required
+        className="mt-2 min-h-12 w-full border border-line bg-transparent px-4 text-sm outline-none focus:border-ink"
+      />
+    </label>
+  )
+}
+
+function AccountLoading() {
+  return (
+    <main className="grid min-h-[70svh] place-items-center bg-canvas text-ink">
+      <p className="text-[9px] uppercase tracking-[0.18em] text-ink/50">
+        Loading your account…
+      </p>
+    </main>
+  )
+}
+
+function UserInformation({ user }: { user: AuthUser }) {
   return (
     <AccountSection
       eyebrow="Personal details"
       title="User information"
-      description="Keep your contact information up to date."
+      description="Identity details verified for this account. Profile editing will be available in a later account update."
     >
-      <form
-        onSubmit={saveProfile}
-        className="mt-7 grid max-w-3xl gap-x-4 gap-y-5 sm:grid-cols-2"
-      >
-        <ProfileField label="First name" defaultValue="Amara" />
-        <ProfileField label="Last name" defaultValue="Okafor" />
-        <ProfileField
-          label="Email address"
-          type="email"
-          defaultValue="amara@example.com"
-        />
-        <ProfileField
-          label="Phone number"
-          type="tel"
-          defaultValue="+234 801 234 5678"
-        />
-        <ProfileField
-          label="Date of birth"
-          type="date"
-          defaultValue="1994-08-16"
-        />
-        <label>
-          <FieldLabel>Preferred size</FieldLabel>
-          <select
-            defaultValue="M"
-            className="mt-2 min-h-12 w-full border border-line bg-transparent px-4 text-sm outline-none focus:border-ink"
-          >
-            <option>XS</option>
-            <option>S</option>
-            <option>M</option>
-            <option>L</option>
-            <option>XL</option>
-          </select>
-        </label>
-
-        <div className="flex flex-col items-start gap-3 pt-2 sm:col-span-2 sm:flex-row sm:items-center">
-          <button
-            type="submit"
-            className="min-h-12 w-full bg-ink px-7 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas sm:w-auto"
-          >
-            Save changes
-          </button>
-          <span
-            aria-live="polite"
-            className="flex min-h-6 items-center gap-2 text-[10px] text-ink/55"
-          >
-            {saved && (
-              <>
-                <FiCheck size={13} />
-                Your details have been saved.
-              </>
-            )}
-          </span>
-        </div>
-      </form>
+      <dl className="mt-7 grid max-w-3xl gap-4 sm:grid-cols-2">
+        <IdentityField label="First name" value={user.firstName ?? 'Not provided'} />
+        <IdentityField label="Last name" value={user.lastName ?? 'Not provided'} />
+        <IdentityField label="Email address" value={user.email} />
+        <IdentityField label="Account role" value={user.role.toLowerCase()} />
+      </dl>
     </AccountSection>
   )
 }
 
+function IdentityField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border border-line p-4">
+      <dt className="text-[8px] font-medium uppercase tracking-[0.15em] text-ink/45">
+        {label}
+      </dt>
+      <dd className="mt-2 break-words text-sm">{value}</dd>
+    </div>
+  )
+}
+
 function OrderHistory() {
+  const [orders, setOrders] = useState<OrderSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [cancelling, setCancelling] = useState<string | null>(null)
+
+  const load = () => {
+    setLoading(true)
+    setError('')
+    void fetchOrders()
+      .then((response) => setOrders(response.items))
+      .catch((caught) => setError(
+        caught instanceof ApiError ? caught.message : 'Order history is unavailable.',
+      ))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(load, [])
+
+  const cancelDraft = async (orderNumber: string) => {
+    setCancelling(orderNumber)
+    setError('')
+    try {
+      await cancelOrder(orderNumber)
+      const response = await fetchOrders()
+      setOrders(response.items)
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'The draft could not be cancelled.')
+    } finally {
+      setCancelling(null)
+    }
+  }
+
   return (
     <AccountSection
       eyebrow="Purchases"
       title="Order history"
       description="Review previous purchases and delivery status."
     >
+      {loading ? (
+        <p className="mt-7 text-xs text-ink/50">Loading order history…</p>
+      ) : error && orders.length === 0 ? (
+        <div className="mt-7 border border-line p-6 text-sm"><p role="alert">{error}</p><button type="button" onClick={load} className="mt-4 border-b border-ink text-[9px] uppercase tracking-[0.14em]">Try again</button></div>
+      ) : orders.length === 0 ? (
+        <div className="mt-7 border border-line p-8 text-center text-sm text-ink/55">No server-backed orders yet.</div>
+      ) : (
       <div className="mt-7 divide-y divide-line border-y border-line">
-        {orderHistory.map((order) => (
+        {orders.map((order) => (
           <article
-            key={order.id}
+            key={order.number}
             className="grid gap-4 py-5 min-[480px]:grid-cols-[1fr_auto] min-[480px]:items-center sm:grid-cols-[1.1fr_1fr_0.7fr_auto]"
           >
             <div>
               <p className="text-[8px] uppercase tracking-[0.16em] text-ink/45">
                 Order
               </p>
-              <h3 className="mt-1 text-sm">{order.id}</h3>
+              <h3 className="mt-1 text-sm">{order.number}</h3>
             </div>
             <div>
               <p className="text-[8px] uppercase tracking-[0.16em] text-ink/45">
                 Date
               </p>
-              <p className="mt-1 text-xs">{order.date}</p>
+              <p className="mt-1 text-xs">{new Date(order.createdAt).toLocaleDateString()}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3 min-[480px]:col-span-1">
               <span
                 className={`px-2.5 py-1 text-[8px] uppercase tracking-[0.12em] ${
-                  order.status === 'Delivered'
+                  order.status === 'CANCELLED'
+                    ? 'border border-line text-ink/45'
+                    : order.status === 'DRAFT'
                     ? 'bg-ink text-canvas'
                     : 'border border-line'
                 }`}
@@ -250,20 +426,19 @@ function OrderHistory() {
                 {order.status}
               </span>
               <span className="text-xs">
-                {order.items} {order.items === 1 ? 'item' : 'items'} ·{' '}
-                {order.total}
+                {order.lineCount} {order.lineCount === 1 ? 'line' : 'lines'} ·{' '}
+                {formatMoney(Number(order.total), order.currency)}
               </span>
             </div>
-            <button
-              type="button"
-              className="flex min-h-10 items-center justify-between gap-2 border border-line px-3 text-[8px] uppercase tracking-[0.13em] hover:border-ink"
-            >
-              View order
-              <FiChevronRight size={13} />
-            </button>
+            <div className="flex gap-2">
+              <Link to={`/order-confirmation/${order.number}`} className="flex min-h-10 items-center gap-2 border border-line px-3 text-[8px] uppercase tracking-[0.13em] hover:border-ink">View <FiChevronRight size={13} /></Link>
+              {order.status === 'DRAFT' && <button type="button" disabled={cancelling === order.number} onClick={() => void cancelDraft(order.number)} className="min-h-10 border border-line px-3 text-[8px] uppercase tracking-[0.13em] disabled:opacity-50">{cancelling === order.number ? 'Cancelling…' : 'Cancel'}</button>}
+            </div>
           </article>
         ))}
       </div>
+      )}
+      {error && orders.length > 0 && <p role="alert" className="mt-4 text-xs text-red-700">{error}</p>}
     </AccountSection>
   )
 }
@@ -514,28 +689,6 @@ function AccountSection({
       </p>
       {children}
     </div>
-  )
-}
-
-function ProfileField({
-  label,
-  type = 'text',
-  defaultValue,
-}: {
-  label: string
-  type?: string
-  defaultValue: string
-}) {
-  return (
-    <label>
-      <FieldLabel>{label}</FieldLabel>
-      <input
-        type={type}
-        defaultValue={defaultValue}
-        required
-        className="mt-2 min-h-12 w-full min-w-0 border border-line bg-transparent px-4 text-sm transition-colors focus:border-ink"
-      />
-    </label>
   )
 }
 

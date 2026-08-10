@@ -18,6 +18,7 @@ backend/*.tsbuildinfo
 .env
 .env.*
 !.env.example
+deploy/production.env
 
 # Original photography and footage are kept locally. Only optimized,
 # production-ready selections belong in frontend/public/ and Git.

@@ -13,6 +13,7 @@ import {
 import { Link } from 'react-router-dom'
 import { useShopStore } from '../store/useShopStore'
 import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
+import { formatMoney } from '../lib/currency'
 import type { Product } from '../types/product'
 import { Skeleton } from './LoadingSkeleton'
 import { OptimizedImage } from './OptimizedImage'
@@ -22,12 +23,6 @@ type ProductCardProps = {
   className?: string
   viewportReveal?: boolean
 }
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
 
 // A reusable commerce card. All product-specific content arrives through props.
 export function ProductCard({
@@ -207,12 +202,12 @@ export function ProductCard({
 
           <div className="mt-3 flex min-h-10 flex-wrap content-start items-center gap-x-2.5 gap-y-1.5 sm:min-h-5">
             <span className="text-[11px] font-medium sm:text-[13px]">
-              {currency.format(product.price)}
+              {formatMoney(product.price, product.currency)}
             </span>
             {product.originalPrice && (
               <>
                 <span className="text-[9px] text-ink/35 line-through sm:text-[11px]">
-                  {currency.format(product.originalPrice)}
+                  {formatMoney(product.originalPrice, product.currency)}
                 </span>
                 <span className="border border-line px-1 py-0.5 text-[6px] font-medium uppercase tracking-[0.08em] text-ink/55 sm:px-1.5 sm:text-[7px] sm:tracking-[0.13em]">
                   Save {discount}%
@@ -285,10 +280,10 @@ export function ProductCard({
                   {product.name}
                 </h2>
                 <div className="mt-4 flex items-center gap-3">
-                  <span className="text-lg">{currency.format(product.price)}</span>
+                  <span className="text-lg">{formatMoney(product.price, product.currency)}</span>
                   {product.originalPrice && (
                     <span className="text-sm text-ink/40 line-through">
-                      {currency.format(product.originalPrice)}
+                      {formatMoney(product.originalPrice, product.currency)}
                     </span>
                   )}
                 </div>

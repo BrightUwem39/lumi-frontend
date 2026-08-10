@@ -15,6 +15,18 @@ const validEnvironment = {
   REDIS_URL: 'redis://127.0.0.1:6379',
 }
 
+const validProductionEnvironment = {
+  ...validEnvironment,
+  NODE_ENV: 'production',
+  HOST: '0.0.0.0',
+  API_DOCS_ENABLED: 'false',
+  TRUST_PROXY: '1',
+  CORS_ORIGINS: 'https://shop.example.com',
+  COOKIE_SECRET: 'a-production-secret-with-more-than-32-characters',
+  DATABASE_URL: 'postgresql://user:password@database.example.com:5432/lumi?sslmode=require',
+  REDIS_URL: 'rediss://default:password@redis.example.com:6379',
+}
+
 describe('validateEnvironment', () => {
   it('parses valid settings', () => {
     expect(validateEnvironment(validEnvironment)).toMatchObject({
@@ -44,5 +56,34 @@ describe('validateEnvironment', () => {
         AUTH_DEV_TOKENS_ENABLED: 'true',
       }),
     ).toThrow('Development authentication tokens are forbidden')
+  })
+
+  it('requires server-side provider settings when Paystack is enabled', () => {
+    expect(() =>
+      validateEnvironment({ ...validEnvironment, PAYSTACK_ENABLED: 'true' }),
+    ).toThrow('PAYSTACK_SECRET_KEY')
+  })
+
+  it('accepts hardened production settings', () => {
+    expect(validateEnvironment(validProductionEnvironment)).toMatchObject({
+      NODE_ENV: 'production', TRUST_PROXY: 1, PAYSTACK_MODE: 'test',
+    })
+  })
+
+  it('rejects localhost and HTTP origins in production', () => {
+    expect(() => validateEnvironment({
+      ...validProductionEnvironment,
+      CORS_ORIGINS: 'http://localhost:5173',
+    })).toThrow('public HTTPS origins')
+  })
+
+  it('requires a Paystack key matching the selected mode', () => {
+    expect(() => validateEnvironment({
+      ...validProductionEnvironment,
+      PAYSTACK_ENABLED: 'true',
+      PAYSTACK_MODE: 'live',
+      PAYSTACK_SECRET_KEY: 'sk_test_not-a-live-key',
+      PAYSTACK_CALLBACK_URL: 'https://shop.example.com/payment-return',
+    })).toThrow('live server-side Paystack secret key')
   })
 })

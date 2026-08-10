@@ -5,6 +5,7 @@ export type Product = {
   category: string
   image: string
   price: number
+  currency: string
   originalPrice?: number
   rating: number
   reviewCount: number
@@ -19,5 +20,5 @@ export type ShopProduct = Product & {
   brand: string
   description?: string
   gallery?: string[]
-  source?: 'curated' | 'dummyjson'
+  source?: 'curated' | 'api'
 }

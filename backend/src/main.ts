@@ -22,7 +22,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     adapter,
-    { bufferLogs: true },
+    { bufferLogs: true, rawBody: true },
   )
   const config = app.get(ConfigService)
 
@@ -54,7 +54,14 @@ async function bootstrap() {
     origin: parseCorsOrigins(config.getOrThrow<string>('CORS_ORIGINS')),
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Accept', 'Content-Type', 'X-CSRF-Token', 'X-Request-ID'],
+    allowedHeaders: [
+      'Accept',
+      'Content-Type',
+      'X-CSRF-Token',
+      'X-Cart-CSRF-Token',
+      'Idempotency-Key',
+      'X-Request-ID',
+    ],
     exposedHeaders: ['X-Request-ID'],
     maxAge: 600,
   })

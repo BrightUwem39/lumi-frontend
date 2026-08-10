@@ -1,0 +1,58 @@
+import { apiRequest, jsonBody } from './api'
+import { cartCsrfHeaders } from './cart'
+
+export type OrderDraft = {
+  number: string
+  status: 'DRAFT' | 'PENDING_PAYMENT' | 'PAID' | 'PROCESSING' | 'SHIPPED' |
+    'DELIVERED' | 'CANCELLED' | 'PAYMENT_FAILED' | 'REFUNDED' | 'PARTIALLY_REFUNDED'
+  email: string
+  shippingName: string
+  shippingAddress: {
+    line1: string
+    line2: string | null
+    city: string
+    region: string
+    postalCode: string | null
+    country: string
+  }
+  currency: string
+  subtotal: string
+  shippingTotal: string
+  total: string
+  createdAt: string
+  payable: boolean
+  items: Array<{
+    name: string
+    image: string | null
+    size: string
+    quantity: number
+    unitPrice: string
+    lineTotal: string
+  }>
+}
+
+export function createOrderDraft(
+  input: {
+    email: string
+    firstName: string
+    lastName: string
+    phone: string
+    line1: string
+    line2?: string
+    city: string
+    region: string
+    postalCode?: string
+    country: string
+  },
+  idempotencyKey: string,
+) {
+  return apiRequest<OrderDraft>('/checkout/orders', {
+    method: 'POST',
+    ...jsonBody(input),
+    headers: {
+      'Content-Type': 'application/json',
+      'Idempotency-Key': idempotencyKey,
+      ...cartCsrfHeaders(),
+    },
+  })
+}

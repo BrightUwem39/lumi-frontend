@@ -14,17 +14,12 @@ import { ProductGallery } from '../components/ProductGallery'
 import { PageReveal } from '../components/PageReveal'
 import { RailIndicator } from '../components/RailIndicator'
 import { useCatalog } from '../hooks/useCatalog'
+import { formatMoney } from '../lib/currency'
 import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
 import { useShopStore } from '../store/useShopStore'
 import type { ShopProduct } from '../types/product'
 import { getRailIndex } from '../utils/rail'
 import { getExpandedSizes } from '../utils/sizes'
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
 
 const reviews = [
   {
@@ -149,7 +144,7 @@ function ProductDetailsContent({
     : fallbackGallery
 
   const handleAddToCart = (source?: Element | null) => {
-    addToCart(product.id, 1)
+    addToCart(product.id, 1, selectedSize)
     launchCartFlight(createCartFlight(product.image, product.name, source))
     setAdded(true)
     window.setTimeout(() => setAdded(false), 1400)
@@ -193,10 +188,10 @@ function ProductDetailsContent({
               </div>
 
               <div className="mt-5 flex flex-wrap items-center gap-3 lg:mt-3 lg:gap-2">
-                <span className="text-lg lg:text-base">{currency.format(product.price)}</span>
+                <span className="text-lg lg:text-base">{formatMoney(product.price, product.currency)}</span>
                 {product.originalPrice && (
                   <span className="text-sm text-ink/40 line-through lg:text-xs">
-                    {currency.format(product.originalPrice)}
+                    {formatMoney(product.originalPrice, product.currency)}
                   </span>
                 )}
                 <a href="#reviews" className="ml-auto flex items-center gap-1.5 text-xs lg:text-[10px]">

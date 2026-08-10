@@ -20,12 +20,16 @@ import { TestimonialsSection } from './components/TestimonialsSection'
 import { CartPage } from './pages/CartPage'
 import { CheckoutPage } from './pages/CheckoutPage'
 import { OrderConfirmationPage } from './pages/OrderConfirmationPage'
+import { PaymentReturnPage } from './pages/PaymentReturnPage'
 import { JournalPage } from './pages/JournalPage'
 import { PolicyPage } from './pages/PolicyPage'
 import { ProductDetailsPage } from './pages/ProductDetailsPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ShopPage } from './pages/ShopPage'
 import { WishlistPage } from './pages/WishlistPage'
+import { useWishlistSync } from './hooks/useWishlistSync'
+import { useCartSync } from './hooks/useCartSync'
+import { useAuthStore } from './store/useAuthStore'
 
 function HomePage() {
   return (
@@ -76,6 +80,13 @@ function App() {
   const location = useLocation()
   const reduceMotion = useReducedMotion()
   const routeKey = `${location.pathname}${location.search}`
+  const initializeAuthentication = useAuthStore((state) => state.initialize)
+  useWishlistSync()
+  useCartSync()
+
+  useEffect(() => {
+    void initializeAuthentication()
+  }, [initializeAuthentication])
 
   return (
     <div className="min-h-screen bg-canvas text-ink transition-colors duration-300">
@@ -129,6 +140,7 @@ function App() {
               path="/order-confirmation/:orderNumber"
               element={<OrderConfirmationPage />}
             />
+            <Route path="/payment-return" element={<PaymentReturnPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/journal" element={<JournalPage />} />

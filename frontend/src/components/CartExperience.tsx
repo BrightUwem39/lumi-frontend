@@ -4,14 +4,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { LuArrowRight as FiArrowRight, LuMinus as FiMinus, LuPlus as FiPlus, LuShoppingBag as FiShoppingBag, LuTrash2 as FiTrash2, LuX as FiX } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { useCatalog } from '../hooks/useCatalog'
+import { formatMoney } from '../lib/currency'
 import { useCartUiStore, type CartFlight } from '../store/useCartUiStore'
 import { useShopStore } from '../store/useShopStore'
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
 
 // The flight, cart feedback, and drawer share one body-level presentation layer.
 export function CartExperience() {
@@ -94,6 +89,7 @@ function CartDrawer() {
   const open = useCartUiStore((state) => state.drawerOpen)
   const closeDrawer = useCartUiStore((state) => state.closeDrawer)
   const cartItems = useShopStore((state) => state.cartItems)
+  const cartSizes = useShopStore((state) => state.cartSizes)
   const updateQuantity = useShopStore((state) => state.updateCartQuantity)
   const removeFromCart = useShopStore((state) => state.removeFromCart)
   const { products } = useCatalog()
@@ -119,6 +115,7 @@ function CartDrawer() {
     [cartItems, products],
   )
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  const cartCurrency = items[0]?.product.currency ?? 'NGN'
 
   useEffect(() => {
     if (!open) return
@@ -194,7 +191,10 @@ function CartDrawer() {
                         <div className="min-w-0">
                           <p className="text-[8px] uppercase tracking-[0.14em] text-ink/45">{product.category}</p>
                           <h3 className="mt-1 line-clamp-2 text-sm leading-5">{product.name}</h3>
-                          <p className="mt-2 text-xs">{currency.format(product.price)}</p>
+                          <p className="mt-2 text-xs">{formatMoney(product.price, product.currency)}</p>
+                          {cartSizes[product.id] && (
+                            <p className="mt-1 text-[9px] text-ink/45">Size: {cartSizes[product.id]}</p>
+                          )}
                           <div className="mt-3 flex h-9 w-fit items-center border border-line">
                             <button type="button" aria-label={`Decrease ${product.name} quantity`} onClick={() => updateQuantity(product.id, quantity - 1)} className="grid size-8 place-items-center"><FiMinus size={12} /></button>
                             <motion.span key={quantity} initial={reduceMotion ? false : { scale: 0.65, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }} className="min-w-7 text-center text-[11px]">{quantity}</motion.span>
@@ -211,7 +211,7 @@ function CartDrawer() {
               <footer className="border-t border-line p-4 sm:p-6">
                 <div className="flex items-center justify-between text-sm">
                   <span>Subtotal</span>
-                  <motion.strong key={subtotal} initial={reduceMotion ? false : { scale: 0.88 }} animate={{ scale: 1 }} className="font-display text-xl font-medium">{currency.format(subtotal)}</motion.strong>
+                  <motion.strong key={subtotal} initial={reduceMotion ? false : { scale: 0.88 }} animate={{ scale: 1 }} className="font-display text-xl font-medium">{formatMoney(subtotal, cartCurrency)}</motion.strong>
                 </div>
                 <p className="mt-2 text-[9px] text-ink/45">Shipping and taxes calculated at checkout.</p>
                 <div className="mt-5 grid grid-cols-2 gap-2">

@@ -5,9 +5,15 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller.js'
 import { AuthModule } from './auth/auth.module.js'
+import { CatalogModule } from './catalog/catalog.module.js'
+import { CartModule } from './cart/cart.module.js'
+import { CheckoutModule } from './checkout/checkout.module.js'
+import { OrdersModule } from './orders/orders.module.js'
+import { PaymentsModule } from './payments/payments.module.js'
 import { validateEnvironment } from './config/environment.js'
 import { DatabaseModule } from './database/database.module.js'
 import { HealthModule } from './health/health.module.js'
+import { WishlistModule } from './wishlist/wishlist.module.js'
 
 @Module({
   imports: [
@@ -51,6 +57,12 @@ import { HealthModule } from './health/health.module.js'
     ]),
     DatabaseModule,
     AuthModule,
+    CatalogModule,
+    CartModule,
+    CheckoutModule,
+    OrdersModule,
+    PaymentsModule,
+    WishlistModule,
     HealthModule,
   ],
   controllers: [AppController],

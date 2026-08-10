@@ -28,7 +28,17 @@ const environmentSchema = z
     CORS_ORIGINS: z.string().min(1),
     COOKIE_SECRET: z.string().min(32),
     DATABASE_URL: z.string().url().startsWith('postgresql://'),
-    REDIS_URL: z.string().url().startsWith('redis://'),
+    REDIS_URL: z.string().url().refine(
+      (value) => value.startsWith('redis://') || value.startsWith('rediss://'),
+      'Redis URL must use redis:// or rediss://.',
+    ),
+    PAYSTACK_ENABLED: booleanFromString,
+    PAYSTACK_MODE: z.enum(['test', 'live']).default('test'),
+    PAYSTACK_SECRET_KEY: z.string().optional(),
+    PAYSTACK_CALLBACK_URL: z.string().url().optional(),
+    PAYSTACK_ALLOWED_CURRENCIES: z.string().regex(/^[A-Z]{3}(,[A-Z]{3})*$/).default('NGN'),
+    PAYMENT_RECONCILIATION_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(60),
+    PAYMENT_RECONCILIATION_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(25),
   })
   .superRefine((environment, context) => {
     const origins = environment.CORS_ORIGINS.split(',').map((origin) => origin.trim())
@@ -40,10 +50,7 @@ const environmentSchema = z
       })
     }
 
-    if (
-      environment.NODE_ENV === 'production' &&
-      environment.COOKIE_SECRET.includes('replace-with')
-    ) {
+    if (environment.NODE_ENV === 'production' && /replace|change|example|placeholder/i.test(environment.COOKIE_SECRET)) {
       context.addIssue({
         code: 'custom',
         path: ['COOKIE_SECRET'],
@@ -58,9 +65,84 @@ const environmentSchema = z
         message: 'Development authentication tokens are forbidden in production.',
       })
     }
+
+    if (environment.NODE_ENV === 'production') {
+      for (const origin of origins) {
+        try {
+          const parsed = new URL(origin)
+          if (parsed.protocol !== 'https:' || parsed.origin !== origin || isLocalHost(parsed.hostname)) {
+            throw new Error()
+          }
+        } catch {
+          context.addIssue({
+            code: 'custom',
+            path: ['CORS_ORIGINS'],
+            message: 'Production CORS origins must be exact public HTTPS origins.',
+          })
+          break
+        }
+      }
+      if (environment.TRUST_PROXY === false || environment.TRUST_PROXY === 0) {
+        context.addIssue({
+          code: 'custom',
+          path: ['TRUST_PROXY'],
+          message: 'Production must trust the known reverse-proxy hop.',
+        })
+      }
+      if (environment.API_DOCS_ENABLED) {
+        context.addIssue({
+          code: 'custom',
+          path: ['API_DOCS_ENABLED'],
+          message: 'API documentation must be disabled in production.',
+        })
+      }
+      for (const key of ['DATABASE_URL', 'REDIS_URL'] as const) {
+        if (isLocalHost(new URL(environment[key]).hostname)) {
+          context.addIssue({
+            code: 'custom',
+            path: [key],
+            message: `${key} cannot point to localhost in production.`,
+          })
+        }
+      }
+    }
+
+    if (environment.PAYSTACK_ENABLED) {
+      const requiredPrefix = environment.PAYSTACK_MODE === 'live' ? 'sk_live_' : 'sk_test_'
+      if (!environment.PAYSTACK_SECRET_KEY?.startsWith(requiredPrefix)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['PAYSTACK_SECRET_KEY'],
+          message: `A ${environment.PAYSTACK_MODE} server-side Paystack secret key is required when payments are enabled.`,
+        })
+      }
+      if (!environment.PAYSTACK_CALLBACK_URL) {
+        context.addIssue({
+          code: 'custom',
+          path: ['PAYSTACK_CALLBACK_URL'],
+          message: 'A Paystack callback URL is required when payments are enabled.',
+        })
+      }
+      if (
+        environment.NODE_ENV === 'production' &&
+        environment.PAYSTACK_CALLBACK_URL &&
+        (new URL(environment.PAYSTACK_CALLBACK_URL).protocol !== 'https:' ||
+          isLocalHost(new URL(environment.PAYSTACK_CALLBACK_URL).hostname))
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['PAYSTACK_CALLBACK_URL'],
+          message: 'Production Paystack callback URL must use public HTTPS.',
+        })
+      }
+    }
   })
 
 export type Environment = z.infer<typeof environmentSchema>
+
+function isLocalHost(hostname: string) {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+}
 
 // Nest calls this before creating modules so invalid or unsafe settings fail fast.
 export function validateEnvironment(input: Record<string, unknown>): Environment {

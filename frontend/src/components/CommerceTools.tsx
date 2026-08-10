@@ -9,14 +9,9 @@ import {
 } from 'react-icons/lu'
 import { Link, useLocation } from 'react-router-dom'
 import { useCatalog } from '../hooks/useCatalog'
+import { formatMoney } from '../lib/currency'
 import { useShopStore } from '../store/useShopStore'
 import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
 
 // Fixed commerce tools stay available without competing with primary navigation.
 export function CommerceTools() {
@@ -246,7 +241,7 @@ function ComparisonModal({
                 <CompareLabel>Price</CompareLabel>
                 {comparedProducts.map((product) => (
                   <CompareValue key={product.id}>
-                    {currency.format(product.price)}
+                    {formatMoney(product.price, product.currency)}
                   </CompareValue>
                 ))}
                 <CompareLabel>Category</CompareLabel>

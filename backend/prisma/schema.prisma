@@ -359,22 +359,29 @@ model OrderItem {
 }
 
 model Payment {
-  id                String          @id @default(uuid()) @db.Uuid
-  orderId           String          @map("order_id") @db.Uuid
-  provider          PaymentProvider
-  providerReference String          @unique @map("provider_reference") @db.VarChar(200)
-  status            PaymentStatus   @default(PENDING)
-  amount            Decimal         @db.Decimal(12, 2)
-  currency          String          @db.Char(3)
-  providerMetadata  Json?           @map("provider_metadata")
-  paidAt            DateTime?       @map("paid_at")
-  createdAt         DateTime        @default(now()) @map("created_at")
-  updatedAt         DateTime        @updatedAt @map("updated_at")
+  id                     String          @id @default(uuid()) @db.Uuid
+  orderId                String          @map("order_id") @db.Uuid
+  provider               PaymentProvider
+  providerReference      String          @unique @map("provider_reference") @db.VarChar(200)
+  status                 PaymentStatus   @default(PENDING)
+  amount                 Decimal         @db.Decimal(12, 2)
+  currency               String          @db.Char(3)
+  providerMetadata       Json?           @map("provider_metadata")
+  expiresAt              DateTime        @map("expires_at")
+  reconciliationAttempts Int             @default(0) @map("reconciliation_attempts")
+  nextReconcileAt        DateTime?       @map("next_reconcile_at")
+  lastReconciledAt       DateTime?       @map("last_reconciled_at")
+  reconciliationError    String?         @map("reconciliation_error") @db.VarChar(500)
+  paidAt                 DateTime?       @map("paid_at")
+  createdAt              DateTime        @default(now()) @map("created_at")
+  updatedAt              DateTime        @updatedAt @map("updated_at")
 
   order  Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
   events PaymentEvent[]
 
-  @@index([orderId, status])
+  @@unique([orderId, provider])
+  @@index([status, expiresAt])
+  @@index([status, nextReconcileAt])
   @@map("payments")
 }
 

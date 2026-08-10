@@ -3,6 +3,11 @@
 Lumi is organized as two independent TypeScript applications so browser code
 and trusted server code have an explicit boundary.
 
+Production container and release instructions are in
+[`docs/deployment.md`](docs/deployment.md). The selected Render hosting and
+Cloudflare DNS flow is documented in
+[`docs/render-cloudflare.md`](docs/render-cloudflare.md).
+
 ```text
 E-COMMERCE_APP/
 ├── frontend/          React, Vite, Tailwind CSS and storefront assets

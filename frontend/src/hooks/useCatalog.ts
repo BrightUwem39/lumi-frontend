@@ -19,8 +19,20 @@ function loadCatalog() {
   if (!catalogRequest) {
     catalogRequest = fetchFashionProducts()
       .then((apiProducts) => {
+        const products = apiProducts.map((product) => {
+          const editorial = curatedProducts.find((item) => item.id === product.id)
+          return editorial
+            ? {
+                ...editorial,
+                ...product,
+                rating: editorial.rating,
+                reviewCount: editorial.reviewCount,
+                badge: editorial.badge,
+              }
+            : product
+        })
         const value = {
-          products: [...curatedProducts, ...apiProducts],
+          products,
           status: 'ready' as const,
         }
         publish(value)

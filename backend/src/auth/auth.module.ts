@@ -6,6 +6,7 @@ import { CsrfGuard } from './guards/csrf.guard.js'
 import { RolesGuard } from './guards/roles.guard.js'
 import { SessionGuard } from './guards/session.guard.js'
 import { NoStoreInterceptor } from './no-store.interceptor.js'
+import { OptionalSessionGuard } from './guards/optional-session.guard.js'
 
 @Module({
   controllers: [AuthController],
@@ -16,7 +17,16 @@ import { NoStoreInterceptor } from './no-store.interceptor.js'
     CsrfGuard,
     RolesGuard,
     NoStoreInterceptor,
+    OptionalSessionGuard,
   ],
-  exports: [AuthService, SessionGuard, CsrfGuard, RolesGuard],
+  exports: [
+    AuthService,
+    AuthCookies,
+    SessionGuard,
+    CsrfGuard,
+    RolesGuard,
+    NoStoreInterceptor,
+    OptionalSessionGuard,
+  ],
 })
 export class AuthModule {}
