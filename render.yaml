@@ -9,7 +9,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     autoDeployTrigger: commit
-    dockerCommand: /bin/sh -c "npm run prisma:migrate:deploy && npm run prisma:seed && node dist/main.js"
+    dockerCommand: /app/render-start.sh
     healthCheckPath: /api/v1/health/ready
     envVars:
       - key: NODE_ENV

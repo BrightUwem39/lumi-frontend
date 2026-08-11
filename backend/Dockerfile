@@ -41,6 +41,8 @@ COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
 COPY --from=build --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build --chown=node:node /app/prisma ./prisma
+COPY --chown=node:node render-start.sh ./render-start.sh
+RUN chmod 0555 ./render-start.sh
 
 USER node
 EXPOSE 3000
