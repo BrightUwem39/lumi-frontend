@@ -15,9 +15,10 @@ Keep Paystack in test mode and do not accept real customer payments.
 
 ## 1. Create the free Neon database
 
-Create a Neon Free project and copy its PostgreSQL connection string. Use the
-pooled connection string when Neon offers both pooled and direct URLs. Keep it
-private; it will be entered in Render as `DATABASE_URL`.
+Create a Neon Free project and copy its PostgreSQL connection string. Choose the
+**Direct connection** because the Render startup command runs Prisma migrations
+before starting the API. Keep it private; it will be entered in Render as
+`DATABASE_URL`.
 
 ## 2. Create the free Render API
 
