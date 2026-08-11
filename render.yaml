@@ -9,7 +9,6 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     autoDeployTrigger: commit
-    healthCheckPath: /api/v1/health/ready
     preDeployCommand: npm run prisma:migrate:deploy
     envVars:
       - key: NODE_ENV
