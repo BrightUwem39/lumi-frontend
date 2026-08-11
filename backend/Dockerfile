@@ -38,6 +38,7 @@ RUN apt-get update \
 
 COPY --from=production-dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/src/generated ./src/generated
 COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
 COPY --from=build --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build --chown=node:node /app/prisma ./prisma
