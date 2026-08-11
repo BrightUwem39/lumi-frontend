@@ -1,5 +1,9 @@
 # Lumi Storefront
 
+For the free portfolio deployment, configure the Vercel project's Root
+Directory as `frontend`. The committed `vercel.json` supplies the Vite build,
+SPA fallback, security headers, and same-origin proxy to the free Render API.
+
 React/Vite frontend for the Lumi premium-fashion ecommerce experience.
 
 The storefront reads its catalog from the local Lumi API at `/api/v1/products`.

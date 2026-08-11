@@ -1,12 +1,11 @@
 # Production deployment
 
-For the selected Render and Cloudflare setup, follow
-[`render-cloudflare.md`](./render-cloudflare.md).
+For the selected zero-cost Vercel, Render, and Neon showcase setup, follow
+[`portfolio-deployment.md`](./portfolio-deployment.md).
 
 Lumi ships provider-neutral Docker targets for the React storefront, Nest API,
 and a one-shot Prisma migration job. The production Compose file expects
-managed PostgreSQL and Redis services; it does not place databases inside the
-application stack.
+managed PostgreSQL; it does not place a database inside the application stack.
 
 ## Architecture
 
@@ -16,7 +15,6 @@ Internet
     -> frontend:8080 (Nginx, SPA and security headers)
       -> backend:3000 (/api only, private Compose network)
         -> managed PostgreSQL
-        -> managed Redis
         -> Paystack API
 
 release -> migrate target -> prisma migrate deploy -> backend starts
@@ -30,8 +28,7 @@ terminator only after HTTPS is confirmed across the production domain.
 
 - Create PostgreSQL with automated backups, point-in-time recovery, TLS, and a
   least-privilege application role.
-- Create Redis with TLS and authentication. Lumi accepts `rediss://` URLs.
-- Create separate staging and production databases, Redis instances, Paystack
+- Create separate staging and production databases, Paystack
   keys, and domains. Never reuse production data or secrets in staging.
 
 ## 2. Configure secrets

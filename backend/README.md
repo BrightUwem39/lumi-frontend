@@ -1,23 +1,20 @@
 # Lumi API
 
-NestJS/Fastify API foundation for the Lumi ecommerce storefront. PostgreSQL is
-accessed through Prisma, while Redis is reserved for sessions, throttling,
-queues, and short-lived checkout reservations in later phases.
+NestJS/Fastify API for the Lumi ecommerce storefront. PostgreSQL is accessed
+through Prisma and stores the portfolio demo's application state.
 
 ## Local requirements
 
 - Node.js 24+
 - PostgreSQL 17+
-- Redis 7+
 
 Docker is optional. From the repository root,
 `docker compose -f backend/compose.yaml up -d`
-starts PostgreSQL and Redis bound only to the local machine. Docker is not
-required in production if a managed PostgreSQL and Redis provider is used.
+starts PostgreSQL bound only to the local machine. Docker is not required in
+production if a managed PostgreSQL provider is used.
 
 Lumi maps PostgreSQL to `127.0.0.1:5433` because this development computer
-already has another PostgreSQL service on the default host port `5432`. Redis
-uses `127.0.0.1:6379`.
+already has another PostgreSQL service on the default host port `5432`.
 
 ## Setup
 

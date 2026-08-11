@@ -28,10 +28,6 @@ const environmentSchema = z
     CORS_ORIGINS: z.string().min(1),
     COOKIE_SECRET: z.string().min(32),
     DATABASE_URL: z.string().url().startsWith('postgresql://'),
-    REDIS_URL: z.string().url().refine(
-      (value) => value.startsWith('redis://') || value.startsWith('rediss://'),
-      'Redis URL must use redis:// or rediss://.',
-    ),
     PAYSTACK_ENABLED: booleanFromString,
     PAYSTACK_MODE: z.enum(['test', 'live']).default('test'),
     PAYSTACK_SECRET_KEY: z.string().optional(),
@@ -96,14 +92,12 @@ const environmentSchema = z
           message: 'API documentation must be disabled in production.',
         })
       }
-      for (const key of ['DATABASE_URL', 'REDIS_URL'] as const) {
-        if (isLocalHost(new URL(environment[key]).hostname)) {
-          context.addIssue({
-            code: 'custom',
-            path: [key],
-            message: `${key} cannot point to localhost in production.`,
-          })
-        }
+      if (isLocalHost(new URL(environment.DATABASE_URL).hostname)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['DATABASE_URL'],
+          message: 'DATABASE_URL cannot point to localhost in production.',
+        })
       }
     }
 

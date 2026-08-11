@@ -12,7 +12,6 @@ const validEnvironment = {
   CORS_ORIGINS: 'http://127.0.0.1:5173',
   COOKIE_SECRET: 'test-only-cookie-secret-with-32-characters',
   DATABASE_URL: 'postgresql://user:password@127.0.0.1:5432/lumi_test',
-  REDIS_URL: 'redis://127.0.0.1:6379',
 }
 
 const validProductionEnvironment = {
@@ -24,7 +23,6 @@ const validProductionEnvironment = {
   CORS_ORIGINS: 'https://shop.example.com',
   COOKIE_SECRET: 'a-production-secret-with-more-than-32-characters',
   DATABASE_URL: 'postgresql://user:password@database.example.com:5432/lumi?sslmode=require',
-  REDIS_URL: 'rediss://default:password@redis.example.com:6379',
 }
 
 describe('validateEnvironment', () => {
