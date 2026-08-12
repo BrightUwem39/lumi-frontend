@@ -282,9 +282,9 @@ function AuthenticationPanel() {
   const copy = authenticationCopy[mode]
 
   return (
-    <main className="h-dvh w-full min-w-0 overflow-hidden bg-white px-4 text-[#171717] sm:px-6">
-      <PageReveal className="mx-auto flex h-full w-full max-w-[960px] flex-col">
-        <header className="shrink-0 pt-4 text-center sm:pt-5">
+    <main className="min-h-screen w-full min-w-0 overflow-x-hidden bg-white px-5 text-[#171717] sm:px-8">
+      <PageReveal className="mx-auto flex min-h-screen w-full max-w-[960px] flex-col">
+        <header className="shrink-0 pt-8 text-center sm:pt-10">
           <Link
             to="/"
             aria-label="Lumi home"
@@ -294,15 +294,15 @@ function AuthenticationPanel() {
           </Link>
         </header>
 
-        <section className="mx-auto flex min-h-0 w-full max-w-[440px] flex-1 flex-col justify-center py-2 sm:py-3">
+        <section className="mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center py-10 sm:py-14">
           <div className="w-full">
             <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-[#777]">{copy.eyebrow}</p>
-            <h1 className="mt-1.5 text-[1.55rem] font-semibold leading-tight tracking-[-0.035em] text-[#111] sm:text-[1.7rem]">{copy.title}</h1>
-            <p className="mt-1 max-w-lg text-xs leading-5 text-[#6b6b6b]">{copy.description}</p>
+            <h1 className="mt-2 text-[1.65rem] font-semibold leading-tight tracking-[-0.035em] text-[#111] sm:text-[1.8rem]">{copy.title}</h1>
+            <p className="mt-2 max-w-lg text-[13px] leading-5 text-[#6b6b6b]">{copy.description}</p>
 
-            <form key={mode} onSubmit={submit} noValidate className="mt-4 space-y-2.5">
+            <form key={mode} onSubmit={submit} noValidate className="mt-6 space-y-3.5">
           {mode === 'register' && (
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3.5">
               <AuthField label="First name" name="firstName" autoComplete="given-name" placeholder="Bright" />
               <AuthField label="Last name" name="lastName" autoComplete="family-name" placeholder="Uwem" />
             </div>
@@ -364,14 +364,14 @@ function AuthenticationPanel() {
 
             <AuthModeActions mode={mode} selectMode={selectMode} />
 
-            <p className="mt-4 text-center text-[9px] leading-4 text-[#858585]">
+            <p className="mt-6 text-center text-[10px] leading-5 text-[#858585]">
               By continuing, you agree to Lumi's{' '}
               <Link to="/policies/terms" className="underline underline-offset-2 hover:text-black">Terms &amp; conditions</Link>.
             </p>
           </div>
         </section>
 
-        <footer className="shrink-0 pb-3 text-center sm:pb-4">
+        <footer className="shrink-0 pb-8 text-center sm:pb-10">
           <Link to="/policies/privacy" className="text-[10px] text-[#666] underline decoration-[#bbb] underline-offset-2 transition-colors hover:text-black">
             Privacy policy
           </Link>
@@ -398,7 +398,7 @@ function AuthField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-medium text-[#3e3e3e]">{label}</span>
+      <span className="mb-1.5 block text-[11px] font-medium text-[#3e3e3e]">{label}</span>
       <input
         name={name}
         type={type}
@@ -421,7 +421,7 @@ function PasswordField({ label, name, minLength, autoComplete }: {
   const [visible, setVisible] = useState(false)
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-medium text-[#3e3e3e]">{label}</span>
+      <span className="mb-1.5 block text-[11px] font-medium text-[#3e3e3e]">{label}</span>
       <span className="relative block">
         <input
           name={name}
@@ -462,20 +462,20 @@ function AuthModeActions({ mode, selectMode }: {
 }) {
   if (mode === 'login') {
     return (
-      <div className="mt-4 text-center">
+      <div className="mt-6 text-center">
         <div className="flex items-center gap-4" aria-hidden="true">
           <span className="h-px flex-1 bg-[#dedede]" />
           <span className="text-[11px] text-[#737373]">or</span>
           <span className="h-px flex-1 bg-[#dedede]" />
         </div>
-        <button type="button" onClick={() => selectMode('register')} className="mt-3 flex h-11 w-full items-center justify-center rounded-xl border border-[#bdbdbd] bg-white px-5 text-xs font-semibold text-[#171717] transition-[border-color,background-color] hover:border-[#171717] hover:bg-[#f8f8f8]">Create an account</button>
-        <button type="button" onClick={() => selectMode('verify')} className="mx-auto mt-3 flex max-w-full items-center justify-center gap-2 text-center text-[10px] leading-4 text-[#737373] transition-colors hover:text-black"><LuMail size={12} className="shrink-0" /> <span>Already have a verification token?</span></button>
+        <button type="button" onClick={() => selectMode('register')} className="mt-4 flex h-11 w-full items-center justify-center rounded-xl border border-[#bdbdbd] bg-white px-5 text-xs font-semibold text-[#171717] transition-[border-color,background-color] hover:border-[#171717] hover:bg-[#f8f8f8]">Create an account</button>
+        <button type="button" onClick={() => selectMode('verify')} className="mx-auto mt-4 flex max-w-full items-center justify-center gap-2 text-center text-[10px] leading-4 text-[#737373] transition-colors hover:text-black"><LuMail size={12} className="shrink-0" /> <span>Already have a verification token?</span></button>
       </div>
     )
   }
 
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-[#dedede] pt-3 text-[10px] text-[#737373]">
+    <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-[#dedede] pt-4 text-[10px] text-[#737373]">
       <button type="button" onClick={() => selectMode('login')} className="font-semibold text-[#171717] underline decoration-[#aaa] underline-offset-4">Back to sign in</button>
       {mode !== 'register' && <button type="button" onClick={() => selectMode('register')} className="hover:text-black">Create account</button>}
       {mode !== 'verify' && <button type="button" onClick={() => selectMode('verify')} className="hover:text-black">Verify email</button>}
