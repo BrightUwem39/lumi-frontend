@@ -81,9 +81,6 @@ function App() {
   const reduceMotion = useReducedMotion()
   const routeKey = `${location.pathname}${location.search}`
   const initializeAuthentication = useAuthStore((state) => state.initialize)
-  const authStatus = useAuthStore((state) => state.status)
-  const isGuestAccountRoute =
-    location.pathname === '/profile' && authStatus !== 'authenticated'
   useWishlistSync()
   useCartSync()
 
@@ -94,8 +91,8 @@ function App() {
   return (
     <div className="min-h-screen bg-canvas text-ink transition-colors duration-300">
       <ScrollManager />
-      {!isGuestAccountRoute && <Navbar />}
-      {!isGuestAccountRoute && <CartExperience />}
+      <Navbar />
+      <CartExperience />
 
       {/* An NProgress-style bar advances in stages before completing and fading. */}
       <div
@@ -154,8 +151,8 @@ function App() {
         </motion.div>
       </AnimatePresence>
 
-      {!isGuestAccountRoute && <CommerceTools />}
-      {!isGuestAccountRoute && <Footer />}
+      <CommerceTools />
+      <Footer />
     </div>
   )
 }
