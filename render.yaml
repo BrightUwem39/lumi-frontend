@@ -20,6 +20,16 @@ services:
         value: "false"
       - key: AUTH_DEV_TOKENS_ENABLED
         value: "false"
+      - key: EMAIL_ENABLED
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM_ADDRESS
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: Lumi
+      - key: PUBLIC_APP_URL
+        sync: false
       - key: LOG_LEVEL
         value: info
       - key: TRUST_PROXY

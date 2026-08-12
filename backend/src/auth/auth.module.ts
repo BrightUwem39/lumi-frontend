@@ -7,11 +7,13 @@ import { RolesGuard } from './guards/roles.guard.js'
 import { SessionGuard } from './guards/session.guard.js'
 import { NoStoreInterceptor } from './no-store.interceptor.js'
 import { OptionalSessionGuard } from './guards/optional-session.guard.js'
+import { BrevoEmailService } from './brevo-email.service.js'
 
 @Module({
   controllers: [AuthController],
   providers: [
     AuthService,
+    BrevoEmailService,
     AuthCookies,
     SessionGuard,
     CsrfGuard,

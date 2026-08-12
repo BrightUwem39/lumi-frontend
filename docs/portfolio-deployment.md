@@ -29,6 +29,14 @@ Provide these prompted values:
 
 - `DATABASE_URL`: the private Neon PostgreSQL connection string.
 - `CORS_ORIGINS`: the exact Vercel production URL, with no trailing slash.
+- `EMAIL_ENABLED`: `true` after configuring the free Brevo sender.
+- `BREVO_API_KEY`: a server-side Brevo API key; never expose it in Vercel.
+- `EMAIL_FROM_ADDRESS`: the sender address verified in Brevo.
+- `PUBLIC_APP_URL`: the exact Vercel production URL, with no trailing slash.
+
+Brevo's free sender can deliver account verification and password-reset tokens
+without a custom domain. A domain-authenticated sender can replace it later for
+better deliverability.
 
 The free tier does not support a pre-deploy command, so the single API instance
 runs `prisma migrate deploy` and the idempotent catalog seed immediately before

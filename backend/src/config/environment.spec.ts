@@ -62,6 +62,23 @@ describe('validateEnvironment', () => {
     ).toThrow('PAYSTACK_SECRET_KEY')
   })
 
+  it('requires Brevo settings when email delivery is enabled', () => {
+    expect(() =>
+      validateEnvironment({ ...validEnvironment, EMAIL_ENABLED: 'true' }),
+    ).toThrow('BREVO_API_KEY')
+  })
+
+  it('accepts a verified sender configuration', () => {
+    expect(validateEnvironment({
+      ...validProductionEnvironment,
+      EMAIL_ENABLED: 'true',
+      BREVO_API_KEY: 'xkeysib-test-secret-value',
+      EMAIL_FROM_ADDRESS: 'sender@example.com',
+      EMAIL_FROM_NAME: 'Lumi',
+      PUBLIC_APP_URL: 'https://shop.example.com',
+    })).toMatchObject({ EMAIL_ENABLED: true, EMAIL_FROM_NAME: 'Lumi' })
+  })
+
   it('accepts hardened production settings', () => {
     expect(validateEnvironment(validProductionEnvironment)).toMatchObject({
       NODE_ENV: 'production', TRUST_PROXY: 1, PAYSTACK_MODE: 'test',

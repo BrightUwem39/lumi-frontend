@@ -24,6 +24,7 @@ import type {
   ResetPasswordDto,
   TokenDto,
 } from './dto/auth.dto.js'
+import { BrevoEmailService } from './brevo-email.service.js'
 
 type RequestMetadata = {
   ip: string
@@ -38,6 +39,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly email: BrevoEmailService,
   ) {
     this.cookieSecret = config.getOrThrow<string>('COOKIE_SECRET')
     this.exposeDevelopmentTokens =
@@ -55,6 +57,7 @@ export class AuthService {
     if (existing) {
       if (existing.status === UserStatus.PENDING_VERIFICATION) {
         const token = await this.replaceVerificationToken(existing.id)
+        await this.email.sendVerification(input.email, token)
         return this.acceptedRegistrationResponse(token)
       }
       return this.acceptedRegistrationResponse()
@@ -85,6 +88,7 @@ export class AuthService {
       throw error
     }
 
+    await this.email.sendVerification(input.email, token)
     return this.acceptedRegistrationResponse(token)
   }
 
@@ -279,6 +283,7 @@ export class AuthService {
       }),
     ])
 
+    await this.email.sendPasswordReset(input.email, token)
     return this.acceptedRecoveryResponse(token)
   }
 

@@ -21,6 +21,11 @@ const environmentSchema = z
     SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(168),
     VERIFICATION_TTL_MINUTES: z.coerce.number().int().min(5).max(10_080).default(1440),
     RESET_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
+    EMAIL_ENABLED: booleanFromString,
+    BREVO_API_KEY: z.string().min(20).optional(),
+    EMAIL_FROM_ADDRESS: z.string().email().optional(),
+    EMAIL_FROM_NAME: z.string().min(1).max(100).default('Lumi'),
+    PUBLIC_APP_URL: z.string().url().optional(),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
       .default('info'),
@@ -127,6 +132,41 @@ const environmentSchema = z
           code: 'custom',
           path: ['PAYSTACK_CALLBACK_URL'],
           message: 'Production Paystack callback URL must use public HTTPS.',
+        })
+      }
+    }
+
+    if (environment.EMAIL_ENABLED) {
+      if (!environment.BREVO_API_KEY) {
+        context.addIssue({
+          code: 'custom',
+          path: ['BREVO_API_KEY'],
+          message: 'A Brevo API key is required when email delivery is enabled.',
+        })
+      }
+      if (!environment.EMAIL_FROM_ADDRESS) {
+        context.addIssue({
+          code: 'custom',
+          path: ['EMAIL_FROM_ADDRESS'],
+          message: 'A verified sender address is required when email delivery is enabled.',
+        })
+      }
+      if (!environment.PUBLIC_APP_URL) {
+        context.addIssue({
+          code: 'custom',
+          path: ['PUBLIC_APP_URL'],
+          message: 'The public storefront URL is required when email delivery is enabled.',
+        })
+      } else if (
+        environment.NODE_ENV === 'production' &&
+        (new URL(environment.PUBLIC_APP_URL).protocol !== 'https:' ||
+          new URL(environment.PUBLIC_APP_URL).origin !== environment.PUBLIC_APP_URL ||
+          isLocalHost(new URL(environment.PUBLIC_APP_URL).hostname))
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['PUBLIC_APP_URL'],
+          message: 'The production storefront URL must be an exact public HTTPS origin.',
         })
       }
     }
