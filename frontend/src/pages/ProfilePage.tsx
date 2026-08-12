@@ -16,9 +16,7 @@ import {
   LuCircleCheck,
   LuEye,
   LuEyeOff,
-  LuKeyRound,
   LuMail,
-  LuShieldCheck,
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { PageReveal } from '../components/PageReveal'
@@ -287,29 +285,10 @@ function AuthenticationPanel() {
     <main className="relative grid min-h-[calc(100svh-5rem)] min-w-0 w-full grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden bg-canvas px-4 py-8 text-ink sm:px-7 sm:py-12 lg:px-10">
       <div aria-hidden="true" className="absolute -left-24 top-10 size-72 rounded-full bg-ink/[0.04] blur-3xl" />
       <div aria-hidden="true" className="absolute -right-24 bottom-8 size-80 rounded-full bg-ink/[0.06] blur-3xl" />
-      <PageReveal className="relative grid min-w-0 w-full max-w-[1080px] grid-cols-[minmax(0,1fr)] overflow-hidden border border-line bg-canvas shadow-[0_28px_90px_rgba(20,18,14,0.12)] lg:grid-cols-[0.86fr_1.14fr]">
-        <section className="relative hidden min-h-[650px] overflow-hidden bg-ink p-10 text-canvas lg:flex lg:flex-col lg:justify-between">
-          <div aria-hidden="true" className="absolute -right-24 -top-16 size-72 rounded-full border border-canvas/15" />
-          <div aria-hidden="true" className="absolute -bottom-32 -left-20 size-96 rounded-full border border-canvas/10" />
-          <div className="relative">
-            <Link to="/" className="font-display text-2xl tracking-[-0.03em]">Lumi.</Link>
-            <p className="mt-20 max-w-sm font-display text-4xl leading-[1.08]">
-              Your wardrobe,<br />thoughtfully collected.
-            </p>
-            <p className="mt-5 max-w-xs text-xs leading-6 text-canvas/60">
-              One account keeps every saved piece, order, and checkout detail close.
-            </p>
-          </div>
-          <div className="relative space-y-4">
-            <AuthBenefit icon={<LuShieldCheck />} text="Secure, private account access" />
-            <AuthBenefit icon={<LuCircleCheck />} text="Verified orders and payment history" />
-            <AuthBenefit icon={<LuKeyRound />} text="Simple email account recovery" />
-          </div>
-        </section>
-
+      <PageReveal className="relative min-w-0 w-full max-w-[620px] overflow-hidden border border-line bg-canvas shadow-[0_28px_90px_rgba(20,18,14,0.12)]">
         <section className="flex min-h-[620px] min-w-0 items-center p-6 sm:p-10 lg:p-14">
           <div className="mx-auto min-w-0 w-full max-w-[460px]">
-            <div className="mb-8 flex min-w-0 items-center justify-between gap-3 lg:hidden">
+            <div className="mb-8 flex min-w-0 items-center justify-between gap-3">
               <Link to="/" className="font-display text-2xl tracking-[-0.03em]">Lumi.</Link>
               <span className="shrink-0 rounded-full border border-line px-2.5 py-1.5 text-[7px] uppercase tracking-[0.12em] text-ink/50 min-[380px]:px-3 min-[380px]:text-[8px] min-[380px]:tracking-[0.16em]">Secure account</span>
             </div>
@@ -481,15 +460,6 @@ function AuthModeActions({ mode, selectMode }: {
       {mode !== 'register' && <button type="button" onClick={() => selectMode('register')} className="hover:text-ink">Create account</button>}
       {mode !== 'verify' && <button type="button" onClick={() => selectMode('verify')} className="hover:text-ink">Verify email</button>}
       {mode === 'forgot' && <button type="button" onClick={() => selectMode('reset')} className="hover:text-ink">I have a reset token</button>}
-    </div>
-  )
-}
-
-function AuthBenefit({ icon, text }: { icon: ReactNode; text: string }) {
-  return (
-    <div className="flex items-center gap-3 text-xs text-canvas/70">
-      <span className="grid size-9 place-items-center rounded-full border border-canvas/15 text-canvas">{icon}</span>
-      <span>{text}</span>
     </div>
   )
 }
