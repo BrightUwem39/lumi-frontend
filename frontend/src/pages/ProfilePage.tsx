@@ -478,7 +478,7 @@ function AuthModeActions({ mode, selectMode }: {
     <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-[#dedede] pt-4 text-[10px] text-[#737373]">
       <button type="button" onClick={() => selectMode('login')} className="font-semibold text-[#171717] underline decoration-[#aaa] underline-offset-4">Back to sign in</button>
       {mode !== 'register' && <button type="button" onClick={() => selectMode('register')} className="hover:text-black">Create account</button>}
-      {mode !== 'verify' && <button type="button" onClick={() => selectMode('verify')} className="hover:text-black">Verify email</button>}
+      {mode !== 'verify' && mode !== 'register' && <button type="button" onClick={() => selectMode('verify')} className="hover:text-black">Verify email</button>}
       {mode === 'forgot' && <button type="button" onClick={() => selectMode('reset')} className="hover:text-black">I have a reset token</button>}
     </div>
   )
