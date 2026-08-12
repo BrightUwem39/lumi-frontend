@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsString,
   Length,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator'
@@ -21,10 +22,12 @@ export class RegisterDto {
   @MaxLength(320)
   email!: string
 
-  @ApiProperty({ minLength: 15, maxLength: 128, writeOnly: true })
+  @ApiProperty({ minLength: 8, maxLength: 128, writeOnly: true })
   @IsString()
-  @MinLength(15)
+  @MinLength(8, { message: 'Password must be at least 8 characters.' })
   @MaxLength(128)
+  @Matches(/[A-Za-z]/, { message: 'Password must contain at least one letter.' })
+  @Matches(/\d/, { message: 'Password must contain at least one number.' })
   password!: string
 
   @ApiProperty({ example: 'Amara' })
@@ -66,7 +69,9 @@ export class TokenDto {
 
 export class ResetPasswordDto extends TokenDto {
   @IsString()
-  @MinLength(15)
+  @MinLength(8, { message: 'Password must be at least 8 characters.' })
   @MaxLength(128)
+  @Matches(/[A-Za-z]/, { message: 'Password must contain at least one letter.' })
+  @Matches(/\d/, { message: 'Password must contain at least one number.' })
   newPassword!: string
 }

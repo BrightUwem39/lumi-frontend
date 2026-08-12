@@ -122,6 +122,7 @@ function App() {
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={routeKey}
+          className="min-w-0 w-full overflow-x-clip"
           initial={reduceMotion ? false : { opacity: 0, x: 18, y: 8 }}
           animate={{ opacity: 1, x: 0, y: 0 }}
           exit={reduceMotion ? { opacity: 1 } : { opacity: 0, x: -12, y: -5 }}

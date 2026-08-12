@@ -42,6 +42,20 @@ export function verifyCustomerEmail(token: string) {
   })
 }
 
+export function requestCustomerPasswordReset(email: string) {
+  return apiRequest<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    ...jsonBody({ email }),
+  })
+}
+
+export function resetCustomerPassword(token: string, newPassword: string) {
+  return apiRequest<{ message: string }>('/auth/reset-password', {
+    method: 'POST',
+    ...jsonBody({ token, newPassword }),
+  })
+}
+
 export async function loginCustomer(email: string, password: string) {
   const response = await apiRequest<{ user: AuthUser; csrfToken: string }>(
     '/auth/login',

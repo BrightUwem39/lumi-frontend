@@ -11,13 +11,25 @@ import {
   LuShoppingBag as FiShoppingBag,
   LuLogOut as FiLogOut,
   LuUser as FiUser,
+  LuArrowRight,
+  LuCircleAlert,
+  LuCircleCheck,
+  LuEye,
+  LuEyeOff,
+  LuKeyRound,
+  LuMail,
+  LuShieldCheck,
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import { useShopStore } from '../store/useShopStore'
 import { ApiError } from '../services/api'
-import type { AuthUser } from '../services/auth'
+import {
+  requestCustomerPasswordReset,
+  resetCustomerPassword,
+  type AuthUser,
+} from '../services/auth'
 import { useAuthStore } from '../store/useAuthStore'
 import { formatMoney } from '../lib/currency'
 import { cancelOrder, fetchOrders, type OrderSummary } from '../services/orders'
@@ -137,7 +149,51 @@ export function ProfilePage() {
   )
 }
 
-type AuthenticationMode = 'login' | 'register' | 'verify'
+type AuthenticationMode = 'login' | 'register' | 'verify' | 'forgot' | 'reset'
+
+const authenticationCopy: Record<AuthenticationMode, {
+  eyebrow: string
+  title: string
+  description: string
+  submit: string
+  busy: string
+}> = {
+  login: {
+    eyebrow: 'Welcome back',
+    title: 'Sign in to Lumi',
+    description: 'Access your saved pieces, orders, and checkout details.',
+    submit: 'Sign in',
+    busy: 'Signing in…',
+  },
+  register: {
+    eyebrow: 'Join Lumi',
+    title: 'Create your account',
+    description: 'Save favourites, track orders, and move through checkout faster.',
+    submit: 'Create account',
+    busy: 'Creating account…',
+  },
+  verify: {
+    eyebrow: 'One last step',
+    title: 'Verify your email',
+    description: 'Paste the single-use token sent to your inbox.',
+    submit: 'Verify email',
+    busy: 'Verifying…',
+  },
+  forgot: {
+    eyebrow: 'Account recovery',
+    title: 'Forgot your password?',
+    description: 'Enter your email and we will send a secure reset token.',
+    submit: 'Send reset token',
+    busy: 'Sending token…',
+  },
+  reset: {
+    eyebrow: 'Choose a new password',
+    title: 'Reset your password',
+    description: 'Use the token from your email and choose a new secure password.',
+    submit: 'Update password',
+    busy: 'Updating password…',
+  },
+}
 
 function AuthenticationPanel() {
   const [mode, setMode] = useState<AuthenticationMode>('login')
@@ -154,10 +210,26 @@ function AuthenticationPanel() {
     setError('')
     setMessage('')
     const data = new FormData(event.currentTarget)
+    const password = String(data.get('password') ?? '')
+    const confirmPassword = String(data.get('confirmPassword') ?? '')
+
+    if (mode === 'register' || mode === 'reset') {
+      const passwordError = validateNewPassword(password)
+      if (passwordError) {
+        setError(passwordError)
+        setBusy(false)
+        return
+      }
+      if (password !== confirmPassword) {
+        setError('The passwords do not match. Please enter them again.')
+        setBusy(false)
+        return
+      }
+    }
 
     try {
       if (mode === 'login') {
-        await login(String(data.get('email')), String(data.get('password')))
+        await login(String(data.get('email')), password)
         return
       }
 
@@ -168,11 +240,25 @@ function AuthenticationPanel() {
         return
       }
 
+      if (mode === 'forgot') {
+        const result = await requestCustomerPasswordReset(String(data.get('email')))
+        setMessage(result.message)
+        setMode('reset')
+        return
+      }
+
+      if (mode === 'reset') {
+        const result = await resetCustomerPassword(String(data.get('token')), password)
+        setMessage(result.message)
+        setMode('login')
+        return
+      }
+
       const result = await register({
         firstName: String(data.get('firstName')),
         lastName: String(data.get('lastName')),
         email: String(data.get('email')),
-        password: String(data.get('password')),
+        password,
       })
       if (result.development?.verificationToken) {
         const verified = await verifyEmail(result.development.verificationToken)
@@ -183,11 +269,7 @@ function AuthenticationPanel() {
         setMode('verify')
       }
     } catch (caught) {
-      setError(
-        caught instanceof ApiError
-          ? caught.message
-          : 'The account service is temporarily unavailable.',
-      )
+      setError(authenticationErrorMessage(caught))
     } finally {
       setBusy(false)
     }
@@ -199,85 +281,107 @@ function AuthenticationPanel() {
     setMessage('')
   }
 
-  return (
-    <main className="grid min-h-[70svh] place-items-center bg-canvas px-4 py-10 text-ink sm:px-7">
-      <PageReveal className="w-full max-w-lg border border-line p-6 sm:p-9">
-        <p className="text-[9px] uppercase tracking-[0.2em] text-ink/45">
-          Lumi account
-        </p>
-        <h1 className="mt-2 text-3xl sm:text-4xl">
-          {mode === 'login'
-            ? 'Welcome back.'
-            : mode === 'register'
-              ? 'Create your account.'
-              : 'Verify your email.'}
-        </h1>
-        <p className="mt-3 text-xs leading-5 text-ink/55">
-          {mode === 'login'
-            ? 'Sign in to keep your wishlist private and available across devices.'
-            : mode === 'register'
-              ? 'Use a passphrase of at least 15 characters.'
-              : 'Paste the single-use token from your verification email.'}
-        </p>
+  const copy = authenticationCopy[mode]
 
-        <form onSubmit={submit} className="mt-7 space-y-4">
+  return (
+    <main className="relative grid min-h-[calc(100svh-5rem)] min-w-0 w-full grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden bg-canvas px-4 py-8 text-ink sm:px-7 sm:py-12 lg:px-10">
+      <div aria-hidden="true" className="absolute -left-24 top-10 size-72 rounded-full bg-ink/[0.04] blur-3xl" />
+      <div aria-hidden="true" className="absolute -right-24 bottom-8 size-80 rounded-full bg-ink/[0.06] blur-3xl" />
+      <PageReveal className="relative grid min-w-0 w-full max-w-[1080px] grid-cols-[minmax(0,1fr)] overflow-hidden border border-line bg-canvas shadow-[0_28px_90px_rgba(20,18,14,0.12)] lg:grid-cols-[0.86fr_1.14fr]">
+        <section className="relative hidden min-h-[650px] overflow-hidden bg-ink p-10 text-canvas lg:flex lg:flex-col lg:justify-between">
+          <div aria-hidden="true" className="absolute -right-24 -top-16 size-72 rounded-full border border-canvas/15" />
+          <div aria-hidden="true" className="absolute -bottom-32 -left-20 size-96 rounded-full border border-canvas/10" />
+          <div className="relative">
+            <Link to="/" className="font-display text-2xl tracking-[-0.03em]">Lumi.</Link>
+            <p className="mt-20 max-w-sm font-display text-4xl leading-[1.08]">
+              Your wardrobe,<br />thoughtfully collected.
+            </p>
+            <p className="mt-5 max-w-xs text-xs leading-6 text-canvas/60">
+              One account keeps every saved piece, order, and checkout detail close.
+            </p>
+          </div>
+          <div className="relative space-y-4">
+            <AuthBenefit icon={<LuShieldCheck />} text="Secure, private account access" />
+            <AuthBenefit icon={<LuCircleCheck />} text="Verified orders and payment history" />
+            <AuthBenefit icon={<LuKeyRound />} text="Simple email account recovery" />
+          </div>
+        </section>
+
+        <section className="flex min-h-[620px] min-w-0 items-center p-6 sm:p-10 lg:p-14">
+          <div className="mx-auto min-w-0 w-full max-w-[460px]">
+            <div className="mb-8 flex min-w-0 items-center justify-between gap-3 lg:hidden">
+              <Link to="/" className="font-display text-2xl tracking-[-0.03em]">Lumi.</Link>
+              <span className="shrink-0 rounded-full border border-line px-2.5 py-1.5 text-[7px] uppercase tracking-[0.12em] text-ink/50 min-[380px]:px-3 min-[380px]:text-[8px] min-[380px]:tracking-[0.16em]">Secure account</span>
+            </div>
+            <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-ink/45">{copy.eyebrow}</p>
+            <h1 className="mt-3 text-3xl leading-tight sm:text-[2.7rem]">{copy.title}</h1>
+            <p className="mt-3 max-w-md text-xs leading-5 text-ink/55">{copy.description}</p>
+
+            <form key={mode} onSubmit={submit} noValidate className="mt-8 space-y-4">
           {mode === 'register' && (
             <div className="grid gap-4 sm:grid-cols-2">
-              <AuthField label="First name" name="firstName" autoComplete="given-name" />
-              <AuthField label="Last name" name="lastName" autoComplete="family-name" />
+              <AuthField label="First name" name="firstName" autoComplete="given-name" placeholder="Bright" />
+              <AuthField label="Last name" name="lastName" autoComplete="family-name" placeholder="Uwem" />
             </div>
           )}
-          {mode !== 'verify' && (
-            <AuthField label="Email address" name="email" type="email" autoComplete="email" />
+          {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
+            <AuthField label="Email address" name="email" type="email" autoComplete="email" placeholder="you@example.com" />
           )}
-          {mode !== 'verify' && (
-            <AuthField
+          {(mode === 'login' || mode === 'register') && (
+            <PasswordField
               label="Password"
               name="password"
-              type="password"
-              minLength={mode === 'register' ? 15 : undefined}
+              minLength={mode === 'register' ? 8 : undefined}
               autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
             />
           )}
-          {mode === 'verify' && (
-            <AuthField label="Verification token" name="token" minLength={43} autoComplete="one-time-code" />
+          {mode === 'login' && (
+            <div className="-mt-1 flex justify-end">
+              <button type="button" onClick={() => selectMode('forgot')} className="text-[9px] font-medium text-ink/55 underline decoration-line underline-offset-4 transition-colors hover:text-ink">
+                Forgot password?
+              </button>
+            </div>
+          )}
+          {mode === 'register' && (
+            <>
+              <PasswordField label="Confirm password" name="confirmPassword" minLength={8} autoComplete="new-password" />
+              <PasswordRequirements />
+            </>
+          )}
+          {(mode === 'verify' || mode === 'reset') && (
+            <AuthField label={mode === 'verify' ? 'Verification token' : 'Reset token'} name="token" minLength={43} autoComplete="one-time-code" placeholder="Paste the token from your email" />
+          )}
+          {mode === 'reset' && (
+            <>
+              <PasswordField label="New password" name="password" minLength={8} autoComplete="new-password" />
+              <PasswordField label="Confirm new password" name="confirmPassword" minLength={8} autoComplete="new-password" />
+              <PasswordRequirements />
+            </>
           )}
 
           {(error || message) && (
-            <p
+            <div
               role={error ? 'alert' : 'status'}
-              className={`text-xs leading-5 ${error ? 'text-red-700' : 'text-ink/60'}`}
+              className={`flex items-start gap-3 border p-3.5 text-xs leading-5 ${error ? 'border-red-700/25 bg-red-700/[0.06] text-red-800 dark:text-red-300' : 'border-line bg-ink/[0.04] text-ink/70'}`}
             >
-              {error || message}
-            </p>
+              {error ? <LuCircleAlert className="mt-0.5 shrink-0" size={15} /> : <LuCircleCheck className="mt-0.5 shrink-0" size={15} />}
+              <span>{error || message}</span>
+            </div>
           )}
 
           <button
             type="submit"
             disabled={busy}
-            className="min-h-12 w-full bg-ink px-6 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas disabled:cursor-wait disabled:opacity-50"
+            className="group flex min-h-13 w-full items-center justify-center gap-2 bg-ink px-6 text-[9px] font-medium uppercase tracking-[0.16em] text-canvas transition-transform hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-50 disabled:hover:translate-y-0"
           >
-            {busy
-              ? 'Please wait…'
-              : mode === 'login'
-                ? 'Sign in'
-                : mode === 'register'
-                  ? 'Create account'
-                  : 'Verify email'}
+            {busy ? copy.busy : copy.submit}
+            {!busy && <LuArrowRight size={14} className="transition-transform group-hover:translate-x-1" />}
           </button>
         </form>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-3 border-t border-line pt-5 text-[8px] font-medium uppercase tracking-[0.13em]">
-          {mode !== 'login' && (
-            <button type="button" onClick={() => selectMode('login')}>Sign in</button>
-          )}
-          {mode !== 'register' && (
-            <button type="button" onClick={() => selectMode('register')}>Create account</button>
-          )}
-          {mode !== 'verify' && (
-            <button type="button" onClick={() => selectMode('verify')}>Verify email</button>
-          )}
-        </div>
+            <AuthModeActions mode={mode} selectMode={selectMode} />
+          </div>
+        </section>
       </PageReveal>
     </main>
   )
@@ -289,12 +393,14 @@ function AuthField({
   type = 'text',
   minLength,
   autoComplete,
+  placeholder,
 }: {
   label: string
   name: string
   type?: string
   minLength?: number
   autoComplete: string
+  placeholder?: string
 }) {
   return (
     <label className="block">
@@ -304,11 +410,104 @@ function AuthField({
         type={type}
         minLength={minLength}
         autoComplete={autoComplete}
+        placeholder={placeholder}
         required
-        className="mt-2 min-h-12 w-full border border-line bg-transparent px-4 text-sm outline-none focus:border-ink"
+        className="mt-2 min-h-13 w-full border border-line bg-transparent px-4 text-sm outline-none transition-colors placeholder:text-ink/30 focus:border-ink"
       />
     </label>
   )
+}
+
+function PasswordField({ label, name, minLength, autoComplete }: {
+  label: string
+  name: string
+  minLength?: number
+  autoComplete: string
+}) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <label className="block">
+      <FieldLabel>{label}</FieldLabel>
+      <span className="relative mt-2 block">
+        <input
+          name={name}
+          type={visible ? 'text' : 'password'}
+          minLength={minLength}
+          maxLength={128}
+          autoComplete={autoComplete}
+          required
+          className="min-h-13 w-full border border-line bg-transparent px-4 pr-13 text-sm outline-none transition-colors placeholder:text-ink/30 focus:border-ink"
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((current) => !current)}
+          aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+          aria-pressed={visible}
+          className="absolute inset-y-0 right-0 grid w-13 place-items-center text-ink/45 transition-colors hover:text-ink"
+        >
+          {visible ? <LuEyeOff size={17} /> : <LuEye size={17} />}
+        </button>
+      </span>
+    </label>
+  )
+}
+
+function PasswordRequirements() {
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-2 text-[9px] text-ink/45">
+      <span className="inline-flex items-center gap-1.5"><LuCircleCheck size={12} /> 8 or more characters</span>
+      <span className="inline-flex items-center gap-1.5"><LuCircleCheck size={12} /> At least one letter</span>
+      <span className="inline-flex items-center gap-1.5"><LuCircleCheck size={12} /> At least one number</span>
+    </div>
+  )
+}
+
+function AuthModeActions({ mode, selectMode }: {
+  mode: AuthenticationMode
+  selectMode: (mode: AuthenticationMode) => void
+}) {
+  if (mode === 'login') {
+    return (
+      <div className="mt-7 space-y-4 border-t border-line pt-6 text-center">
+        <p className="text-xs text-ink/55">New to Lumi?{' '}<button type="button" onClick={() => selectMode('register')} className="font-medium text-ink underline decoration-line underline-offset-4">Create an account</button></p>
+        <button type="button" onClick={() => selectMode('verify')} className="mx-auto flex max-w-full items-center justify-center gap-2 text-center text-[8px] uppercase leading-4 tracking-[0.1em] text-ink/45 hover:text-ink min-[380px]:text-[9px] min-[380px]:tracking-[0.13em]"><LuMail size={13} className="shrink-0" /> <span>Already have a verification token?</span></button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 border-t border-line pt-6 text-[9px] text-ink/50">
+      <button type="button" onClick={() => selectMode('login')} className="font-medium text-ink underline decoration-line underline-offset-4">Back to sign in</button>
+      {mode !== 'register' && <button type="button" onClick={() => selectMode('register')} className="hover:text-ink">Create account</button>}
+      {mode !== 'verify' && <button type="button" onClick={() => selectMode('verify')} className="hover:text-ink">Verify email</button>}
+      {mode === 'forgot' && <button type="button" onClick={() => selectMode('reset')} className="hover:text-ink">I have a reset token</button>}
+    </div>
+  )
+}
+
+function AuthBenefit({ icon, text }: { icon: ReactNode; text: string }) {
+  return (
+    <div className="flex items-center gap-3 text-xs text-canvas/70">
+      <span className="grid size-9 place-items-center rounded-full border border-canvas/15 text-canvas">{icon}</span>
+      <span>{text}</span>
+    </div>
+  )
+}
+
+function validateNewPassword(password: string) {
+  if (password.length < 8) return 'Password must be at least 8 characters.'
+  if (!/[A-Za-z]/.test(password)) return 'Password must contain at least one letter.'
+  if (!/\d/.test(password)) return 'Password must contain at least one number.'
+  return ''
+}
+
+function authenticationErrorMessage(error: unknown) {
+  if (!(error instanceof ApiError)) return 'The account service is temporarily unavailable. Please try again.'
+  if (error.status === 401) return 'Incorrect email or password. Please check your details and try again.'
+  if (error.status === 403) return 'Please verify your email before signing in.'
+  if (error.status === 429) return 'Too many attempts. Please wait a minute and try again.'
+  if (error.status >= 500) return 'The account service is temporarily unavailable. Please try again.'
+  return error.message
 }
 
 function AccountLoading() {
