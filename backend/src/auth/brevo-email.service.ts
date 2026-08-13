@@ -27,7 +27,7 @@ export class BrevoEmailService {
       text: [
         'Welcome to Lumi.',
         '',
-        'Paste this single-use verification token on the Lumi profile page:',
+        'Enter this single-use 6-digit verification code on the Lumi profile page:',
         token,
         '',
         `Profile: ${profileUrl}`,
@@ -36,8 +36,8 @@ export class BrevoEmailService {
       ].join('\n'),
       html: `
         <h1>Verify your Lumi account</h1>
-        <p>Paste this single-use verification token on the Lumi profile page:</p>
-        <p><code style="font-size:16px;word-break:break-all">${token}</code></p>
+        <p>Enter this single-use 6-digit verification code on the Lumi profile page:</p>
+        <p><code style="font-size:24px;letter-spacing:6px;font-weight:700">${token}</code></p>
         <p><a href="${profileUrl}">Open your Lumi profile</a></p>
         <p>This token expires in ${expiresInMinutes} minutes.</p>
         <p>If you did not create this account, you can ignore this email.</p>

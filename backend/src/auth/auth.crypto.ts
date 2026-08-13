@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto'
 import { argon2id, hash, verify } from 'argon2'
 
 const PASSWORD_HASH_OPTIONS = {
@@ -31,6 +31,10 @@ export async function verifyAgainstDummyPassword(password: string) {
 
 export function createOpaqueToken() {
   return randomBytes(32).toString('base64url')
+}
+
+export function createVerificationCode() {
+  return randomInt(0, 1_000_000).toString().padStart(6, '0')
 }
 
 export function hashToken(token: string) {

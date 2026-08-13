@@ -10,6 +10,7 @@ import { PrismaService } from '../database/prisma.service.js'
 import { AUTH_MESSAGES } from './auth.constants.js'
 import {
   createOpaqueToken,
+  createVerificationCode,
   hashPassword,
   hashPrivateIdentifier,
   hashToken,
@@ -23,6 +24,7 @@ import type {
   RegisterDto,
   ResetPasswordDto,
   TokenDto,
+  VerificationCodeDto,
 } from './dto/auth.dto.js'
 import { BrevoEmailService } from './brevo-email.service.js'
 
@@ -63,7 +65,7 @@ export class AuthService {
       return this.acceptedRegistrationResponse()
     }
 
-    const token = createOpaqueToken()
+    const token = createVerificationCode()
     const expiresAt = this.minutesFromNow(
       this.config.getOrThrow<number>('VERIFICATION_TTL_MINUTES'),
     )
@@ -92,10 +94,10 @@ export class AuthService {
     return this.acceptedRegistrationResponse(token)
   }
 
-  async verifyEmail(input: TokenDto) {
+  async verifyEmail(input: VerificationCodeDto) {
     const now = new Date()
     const record = await this.prisma.emailVerificationToken.findUnique({
-      where: { tokenHash: hashToken(input.token) },
+      where: { tokenHash: hashToken(input.code) },
       select: {
         id: true,
         userId: true,
@@ -111,7 +113,7 @@ export class AuthService {
       record.expiresAt <= now ||
       record.user.status !== UserStatus.PENDING_VERIFICATION
     ) {
-      throw new BadRequestException('The verification token is invalid or expired.')
+      throw new BadRequestException('The verification code is invalid or expired.')
     }
 
     await this.prisma.$transaction(async (transaction) => {
@@ -120,7 +122,7 @@ export class AuthService {
         data: { usedAt: now },
       })
       if (claimed.count !== 1) {
-        throw new BadRequestException('The verification token is invalid or expired.')
+        throw new BadRequestException('The verification code is invalid or expired.')
       }
 
       await transaction.user.update({
@@ -326,7 +328,7 @@ export class AuthService {
   }
 
   private async replaceVerificationToken(userId: string) {
-    const token = createOpaqueToken()
+    const token = createVerificationCode()
     const expiresAt = this.minutesFromNow(
       this.config.getOrThrow<number>('VERIFICATION_TTL_MINUTES'),
     )

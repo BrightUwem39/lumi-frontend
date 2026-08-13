@@ -8,25 +8,26 @@ const settings = {
   EMAIL_FROM_ADDRESS: 'sender@example.com',
   EMAIL_FROM_NAME: 'Lumi',
   PUBLIC_APP_URL: 'https://shop.example.com',
-  VERIFICATION_TTL_MINUTES: 1440,
+  VERIFICATION_TTL_MINUTES: 10,
   RESET_TTL_MINUTES: 30,
 }
 
 describe('BrevoEmailService', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('sends a verification token without exposing the API key in the body', async () => {
+  it('sends a six-digit verification code without exposing the API key', async () => {
     const request = vi.fn().mockResolvedValue(new Response(null, { status: 201 }))
     vi.stubGlobal('fetch', request)
     const service = new BrevoEmailService(new ConfigService(settings))
 
-    await service.sendVerification('customer@example.com', 'verification-token')
+    await service.sendVerification('customer@example.com', '042731')
 
     expect(request).toHaveBeenCalledOnce()
     const [url, options] = request.mock.calls[0] as [string, RequestInit]
     expect(url).toBe('https://api.brevo.com/v3/smtp/email')
     expect(options.headers).toMatchObject({ 'api-key': settings.BREVO_API_KEY })
-    expect(options.body).toContain('verification-token')
+    expect(options.body).toContain('042731')
+    expect(options.body).toContain('6-digit verification code')
     expect(options.body).not.toContain(settings.BREVO_API_KEY)
   })
 

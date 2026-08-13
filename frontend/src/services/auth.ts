@@ -35,10 +35,10 @@ export function registerCustomer(input: {
   })
 }
 
-export function verifyCustomerEmail(token: string) {
+export function verifyCustomerEmail(code: string) {
   return apiRequest<{ message: string }>('/auth/verify-email', {
     method: 'POST',
-    ...jsonBody({ token }),
+    ...jsonBody({ code }),
   })
 }
 

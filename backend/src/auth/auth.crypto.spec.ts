@@ -3,6 +3,7 @@ import {
   constantTimeStringMatch,
   constantTimeTokenMatch,
   createOpaqueToken,
+  createVerificationCode,
   hashPassword,
   hashToken,
   verifyPassword,
@@ -24,6 +25,12 @@ describe('authentication cryptography', () => {
     expect(hashToken(token)).toHaveLength(64)
     expect(constantTimeTokenMatch(token, hashToken(token))).toBe(true)
     expect(constantTimeTokenMatch(`${token}x`, hashToken(token))).toBe(false)
+  })
+
+  it('creates six-digit email verification codes', () => {
+    for (let index = 0; index < 100; index += 1) {
+      expect(createVerificationCode()).toMatch(/^\d{6}$/)
+    }
   })
 
   it('compares CSRF values without early string comparison', () => {

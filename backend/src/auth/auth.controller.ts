@@ -23,6 +23,7 @@ import {
   RegisterDto,
   ResetPasswordDto,
   TokenDto,
+  VerificationCodeDto,
 } from './dto/auth.dto.js'
 import { CsrfGuard } from './guards/csrf.guard.js'
 import { SessionGuard } from './guards/session.guard.js'
@@ -48,8 +49,8 @@ export class AuthController {
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Consumes a single-use email verification token' })
-  verifyEmail(@Body() input: TokenDto) {
+  @ApiOperation({ summary: 'Consumes a single-use six-digit email verification code' })
+  verifyEmail(@Body() input: VerificationCodeDto) {
     return this.auth.verifyEmail(input)
   }
 

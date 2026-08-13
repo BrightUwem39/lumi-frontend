@@ -173,7 +173,7 @@ const authenticationCopy: Record<AuthenticationMode, {
   verify: {
     eyebrow: 'One last step',
     title: 'Verify your email',
-    description: 'Paste the single-use token sent to your inbox.',
+    description: 'Enter the 6-digit code sent to your inbox. It expires in 10 minutes.',
     submit: 'Verify email',
     busy: 'Verifying…',
   },
@@ -210,6 +210,13 @@ function AuthenticationPanel() {
     const data = new FormData(event.currentTarget)
     const password = String(data.get('password') ?? '')
     const confirmPassword = String(data.get('confirmPassword') ?? '')
+    const verificationCode = String(data.get('token') ?? '').trim()
+
+    if (mode === 'verify' && !/^\d{6}$/.test(verificationCode)) {
+      setError('Enter the 6-digit verification code from your email.')
+      setBusy(false)
+      return
+    }
 
     if (mode === 'register' || mode === 'reset') {
       const passwordError = validateNewPassword(password)
@@ -232,7 +239,7 @@ function AuthenticationPanel() {
       }
 
       if (mode === 'verify') {
-        const result = await verifyEmail(String(data.get('token')))
+        const result = await verifyEmail(verificationCode)
         setMessage(result.message)
         setMode('login')
         return
@@ -331,8 +338,11 @@ function AuthenticationPanel() {
               <PasswordRequirements />
             </>
           )}
-          {(mode === 'verify' || mode === 'reset') && (
-            <AuthField label={mode === 'verify' ? 'Verification token' : 'Reset token'} name="token" minLength={43} autoComplete="one-time-code" placeholder="Paste the token from your email" />
+          {mode === 'verify' && (
+            <AuthField label="Verification code" name="token" minLength={6} maxLength={6} inputMode="numeric" pattern="[0-9]{6}" autoComplete="one-time-code" placeholder="Enter the 6-digit code" />
+          )}
+          {mode === 'reset' && (
+            <AuthField label="Reset token" name="token" minLength={43} maxLength={128} autoComplete="one-time-code" placeholder="Paste the token from your email" />
           )}
           {mode === 'reset' && (
             <>
@@ -386,6 +396,9 @@ function AuthField({
   name,
   type = 'text',
   minLength,
+  maxLength,
+  inputMode,
+  pattern,
   autoComplete,
   placeholder,
 }: {
@@ -393,6 +406,9 @@ function AuthField({
   name: string
   type?: string
   minLength?: number
+  maxLength?: number
+  inputMode?: 'numeric'
+  pattern?: string
   autoComplete: string
   placeholder?: string
 }) {
@@ -403,6 +419,9 @@ function AuthField({
         name={name}
         type={type}
         minLength={minLength}
+        maxLength={maxLength}
+        inputMode={inputMode}
+        pattern={pattern}
         autoComplete={autoComplete}
         placeholder={placeholder}
         required
@@ -469,7 +488,7 @@ function AuthModeActions({ mode, selectMode }: {
           <span className="h-px flex-1 bg-[#dedede]" />
         </div>
         <button type="button" onClick={() => selectMode('register')} className="mt-4 flex h-11 w-full items-center justify-center rounded-xl border border-[#bdbdbd] bg-white px-5 text-xs font-semibold text-[#171717] transition-[border-color,background-color] hover:border-[#171717] hover:bg-[#f8f8f8]">Create an account</button>
-        <button type="button" onClick={() => selectMode('verify')} className="mx-auto mt-4 flex max-w-full items-center justify-center gap-2 text-center text-[10px] leading-4 text-[#737373] transition-colors hover:text-black"><LuMail size={12} className="shrink-0" /> <span>Already have a verification token?</span></button>
+        <button type="button" onClick={() => selectMode('verify')} className="mx-auto mt-4 flex max-w-full items-center justify-center gap-2 text-center text-[10px] leading-4 text-[#737373] transition-colors hover:text-black"><LuMail size={12} className="shrink-0" /> <span>Already have a verification code?</span></button>
       </div>
     )
   }

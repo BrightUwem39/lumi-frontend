@@ -19,7 +19,7 @@ const environmentSchema = z
     API_DOCS_ENABLED: booleanFromString,
     AUTH_DEV_TOKENS_ENABLED: booleanFromString,
     SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(168),
-    VERIFICATION_TTL_MINUTES: z.coerce.number().int().min(5).max(10_080).default(1440),
+    VERIFICATION_TTL_MINUTES: z.coerce.number().int().min(5).max(30).default(10),
     RESET_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
     EMAIL_ENABLED: booleanFromString,
     BREVO_API_KEY: z.string().min(20).optional(),

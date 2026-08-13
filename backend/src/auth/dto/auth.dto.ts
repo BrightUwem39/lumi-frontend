@@ -61,7 +61,15 @@ export class EmailDto {
   email!: string
 }
 
+export class VerificationCodeDto {
+  @Transform(trimText)
+  @IsString()
+  @Matches(/^\d{6}$/, { message: 'Verification code must contain exactly 6 digits.' })
+  code!: string
+}
+
 export class TokenDto {
+  @Transform(trimText)
   @IsString()
   @Length(43, 128)
   token!: string
