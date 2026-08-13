@@ -1,7 +1,8 @@
 # Lumi API
 
 NestJS/Fastify API for the Lumi ecommerce storefront. PostgreSQL is accessed
-through Prisma and stores the portfolio demo's application state.
+through Prisma and stores the application's catalog, customer, cart, order,
+inventory, and payment state.
 
 ## Local requirements
 

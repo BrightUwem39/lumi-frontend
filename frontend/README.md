@@ -1,6 +1,6 @@
 # Lumi Storefront
 
-For the free portfolio deployment, configure the Vercel project's Root
+For the free-tier deployment, configure the Vercel project's Root
 Directory as `frontend`. The committed `vercel.json` supplies the Vite build,
 SPA fallback, security headers, and same-origin proxy to the free Render API.
 

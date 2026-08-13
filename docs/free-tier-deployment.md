@@ -1,6 +1,6 @@
-# Free portfolio deployment
+# Free-tier deployment
 
-This showcase deployment is designed to have no recurring infrastructure cost:
+This deployment is designed to have no recurring infrastructure cost:
 
 ```text
 Browser
@@ -9,7 +9,7 @@ Browser
       -> Neon Free: PostgreSQL
 ```
 
-It is a portfolio demo, not a production commerce deployment. Render's free API
+It is a pre-production test environment, not a live retail deployment. Render's free API
 spins down after 15 minutes without traffic and can take about a minute to wake.
 Keep Paystack in test mode and do not accept real customer payments.
 
@@ -64,7 +64,7 @@ headers, and same-origin `/api` rewrites to the Render API.
 After Vercel assigns the production URL, update `CORS_ORIGINS` in Render to that
 exact HTTPS origin and redeploy the API.
 
-## 4. Optional Paystack test demonstration
+## 4. Optional Paystack test checkout
 
 Only after both deployments work, add these environment variables to the Render
 API:

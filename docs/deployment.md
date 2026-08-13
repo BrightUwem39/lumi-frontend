@@ -1,7 +1,7 @@
 # Production deployment
 
-For the selected zero-cost Vercel, Render, and Neon showcase setup, follow
-[`portfolio-deployment.md`](./portfolio-deployment.md).
+For the selected zero-cost Vercel, Render, and Neon hosting setup, follow
+[`free-tier-deployment.md`](./free-tier-deployment.md).
 
 Lumi ships provider-neutral Docker targets for the React storefront, Nest API,
 and a one-shot Prisma migration job. The production Compose file expects

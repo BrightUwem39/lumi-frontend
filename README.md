@@ -1,6 +1,6 @@
 # Lumi — Full-Stack Fashion Commerce
 
-Lumi is a responsive fashion-commerce portfolio project built as a complete
+Lumi is a responsive full-stack fashion-commerce application built as a complete
 customer journey rather than a static storefront. Visitors can browse a live
 catalog, create and verify an account, manage a wishlist and cart, create an
 order, and complete a sandbox payment through Paystack.
@@ -26,7 +26,7 @@ order, and complete a sandbox payment through Paystack.
   parameters alone can never mark an order as paid.
 - Atomic inventory reservation, settlement, release, and scheduled payment
   reconciliation for ambiguous provider responses.
-- Containerized builds plus a deployed zero-cost portfolio architecture.
+- Containerized builds plus a deployed free-tier hosting architecture.
 
 ## Live architecture
 
@@ -65,7 +65,7 @@ cookie, CSRF, authorization, and validation controls.
 2. Add products to a guest cart with inventory validation.
 3. Register with an email and a password of at least eight characters containing
    a letter and a number.
-4. Verify the single-use token delivered by Brevo and sign in.
+4. Verify the six-digit code delivered by Brevo and sign in.
 5. Enter shipping details and create an idempotent order draft.
 6. Continue to Paystack's hosted test checkout.
 7. Paystack sends a signed event directly to the API.
@@ -74,7 +74,7 @@ cookie, CSRF, authorization, and validation controls.
 
 Official Paystack sandbox cards are available in the
 [Paystack test-payment documentation](https://paystack.com/docs/payments/test-payments/).
-Never enter a real card in this portfolio demo.
+Never enter a real card while Paystack is configured in test mode.
 
 ## Security and data ownership
 
@@ -106,7 +106,7 @@ E-COMMERCE_APP/
 ├── backend/               Nest API, Prisma schema/migrations, tests, and Dockerfile
 ├── docs/security/         Threat model, data classification, authorization matrix
 ├── docs/deployment.md     Container-based production deployment
-├── docs/portfolio-deployment.md
+├── docs/free-tier-deployment.md
 ├── render.yaml            Free Render API Blueprint
 └── compose.production.yaml
 ```
@@ -168,13 +168,13 @@ npm run build
 npm run prisma:validate
 ```
 
-The backend currently contains 42 passing tests across authentication, email,
+The backend currently contains 43 passing tests across authentication, email,
 catalog, cart, checkout, orders, wishlist, payments, environment validation,
 and application dependency wiring.
 
 ## Deployment
 
-The live portfolio uses free tiers and does not require a custom domain:
+The live application uses free tiers and does not require a custom domain:
 
 - Vercel serves `frontend` and applies the committed SPA/API rewrites.
 - Render builds the backend Docker image, applies Prisma migrations, seeds the
@@ -183,13 +183,14 @@ The live portfolio uses free tiers and does not require a custom domain:
 - Brevo sends account verification and password-reset messages.
 - Paystack remains permanently configured with test credentials for the demo.
 
-Follow [docs/portfolio-deployment.md](docs/portfolio-deployment.md) for the full
+Follow [docs/free-tier-deployment.md](docs/free-tier-deployment.md) for the full
 setup. Secrets belong only in provider environment settings and must never be
 committed or placed in `VITE_*` variables.
 
 ## Current scope
 
-Lumi is a portfolio demonstration, not a live retail business. Paystack stays
-in sandbox mode, fulfillment is simulated, and the free hosting services have
-development-tier availability limits. The architecture keeps a future custom
-domain or paid infrastructure upgrade separate from the application itself.
+Lumi is an e-commerce application currently operating in a pre-production test
+environment. Paystack stays in sandbox mode, fulfillment is not yet connected
+to a carrier, and the free hosting services have development-tier availability
+limits. The architecture keeps a future custom domain or paid infrastructure
+upgrade separate from the application itself.

@@ -1,10 +1,11 @@
 # Lumi Security Policy
 
-Lumi is currently a frontend demonstration. It does not provide production
-authentication, order processing, inventory control, or payment processing.
-Do not deploy the current checkout as a real payment experience.
+Lumi is a full-stack e-commerce application currently running in a
+pre-production test environment. It provides server-owned authentication,
+orders, inventory controls, and Paystack sandbox payment processing. Do not
+enable real payments until the production launch gate below is satisfied.
 
-The security requirements for the planned backend are maintained in:
+The security requirements for the backend are maintained in:
 
 - [Threat model](docs/security/THREAT_MODEL.md)
 - [Data classification](docs/security/DATA_CLASSIFICATION.md)
@@ -101,22 +102,16 @@ details, or production secrets in a report.
 - Keep development, staging, and production data and credentials separate.
 - Back up production data in encrypted storage and test restoration regularly.
 
-## Current frontend limitations
+## Current environment limitations
 
-The following behavior is demo-only and must not be treated as a secure source
-of truth:
-
-- Cart, wishlist, comparison, recently viewed products, newsletter email, and
-  theme preferences use browser storage.
-- Checkout totals and order numbers are calculated in the browser.
-- The last demo receipt stores a customer name, email, and delivery address in
-  `sessionStorage`.
-- The checkout displays fake payment inputs. It does not process a payment, but
-  real payment details must never be entered or retained there.
-- Product metadata is fetched from DummyJSON and is not authoritative inventory.
-
-Before launch, browser storage must contain only non-sensitive UI state. Orders,
-addresses, consent, inventory, and payment state must be server-owned.
+- Paystack is intentionally restricted to test mode; real card details must not
+  be used in the current environment.
+- Fulfilment is not connected to a delivery carrier and remains an operational
+  step outside the application.
+- Free-tier hosting may sleep or have development-tier availability limits.
+- Browser storage is limited to non-authoritative interface preferences and
+  recoverable client state; prices, inventory, orders, roles, and payment status
+  remain server-owned.
 
 ## Minimum launch gate
 
@@ -137,4 +132,3 @@ Production launch is blocked until all of the following are true:
   and
 - incident contacts, credential rotation, containment, and recovery procedures
   are documented and rehearsed.
-
