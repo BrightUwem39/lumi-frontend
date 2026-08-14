@@ -279,6 +279,7 @@ function ProductDetailsContent({
                 key={item.id}
                 product={item}
                 className="w-[calc((100%-0.75rem)/2)] min-w-0 shrink-0 snap-start sm:w-auto sm:shrink"
+                mediaClassName="!aspect-[3/5]"
               />
             ))}
           </div>

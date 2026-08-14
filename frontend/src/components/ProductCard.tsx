@@ -21,6 +21,7 @@ import { OptimizedImage } from './OptimizedImage'
 type ProductCardProps = {
   product: Product
   className?: string
+  mediaClassName?: string
   viewportReveal?: boolean
 }
 
@@ -28,6 +29,7 @@ type ProductCardProps = {
 export function ProductCard({
   product,
   className = '',
+  mediaClassName = '',
   viewportReveal = true,
 }: ProductCardProps) {
   const [quickViewOpen, setQuickViewOpen] = useState(false)
@@ -116,7 +118,7 @@ export function ProductCard({
           style={{ willChange: canTilt && !reduceMotion ? 'transform' : 'auto' }}
         >
         {/* Image area contains merchandising badges and fast product actions. */}
-        <div className="product-card-media relative aspect-[4/5] overflow-hidden bg-[#e8e5df]">
+        <div className={`product-card-media relative aspect-[4/5] overflow-hidden bg-[#e8e5df] ${mediaClassName}`}>
           {/* The skeleton disappears as soon as the product image is decoded. */}
           {!imageLoaded && (
             <Skeleton className="absolute inset-0 z-10" />
