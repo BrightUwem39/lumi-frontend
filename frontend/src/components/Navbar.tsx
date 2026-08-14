@@ -51,14 +51,13 @@ type CountIconProps = {
   pulseKey?: number
 }
 
-// A compact monogram keeps the brand recognizable on narrow screens, while
-// the complete wordmark appears as soon as the header has enough room.
+// The same complete mark appears at every width and scales with the header.
 function LumiLogo() {
   return (
-    <span className="flex items-center gap-2.5" aria-hidden="true">
+    <span className="flex items-center gap-1 sm:gap-2.5" aria-hidden="true">
       <svg
         viewBox="0 0 32 32"
-        className="size-6 shrink-0 min-[360px]:size-7 sm:size-8"
+        className="size-4 shrink-0 sm:size-8"
         fill="none"
       >
         <circle cx="16" cy="16" r="14.5" stroke="currentColor" />
@@ -70,7 +69,7 @@ function LumiLogo() {
         />
         <circle cx="22" cy="9" r="1.35" fill="currentColor" />
       </svg>
-      <span className="hidden font-display text-[28px] leading-none tracking-[0.18em] sm:inline xl:text-[31px]">
+      <span className="font-display text-[12px] leading-none tracking-[0.11em] sm:text-[28px] sm:tracking-[0.18em] xl:text-[31px]">
         LUMI
       </span>
     </span>
@@ -85,7 +84,7 @@ function CountIcon({ count, label, href = '#', children, onClick, cartTarget = f
       onClick={onClick}
       data-cart-target={cartTarget ? 'navbar' : undefined}
       aria-label={`${label}${count ? `, ${count} item${count === 1 ? '' : 's'}` : ''}`}
-      className="relative grid size-6 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-8 sm:size-10"
+      className="relative grid size-6 place-items-center transition-opacity hover:opacity-55 sm:size-10"
     >
       <motion.span
         key={cartTarget ? pulseKey : 'static-icon'}
@@ -204,14 +203,14 @@ export function Navbar() {
                 aria-expanded={searchOpen}
                 aria-controls="site-search-modal"
                 onClick={() => setSearchOpen(true)}
-                className="grid size-6 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-8 sm:size-10"
+                className="grid size-6 place-items-center transition-opacity hover:opacity-55 sm:size-10"
               >
                 <FiSearch size={18} strokeWidth={1.5} />
               </button>
               <Link
                 to="/profile"
                 aria-label="Account"
-                className="grid size-6 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-8 sm:size-10"
+                className="grid size-6 place-items-center transition-opacity hover:opacity-55 sm:size-10"
               >
                 <FiUser size={18} strokeWidth={1.5} />
               </Link>
@@ -244,7 +243,7 @@ export function Navbar() {
                 aria-label={`Switch to ${darkMode ? 'light' : 'dark'} mode`}
                 aria-pressed={darkMode}
                 onClick={toggleDarkMode}
-                className="grid size-6 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-8 sm:size-10"
+                className="grid size-6 place-items-center transition-opacity hover:opacity-55 sm:size-10"
               >
                 {darkMode ? (
                   <FiSun size={19} strokeWidth={1.5} />
