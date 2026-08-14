@@ -168,9 +168,9 @@ npm run build
 npm run prisma:validate
 ```
 
-The backend currently contains 43 passing tests across authentication, email,
-catalog, cart, checkout, orders, wishlist, payments, environment validation,
-and application dependency wiring.
+The backend currently contains 46 passing tests across authentication, email,
+authorization, administration, catalog, cart, checkout, orders, wishlist,
+payments, environment validation, and application dependency wiring.
 
 ## Deployment
 

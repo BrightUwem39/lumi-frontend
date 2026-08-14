@@ -56,6 +56,7 @@ never be used in production.
 - `GET /api/v1/payments/paystack/availability` — public provider availability without secrets
 - `GET /api/v1/payments/paystack/status/:reference` — owner-authorized return status
 - `POST /api/v1/payments/paystack/webhook` — receive signed provider events
+- `GET /api/v1/admin/dashboard` — administrator-only operational overview with audited access
 - `GET /api/docs-json` — OpenAPI schema when `API_DOCS_ENABLED=true`
 
 Catalog queries accept bounded `page` and `limit` values plus optional
