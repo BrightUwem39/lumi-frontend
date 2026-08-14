@@ -357,7 +357,8 @@ export function Navbar() {
 
               <a
                 href="tel:+2348005864000"
-                className="pt-6 text-[9px] uppercase tracking-[0.12em] text-ink/50 transition-colors hover:text-ink sm:mt-auto sm:pt-8 sm:text-[10px] sm:tracking-[0.16em]"
+                className="whitespace-nowrap pt-6 text-ink/50 transition-colors hover:text-ink sm:mt-auto sm:pt-8"
+                style={{ fontSize: 'clamp(11px, 3vw, 13px)', lineHeight: 1.4 }}
               >
                 Client services · +234 800 LUMI 000
               </a>
