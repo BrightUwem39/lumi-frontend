@@ -21,6 +21,11 @@ import {
 import { useShopStore } from '../store/useShopStore'
 import { useCartUiStore } from '../store/useCartUiStore'
 import { SearchModal } from './SearchModal'
+import { commerceTerms, formatMoney } from '../lib/currency'
+
+const freeShippingThreshold = formatMoney(
+  commerceTerms('NGN').freeShippingThreshold,
+)
 
 // Navigation data lives outside the component so it is not recreated on render.
 const navigation = [
@@ -137,9 +142,9 @@ export function Navbar() {
           to="/shop"
           className="flex h-7 w-full min-w-0 items-center justify-center overflow-hidden whitespace-nowrap bg-ink px-3 text-center text-[8px] font-medium uppercase tracking-[0.16em] text-canvas transition-opacity hover:opacity-90 sm:h-8 sm:px-4 sm:text-[10px] sm:tracking-[0.24em]"
         >
-          <span className="min-w-0 truncate sm:hidden">Free shipping over $250</span>
+          <span className="min-w-0 truncate sm:hidden">Free shipping from {freeShippingThreshold}</span>
           <span className="hidden min-w-0 truncate sm:inline">
-            Complimentary shipping on orders over $250
+            Complimentary shipping from {freeShippingThreshold}
           </span>
         </Link>
 

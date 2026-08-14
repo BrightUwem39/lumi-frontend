@@ -86,10 +86,10 @@ export function ShopPage() {
         category === 'All' || product.category === category
       const matchesPrice =
         priceFilter === 'all' ||
-        (priceFilter === '10-50' && product.price >= 10 && product.price <= 50) ||
-        (priceFilter === '50-150' && product.price > 50 && product.price <= 150) ||
-        (priceFilter === '150-250' && product.price > 150 && product.price <= 250) ||
-        (priceFilter === 'over-250' && product.price > 250)
+        (priceFilter === 'under-200000' && product.price < 200_000) ||
+        (priceFilter === '200000-300000' && product.price >= 200_000 && product.price < 300_000) ||
+        (priceFilter === '300000-400000' && product.price >= 300_000 && product.price < 400_000) ||
+        (priceFilter === 'over-400000' && product.price >= 400_000)
       const matchesSize =
         selectedSizes.length === 0 ||
         selectedSizes.some((size) => getExpandedSizes(product.sizes).includes(size))

@@ -64,14 +64,23 @@ function ScrollManager() {
   const location = useLocation()
 
   useEffect(() => {
+    let settleTimer: number | undefined
+
     if (location.hash) {
-      requestAnimationFrame(() => {
+      settleTimer = window.setTimeout(() => {
         document.querySelector(location.hash)?.scrollIntoView()
-      })
-      return
+      }, 380)
+    } else {
+      const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'auto' })
+      scrollToTop()
+      // AnimatePresence renders the incoming route after the outgoing route exits.
+      // Reset once more when that transition has settled so short pages do not
+      // inherit the previous page's scroll position.
+      settleTimer = window.setTimeout(scrollToTop, 380)
     }
-    window.scrollTo({ top: 0, behavior: 'auto' })
-  }, [location])
+
+    return () => window.clearTimeout(settleTimer)
+  }, [location.hash, location.pathname, location.search])
 
   return null
 }

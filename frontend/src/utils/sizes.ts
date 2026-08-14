@@ -3,13 +3,7 @@ export const APPAREL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 export const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42']
 export const SHOP_SIZE_OPTIONS = [...APPAREL_SIZES, ...SHOE_SIZES]
 
-// Catalogue APIs may return only a few sizes, so the storefront presents a complete range.
+// Product controls must only offer sizes the catalogue says are available.
 export const getExpandedSizes = (sizes: string[]) => {
-  if (sizes.length === 1 && sizes[0].toLowerCase() === 'one size') return sizes
-
-  const sizeRange = sizes.every((size) => /^\d+$/.test(size))
-    ? SHOE_SIZES
-    : APPAREL_SIZES
-
-  return Array.from(new Set([...sizeRange, ...sizes]))
+  return Array.from(new Set(sizes.map((size) => size.trim()).filter(Boolean)))
 }

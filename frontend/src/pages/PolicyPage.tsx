@@ -1,6 +1,11 @@
 import { LuArrowLeft as FiArrowLeft, LuMail as FiMail, LuPhone as FiPhone } from 'react-icons/lu'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { PageReveal } from '../components/PageReveal'
+import { commerceTerms, formatMoney } from '../lib/currency'
+
+const freeShippingThreshold = formatMoney(
+  commerceTerms('NGN').freeShippingThreshold,
+)
 
 type Policy = {
   eyebrow: string
@@ -18,7 +23,7 @@ const policies: Record<string, Policy> = {
     sections: [
       { heading: 'Processing your order', paragraphs: ['Orders are prepared within one to two business days. Once your parcel leaves us, you’ll receive an email with tracking information.'] },
       { heading: 'Delivery timing', paragraphs: ['Deliveries within Nigeria typically arrive in two to five business days. International deliveries generally take five to ten business days, depending on the destination and customs.'] },
-      { heading: 'Shipping costs', paragraphs: ['Standard shipping is complimentary on orders over $250. Available delivery options and final costs are shown before you place your order.'] },
+      { heading: 'Shipping costs', paragraphs: [`Standard shipping is complimentary from ${freeShippingThreshold}. Available delivery options and final costs are shown before you place your order.`] },
       { heading: 'Need a hand?', paragraphs: ['If tracking has not updated or your parcel is delayed, contact us with your order number and we’ll look into it.'] },
     ],
   },

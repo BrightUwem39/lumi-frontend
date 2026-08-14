@@ -14,7 +14,7 @@ import { ProductGallery } from '../components/ProductGallery'
 import { PageReveal } from '../components/PageReveal'
 import { RailIndicator } from '../components/RailIndicator'
 import { useCatalog } from '../hooks/useCatalog'
-import { formatMoney } from '../lib/currency'
+import { commerceTerms, formatMoney } from '../lib/currency'
 import { createCartFlight, useCartUiStore } from '../store/useCartUiStore'
 import { useShopStore } from '../store/useShopStore'
 import type { ShopProduct } from '../types/product'
@@ -41,6 +41,10 @@ const reviews = [
     text: 'A very polished piece. I sized up for a little more room and the fit is now perfect.',
   },
 ]
+
+const freeShippingThreshold = formatMoney(
+  commerceTerms('NGN').freeShippingThreshold,
+)
 
 // Product details combines shop data with purchasing controls and supporting content.
 export function ProductDetailsPage({ productId }: { productId: string }) {
@@ -243,7 +247,7 @@ function ProductDetailsContent({
               {/* Native disclosure controls keep delivery information accessible. */}
               <div className="mt-7 border-t border-line lg:mt-4">
                 <DeliveryRow icon={<FiTruck />} title="Delivery & returns">
-                  Free standard delivery over $150. Returns are accepted within
+                  Free standard delivery from {freeShippingThreshold}. Returns are accepted within
                   30 days in their original condition.
                 </DeliveryRow>
                 <DeliveryRow icon={<FiShield />} title="Materials & care">

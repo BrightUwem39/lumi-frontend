@@ -8,10 +8,10 @@ import {
 
 export type PriceFilter =
   | 'all'
-  | '10-50'
-  | '50-150'
-  | '150-250'
-  | 'over-250'
+  | 'under-200000'
+  | '200000-300000'
+  | '300000-400000'
+  | 'over-400000'
 
 export type ProductFilterProps = {
   category: string
@@ -35,10 +35,10 @@ export type ProductFilterProps = {
 
 const priceOptions: { label: string; value: PriceFilter }[] = [
   { label: 'All prices', value: 'all' },
-  { label: '$10 – $50', value: '10-50' },
-  { label: '$50 – $150', value: '50-150' },
-  { label: '$150 – $250', value: '150-250' },
-  { label: '$250+', value: 'over-250' },
+  { label: 'Under ₦200,000', value: 'under-200000' },
+  { label: '₦200,000 – ₦299,999', value: '200000-300000' },
+  { label: '₦300,000 – ₦399,999', value: '300000-400000' },
+  { label: '₦400,000+', value: 'over-400000' },
 ]
 
 // Nested variants reveal filter groups first, then each choice within the group.

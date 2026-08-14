@@ -1,50 +1,61 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CategoryCard } from './CategoryCard'
 import { MotionReveal } from './MotionReveal'
 import { RailIndicator } from './RailIndicator'
 import { getRailIndex } from '../utils/rail'
+import { useCatalog } from '../hooks/useCatalog'
 
-// Category data can later come from the backend without changing the card.
+// Category presentation stays static while counts come from the live catalogue.
 const categories = [
   {
     title: 'Women',
     image: '/images/curated/women-edit.jpg',
     to: '/shop?category=Women',
-    itemCount: 84,
     imagePosition: 'object-[center_28%]',
   },
   {
     title: 'Men',
     image: '/images/curated/men-edit.jpg',
     to: '/shop?category=Men',
-    itemCount: 62,
     imagePosition: 'object-[center_28%]',
   },
   {
     title: 'Accessories',
     image: '/images/curated/accessories-edit.jpg',
     to: '/shop?category=Accessories',
-    itemCount: 38,
     imagePosition: 'object-center',
   },
   {
     title: 'Shoes',
     image: '/images/curated/shoes-edit.jpg',
     to: '/shop?category=Shoes',
-    itemCount: 29,
     imagePosition: 'object-center',
   },
   {
     title: 'Bags',
     image: '/images/curated/bags-edit.jpg',
     to: '/shop?search=bag',
-    itemCount: 21,
     imagePosition: 'object-center',
   },
 ]
 
 export function CategorySection() {
   const [activeCard, setActiveCard] = useState(0)
+  const { products } = useCatalog()
+  const categoryCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        categories.map(({ title }) => [
+          title,
+          products.filter((product) =>
+            title === 'Bags'
+              ? `${product.name} ${product.category}`.toLowerCase().includes('bag')
+              : product.category === title,
+          ).length,
+        ]),
+      ),
+    [products],
+  )
 
   return (
     <section
@@ -77,6 +88,7 @@ export function CategorySection() {
             <CategoryCard
               key={category.title}
               {...category}
+              itemCount={categoryCounts[category.title]}
               className="w-[82vw] max-w-[340px] shrink-0 snap-start sm:w-[42vw] lg:w-[calc((100%-4rem)/5)] lg:max-w-none"
             />
           ))}

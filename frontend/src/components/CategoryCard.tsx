@@ -46,7 +46,9 @@ export function CategoryCard({
       <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4 sm:p-5">
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/35 pb-3 text-[7px] font-medium uppercase tracking-[0.16em] text-white/65">
           <span>Collection</span>
-          <span>{itemCount ? `${itemCount} pieces` : 'Explore'}</span>
+          <span>
+            {itemCount ? `${itemCount} ${itemCount === 1 ? 'piece' : 'pieces'}` : 'Explore'}
+          </span>
         </div>
 
         <div className="flex w-full items-end justify-between gap-2">
