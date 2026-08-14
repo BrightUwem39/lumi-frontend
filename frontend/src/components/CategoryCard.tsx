@@ -29,7 +29,7 @@ export function CategoryCard({
       <Link
         to={to}
         aria-label={`Explore ${title}`}
-        className="block aspect-[4/5] overflow-hidden bg-[#c8c1b7]"
+        className="block aspect-[3/5] overflow-hidden bg-[#c8c1b7]"
       >
         <img
           src={image}

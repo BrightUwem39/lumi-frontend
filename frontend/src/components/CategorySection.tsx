@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { CategoryCard } from './CategoryCard'
 import { MotionReveal } from './MotionReveal'
+import { RailIndicator } from './RailIndicator'
+import { getRailIndex } from '../utils/rail'
 
 // Category presentation mirrors an editorial collection index.
 const categories = [
@@ -36,6 +39,8 @@ const categories = [
 ]
 
 export function CategorySection() {
+  const [activeCard, setActiveCard] = useState(0)
+
   return (
     <section
       id="categories"
@@ -57,15 +62,21 @@ export function CategorySection() {
           </p>
         </MotionReveal>
 
-        {/* Image-first category cards follow a consistent two-column phone grid. */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-5 xl:gap-x-5">
+        {/* Phones show two cards at once in a swipeable snap rail. Larger
+            screens return to a fixed editorial grid. */}
+        <div
+          className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-2 sm:grid sm:grid-cols-3 sm:gap-x-4 sm:gap-y-10 sm:overflow-visible sm:pb-0 xl:grid-cols-5 xl:gap-x-5"
+          onScroll={(event) => setActiveCard(getRailIndex(event.currentTarget))}
+        >
           {categories.map((category) => (
             <CategoryCard
               key={category.title}
               {...category}
+              className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start sm:w-auto sm:shrink"
             />
           ))}
         </div>
+        <RailIndicator count={categories.length} activeIndex={activeCard} />
       </div>
     </section>
   )
