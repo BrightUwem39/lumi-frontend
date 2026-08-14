@@ -267,7 +267,7 @@ function ProductDetailsContent({
           <p className="text-[9px] uppercase tracking-[0.2em] text-ink/50">You may also like</p>
           <h2 id="related-heading" className="mt-2 text-3xl sm:text-4xl">Related products</h2>
 
-          {/* Phones use the same bounded, snap-aligned rail as homepage products. */}
+          {/* Phones show two cards at once inside a snap-aligned swipe rail. */}
           <div
             className="no-scrollbar mt-6 flex w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-8 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
             onScroll={(event) =>
@@ -278,7 +278,7 @@ function ProductDetailsContent({
               <ProductCard
                 key={item.id}
                 product={item}
-                className="w-[82vw] max-w-[340px] min-w-0 shrink-0 snap-start sm:w-auto sm:max-w-none sm:shrink"
+                className="w-[calc((100%-0.75rem)/2)] min-w-0 shrink-0 snap-start sm:w-auto sm:shrink"
               />
             ))}
           </div>
