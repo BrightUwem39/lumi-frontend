@@ -15,6 +15,8 @@ order, and complete a sandbox payment through Paystack.
 
 - A polished React storefront with responsive navigation, product discovery,
   filtering, detail pages, wishlist, cart, checkout, and account screens.
+- A protected responsive administrator workspace for operational metrics,
+  inventory control, customer lookup, and forward-only order fulfilment.
 - Server-owned catalog prices, inventory, carts, orders, and payment state.
 - Registration, Brevo email verification, login, logout, forgotten-password,
   and reset-password flows.

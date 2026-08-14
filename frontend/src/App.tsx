@@ -27,6 +27,7 @@ import { ProductDetailsPage } from './pages/ProductDetailsPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ShopPage } from './pages/ShopPage'
 import { WishlistPage } from './pages/WishlistPage'
+import { AdminPage } from './pages/AdminPage'
 import { useWishlistSync } from './hooks/useWishlistSync'
 import { useCartSync } from './hooks/useCartSync'
 import { useAuthStore } from './store/useAuthStore'
@@ -93,6 +94,7 @@ function App() {
   const authStatus = useAuthStore((state) => state.status)
   const isGuestAccountRoute =
     location.pathname === '/profile' && authStatus !== 'authenticated'
+  const isAdminRoute = location.pathname.startsWith('/admin')
   useWishlistSync()
   useCartSync()
 
@@ -103,8 +105,8 @@ function App() {
   return (
     <div className="min-h-screen bg-canvas text-ink transition-colors duration-300">
       <ScrollManager />
-      {!isGuestAccountRoute && <Navbar />}
-      {!isGuestAccountRoute && <CartExperience />}
+      {!isGuestAccountRoute && !isAdminRoute && <Navbar />}
+      {!isGuestAccountRoute && !isAdminRoute && <CartExperience />}
 
       {/* An NProgress-style bar advances in stages before completing and fading. */}
       <div
@@ -156,6 +158,7 @@ function App() {
             <Route path="/payment-return" element={<PaymentReturnPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="/journal" element={<JournalPage />} />
             <Route path="/policies/:policyId" element={<PolicyPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -163,8 +166,8 @@ function App() {
         </motion.div>
       </AnimatePresence>
 
-      {!isGuestAccountRoute && <CommerceTools />}
-      {!isGuestAccountRoute && <Footer />}
+      {!isGuestAccountRoute && !isAdminRoute && <CommerceTools />}
+      {!isGuestAccountRoute && !isAdminRoute && <Footer />}
     </div>
   )
 }
