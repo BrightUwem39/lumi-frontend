@@ -8,7 +8,6 @@ import {
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
-  LuChevronDown as FiChevronDown,
   LuHeart as FiHeart,
   LuMenu as FiMenu,
   LuMoon as FiMoon,
@@ -52,6 +51,32 @@ type CountIconProps = {
   pulseKey?: number
 }
 
+// A compact monogram keeps the brand recognizable on narrow screens, while
+// the complete wordmark appears as soon as the header has enough room.
+function LumiLogo() {
+  return (
+    <span className="flex items-center gap-2.5" aria-hidden="true">
+      <svg
+        viewBox="0 0 32 32"
+        className="size-6 shrink-0 min-[360px]:size-7 sm:size-8"
+        fill="none"
+      >
+        <circle cx="16" cy="16" r="14.5" stroke="currentColor" />
+        <path
+          d="M10.25 8.75v14.5h11.5M15.5 8.75v9.25h6.25"
+          stroke="currentColor"
+          strokeWidth="1.65"
+          strokeLinecap="square"
+        />
+        <circle cx="22" cy="9" r="1.35" fill="currentColor" />
+      </svg>
+      <span className="hidden font-display text-[28px] leading-none tracking-[0.18em] sm:inline xl:text-[31px]">
+        LUMI
+      </span>
+    </span>
+  )
+}
+
 // Reusable accessible icon link with an optional item counter.
 function CountIcon({ count, label, href = '#', children, onClick, cartTarget = false, pulseKey = 0 }: CountIconProps) {
   return (
@@ -60,7 +85,7 @@ function CountIcon({ count, label, href = '#', children, onClick, cartTarget = f
       onClick={onClick}
       data-cart-target={cartTarget ? 'navbar' : undefined}
       aria-label={`${label}${count ? `, ${count} item${count === 1 ? '' : 's'}` : ''}`}
-      className="relative grid size-10 place-items-center transition-opacity hover:opacity-55"
+      className="relative grid size-6 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-8 sm:size-10"
     >
       <motion.span
         key={cartTarget ? pulseKey : 'static-icon'}
@@ -90,7 +115,6 @@ export function Navbar() {
   // Local UI state controls temporary interfaces such as menus and search.
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [categoriesOpen, setCategoriesOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('lumi-theme')
     return savedTheme
@@ -109,7 +133,6 @@ export function Navbar() {
       if (event.key === 'Escape') {
         setMobileOpen(false)
         setSearchOpen(false)
-        setCategoriesOpen(false)
       }
     }
 
@@ -149,112 +172,48 @@ export function Navbar() {
         </Link>
 
         <div className="border-b border-line">
-          <div className="relative mx-auto flex h-[50px] max-w-[1440px] items-center px-3 min-[360px]:px-4 sm:h-[60px] sm:px-7 lg:px-10 xl:h-[70px]">
-            {/* Phone and tablet use a deliberately minimal two-item header:
-                menu control on the left and wordmark on the right. */}
+          <div className="relative mx-auto flex h-[50px] max-w-[1440px] items-center px-1 min-[360px]:px-2 sm:h-[60px] sm:px-5 lg:px-8 xl:h-[70px] xl:px-10">
+            {/* Navigation links live in the drawer at every breakpoint. */}
             <button
               type="button"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
               aria-controls={mobileMenuId}
               onClick={() => setMobileOpen((open) => !open)}
-              className="order-1 grid size-10 shrink-0 place-items-center min-[360px]:size-11 sm:size-10 xl:hidden"
+              className="grid size-8 shrink-0 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-9 sm:size-10"
             >
-              {mobileOpen ? <FiX size={21} /> : <FiMenu size={22} />}
+              {mobileOpen ? <FiX size={20} /> : <FiMenu size={21} />}
             </button>
 
-            {/* The wordmark remains visible at every width and returns to the
-                full desktop navigation flow at the xl breakpoint. */}
+            {/* Absolute positioning keeps the logo centered independently of
+                the unequal controls on either side. */}
             <Link
               to="/"
               aria-label="Lumi home"
-              className="order-2 ml-auto shrink-0 font-display text-[24px] leading-none tracking-[0.14em] sm:text-[27px] xl:order-none xl:ml-0 xl:text-[32px]"
+              onClick={() => setMobileOpen(false)}
+              className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-opacity hover:opacity-60"
             >
-              LUMI
+              <LumiLogo />
             </Link>
 
-            {/* Full navigation appears at 1280px and above. */}
-            <nav aria-label="Primary navigation" className="ml-10 hidden items-center gap-7 xl:flex xl:gap-9">
-              <Link
-                to="/shop?sort=latest"
-                className="group relative py-3 text-[11px] font-medium uppercase tracking-[0.16em]"
-              >
-                New in
-                <span className="absolute inset-x-0 bottom-1 h-px origin-left scale-x-0 bg-ink transition-transform duration-300 group-hover:scale-x-100" />
-              </Link>
-              {/* Categories uses an animated dropdown on desktop. */}
-              <div
-                className="relative"
-                onMouseEnter={() => setCategoriesOpen(true)}
-                onMouseLeave={() => setCategoriesOpen(false)}
-              >
-                <button
-                  type="button"
-                  aria-expanded={categoriesOpen}
-                  aria-controls="desktop-categories"
-                  onClick={() => setCategoriesOpen((open) => !open)}
-                  className="flex items-center gap-1.5 py-3 text-[11px] font-medium uppercase tracking-[0.16em]"
-                >
-                  Categories
-                  <FiChevronDown
-                    size={13}
-                    className={`transition-transform ${categoriesOpen ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                <AnimatePresence>
-                  {categoriesOpen && (
-                    <motion.div
-                      id="desktop-categories"
-                      className="absolute left-0 top-full w-52 border border-line bg-canvas p-2 shadow-xl"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 8 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {categories.map((category) => (
-                        <Link
-                          key={category.label}
-                          to={category.to}
-                          onClick={() => setCategoriesOpen(false)}
-                          className="block px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] transition-colors hover:bg-ink hover:text-canvas"
-                        >
-                          {category.label}
-                        </Link>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              {navigation.slice(1).map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.to}
-                  className="group relative py-3 text-[11px] font-medium uppercase tracking-[0.16em]"
-                >
-                  {item.label}
-                  <span className="absolute inset-x-0 bottom-1 h-px origin-left scale-x-0 bg-ink transition-transform duration-300 group-hover:scale-x-100" />
-                </Link>
-              ))}
-            </nav>
-
-            {/* Desktop utilities move into the drawer below 1280px. */}
-            <div className="ml-auto hidden shrink-0 items-center gap-1 xl:flex">
+            {/* Existing utility actions remain on the right at every width. */}
+            <div className="ml-auto flex shrink-0 items-center sm:gap-0.5">
               <button
                 type="button"
                 aria-label="Search"
                 aria-expanded={searchOpen}
                 aria-controls="site-search-modal"
                 onClick={() => setSearchOpen(true)}
-                className="grid size-10 place-items-center transition-opacity hover:opacity-55"
+                className="grid size-6 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-8 sm:size-10"
               >
-                <FiSearch size={19} strokeWidth={1.5} />
+                <FiSearch size={18} strokeWidth={1.5} />
               </button>
               <Link
                 to="/profile"
                 aria-label="Account"
-                className="grid size-10 place-items-center transition-opacity hover:opacity-55"
+                className="grid size-6 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-8 sm:size-10"
               >
-                <FiUser size={19} strokeWidth={1.5} />
+                <FiUser size={18} strokeWidth={1.5} />
               </Link>
               <span>
                 <CountIcon
@@ -265,7 +224,7 @@ export function Navbar() {
                   <FiHeart size={19} strokeWidth={1.5} />
                 </CountIcon>
               </span>
-              <span className="[&>a]:size-10">
+              <span>
                 <CountIcon
                   count={cartCount}
                   label="Shopping bag"
@@ -285,7 +244,7 @@ export function Navbar() {
                 aria-label={`Switch to ${darkMode ? 'light' : 'dark'} mode`}
                 aria-pressed={darkMode}
                 onClick={toggleDarkMode}
-                className="grid size-10 place-items-center transition-opacity hover:opacity-55"
+                className="grid size-6 place-items-center transition-opacity hover:opacity-55 min-[360px]:size-8 sm:size-10"
               >
                 {darkMode ? (
                   <FiSun size={19} strokeWidth={1.5} />
@@ -294,7 +253,6 @@ export function Navbar() {
                 )}
               </button>
             </div>
-
           </div>
         </div>
       </header>
@@ -305,15 +263,14 @@ export function Navbar() {
 
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
-      {/* Mobile navigation is rendered as an off-canvas drawer with its own
-          category and account shortcuts. */}
+      {/* Site navigation is rendered as an off-canvas drawer at every width. */}
       <AnimatePresence>
         {mobileOpen && (
           <>
             <motion.button
               type="button"
               aria-label="Close menu"
-              className="fixed inset-0 z-20 cursor-default bg-black/30 xl:hidden"
+              className="fixed inset-0 z-20 cursor-default bg-black/30"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -321,8 +278,8 @@ export function Navbar() {
             />
             <motion.aside
               id={mobileMenuId}
-              aria-label="Mobile navigation"
-              className="fixed bottom-0 left-0 top-[78px] z-30 flex w-full flex-col overflow-y-auto overscroll-contain bg-canvas px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 text-ink min-[380px]:px-5 sm:top-[92px] sm:w-[88%] sm:max-w-sm sm:px-6 sm:pb-8 sm:pt-8 xl:hidden"
+              aria-label="Site navigation"
+              className="fixed bottom-0 left-0 top-[78px] z-30 flex w-full flex-col overflow-y-auto overscroll-contain bg-canvas px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 text-ink min-[380px]:px-5 sm:top-[92px] sm:w-[88%] sm:max-w-[420px] sm:px-6 sm:pb-8 sm:pt-8 xl:top-[102px]"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -350,8 +307,8 @@ export function Navbar() {
                 Search the collection
               </button>
 
-              {/* Primary mobile links use larger touch-friendly typography. */}
-              <nav className="flex flex-col" aria-label="Mobile primary navigation">
+              {/* Primary links use large, touch-friendly typography. */}
+              <nav className="flex flex-col" aria-label="Primary navigation">
                 {navigation.map((item, index) => (
                   <motion.div
                     key={item.label}
