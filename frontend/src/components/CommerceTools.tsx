@@ -97,7 +97,7 @@ export function CommerceTools() {
       </Link>
 
       <AnimatePresence>
-        {!footerVisible && comparedProducts.length > 0 && (
+        {comparedProducts.length > 0 && (
           <motion.aside
             aria-label="Product comparison"
             className="fixed inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-2xl items-center gap-2 border border-line bg-canvas p-2.5 text-ink shadow-2xl min-[380px]:gap-3 min-[380px]:p-3 sm:inset-x-6 sm:bottom-4 sm:px-4"
