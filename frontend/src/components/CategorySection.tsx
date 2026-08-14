@@ -1,11 +1,7 @@
-import { useMemo, useState } from 'react'
 import { CategoryCard } from './CategoryCard'
 import { MotionReveal } from './MotionReveal'
-import { RailIndicator } from './RailIndicator'
-import { getRailIndex } from '../utils/rail'
-import { useCatalog } from '../hooks/useCatalog'
 
-// Category presentation stays static while counts come from the live catalogue.
+// Category presentation mirrors an editorial collection index.
 const categories = [
   {
     title: 'Women',
@@ -40,23 +36,6 @@ const categories = [
 ]
 
 export function CategorySection() {
-  const [activeCard, setActiveCard] = useState(0)
-  const { products } = useCatalog()
-  const categoryCounts = useMemo(
-    () =>
-      Object.fromEntries(
-        categories.map(({ title }) => [
-          title,
-          products.filter((product) =>
-            title === 'Bags'
-              ? `${product.name} ${product.category}`.toLowerCase().includes('bag')
-              : product.category === title,
-          ).length,
-        ]),
-      ),
-    [products],
-  )
-
   return (
     <section
       id="categories"
@@ -78,22 +57,15 @@ export function CategorySection() {
           </p>
         </MotionReveal>
 
-        {/* Categories remain in one row at every width. Phones and tablets can
-            swipe the rail, while desktop fits all five cards side by side. */}
-        <div
-          className="no-scrollbar flex w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-2 sm:gap-4 lg:overflow-visible"
-          onScroll={(event) => setActiveCard(getRailIndex(event.currentTarget))}
-        >
+        {/* Image-first category cards follow a consistent two-column phone grid. */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 sm:gap-x-4 sm:gap-y-10 xl:grid-cols-5 xl:gap-x-5">
           {categories.map((category) => (
             <CategoryCard
               key={category.title}
               {...category}
-              itemCount={categoryCounts[category.title]}
-              className="w-[82vw] max-w-[340px] shrink-0 snap-start sm:w-[42vw] lg:w-[calc((100%-4rem)/5)] lg:max-w-none"
             />
           ))}
         </div>
-        <RailIndicator count={categories.length} activeIndex={activeCard} />
       </div>
     </section>
   )

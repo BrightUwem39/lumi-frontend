@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
 import { ProductCard } from './ProductCard'
 import { MotionReveal } from './MotionReveal'
-import { RailIndicator } from './RailIndicator'
-import { getRailIndex } from '../utils/rail'
 import type { Product } from '../types/product'
 
 type ProductFilter = 'all' | 'trending' | 'popular' | 'latest'
@@ -94,7 +92,6 @@ const products: FeaturedProduct[] = [
 // Featured products reuses ProductCard and only owns filtering and section layout.
 export function FeaturedProducts() {
   const [activeFilter, setActiveFilter] = useState<ProductFilter>('all')
-  const [activeCard, setActiveCard] = useState(0)
   const reduceMotion = useReducedMotion()
   const visibleProducts =
     activeFilter === 'all'
@@ -135,7 +132,6 @@ export function FeaturedProducts() {
                   aria-selected={isActive}
                   onClick={() => {
                     setActiveFilter(tab.value)
-                    setActiveCard(0)
                   }}
                   className={`relative shrink-0 pb-3 text-[9px] font-medium uppercase tracking-[0.16em] transition-opacity ${
                     isActive ? 'opacity-100' : 'opacity-45 hover:opacity-75'
@@ -163,21 +159,19 @@ export function FeaturedProducts() {
             whileInView="visible"
             viewport={{ once: true, amount: 0.12 }}
             exit={{ opacity: 0, y: -8 }}
-            onScroll={(event) => setActiveCard(getRailIndex(event.currentTarget))}
-            className="no-scrollbar flex w-full snap-x snap-mandatory items-stretch gap-3 overflow-x-auto overscroll-x-contain pb-2 sm:gap-4 lg:grid lg:grid-cols-4 lg:gap-x-5 lg:gap-y-10 lg:overflow-visible lg:pb-0"
+            className="grid w-full grid-cols-2 items-stretch gap-x-3 gap-y-7 sm:gap-x-4 sm:gap-y-9 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-10"
           >
             {visibleProducts.map((product) => (
               <motion.div
                 key={product.id}
                 variants={productItemVariants}
-                className="w-[82vw] max-w-[340px] min-w-0 shrink-0 snap-start self-stretch sm:w-[42vw] lg:w-auto lg:max-w-none lg:shrink"
+                className="min-w-0 self-stretch"
               >
                 <ProductCard product={product} viewportReveal={false} />
               </motion.div>
             ))}
           </motion.div>
         </AnimatePresence>
-        <RailIndicator count={visibleProducts.length} activeIndex={activeCard} />
       </div>
     </section>
   )
