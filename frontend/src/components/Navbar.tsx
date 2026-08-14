@@ -214,7 +214,7 @@ export function Navbar() {
               >
                 <FiUser size={18} strokeWidth={1.5} />
               </Link>
-              <span>
+              <span className="hidden sm:block">
                 <CountIcon
                   count={wishlistCount}
                   label="Wishlist"
@@ -243,7 +243,7 @@ export function Navbar() {
                 aria-label={`Switch to ${darkMode ? 'light' : 'dark'} mode`}
                 aria-pressed={darkMode}
                 onClick={toggleDarkMode}
-                className="grid size-6 place-items-center transition-opacity hover:opacity-55 sm:size-10"
+                className="hidden size-6 place-items-center transition-opacity hover:opacity-55 sm:grid sm:size-10"
               >
                 {darkMode ? (
                   <FiSun size={19} strokeWidth={1.5} />
@@ -334,9 +334,30 @@ export function Navbar() {
                 </div>
               </div>
 
+              {/* On phones, favorites and appearance controls live here
+                  instead of being duplicated in the navbar. */}
+              <div className="mt-auto grid grid-cols-2 gap-2 border-t border-line pt-5 sm:hidden">
+                <Link
+                  to="/wishlist"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex min-h-12 min-w-0 items-center justify-center gap-2 border border-line px-3 text-[9px] font-medium uppercase tracking-[0.12em]"
+                >
+                  <FiHeart size={16} />
+                  Favorites{wishlistCount > 0 ? ` (${wishlistCount})` : ''}
+                </Link>
+                <button
+                  type="button"
+                  onClick={toggleDarkMode}
+                  className="flex min-h-12 min-w-0 items-center justify-center gap-2 border border-line px-3 text-[9px] font-medium uppercase tracking-[0.12em]"
+                >
+                  {darkMode ? <FiSun size={16} /> : <FiMoon size={16} />}
+                  {darkMode ? 'Light mode' : 'Dark mode'}
+                </button>
+              </div>
+
               <a
                 href="tel:+2348005864000"
-                className="mt-auto pt-8 text-[9px] uppercase tracking-[0.12em] text-ink/50 transition-colors hover:text-ink sm:text-[10px] sm:tracking-[0.16em]"
+                className="pt-6 text-[9px] uppercase tracking-[0.12em] text-ink/50 transition-colors hover:text-ink sm:mt-auto sm:pt-8 sm:text-[10px] sm:tracking-[0.16em]"
               >
                 Client services · +234 800 LUMI 000
               </a>
