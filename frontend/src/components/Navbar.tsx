@@ -294,18 +294,6 @@ export function Navbar() {
                 }
               }}
             >
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false)
-                  setSearchOpen(true)
-                }}
-                className="mb-5 flex min-h-12 w-full items-center gap-3 border border-line px-4 text-left text-[9px] font-medium uppercase tracking-[0.16em] sm:mb-7"
-              >
-                <FiSearch size={17} />
-                Search the collection
-              </button>
-
               {/* Primary links use large, touch-friendly typography. */}
               <nav className="flex flex-col" aria-label="Primary navigation">
                 {navigation.map((item, index) => (
@@ -346,46 +334,9 @@ export function Navbar() {
                 </div>
               </div>
 
-              {/* Account, wishlist, cart, and theme actions remain available when
-                  their header icons are hidden at smaller breakpoints. */}
-              <div className="mt-auto grid grid-cols-2 gap-2 pt-4 sm:gap-3">
-                <Link
-                  to="/profile"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex min-w-0 items-center gap-2 border border-line px-3 py-3 text-[9px] font-medium uppercase tracking-[0.12em] sm:px-4 sm:text-[10px] sm:tracking-[0.16em]"
-                >
-                  <FiUser size={16} /> Account
-                </Link>
-                <Link
-                  to="/wishlist"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex min-w-0 items-center gap-2 border border-line px-3 py-3 text-[9px] font-medium uppercase tracking-[0.12em] sm:px-4 sm:text-[10px] sm:tracking-[0.16em]"
-                >
-                  <FiHeart size={16} /> Wishlist
-                </Link>
-                <Link
-                  to="/cart"
-                  onClick={(event) => {
-                    event.preventDefault()
-                    setMobileOpen(false)
-                    openCartDrawer()
-                  }}
-                  className="flex min-w-0 items-center gap-2 border border-line px-3 py-3 text-[9px] font-medium uppercase tracking-[0.12em] sm:px-4 sm:text-[10px] sm:tracking-[0.16em]"
-                >
-                  <FiShoppingBag size={16} /> Cart
-                </Link>
-                <button
-                  type="button"
-                  onClick={toggleDarkMode}
-                  className="flex min-w-0 items-center gap-2 border border-line px-3 py-3 text-left text-[9px] font-medium uppercase tracking-[0.12em] sm:px-4 sm:text-[10px] sm:tracking-[0.16em]"
-                >
-                  {darkMode ? <FiSun size={16} /> : <FiMoon size={16} />}
-                  {darkMode ? 'Light mode' : 'Dark mode'}
-                </button>
-              </div>
               <a
                 href="tel:+2348005864000"
-                className="pt-5 text-[9px] uppercase tracking-[0.12em] text-ink/50 transition-colors hover:text-ink sm:pt-6 sm:text-[10px] sm:tracking-[0.16em]"
+                className="mt-auto pt-8 text-[9px] uppercase tracking-[0.12em] text-ink/50 transition-colors hover:text-ink sm:text-[10px] sm:tracking-[0.16em]"
               >
                 Client services · +234 800 LUMI 000
               </a>
