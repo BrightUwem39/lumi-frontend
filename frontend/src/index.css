@@ -23,6 +23,16 @@
   --color-line: #d8d5cd;
   --color-footer: #ebebeb;
   --color-footer-ink: #171713;
+  --color-admin-bg: #f3f4f6;
+  --color-admin-surface: #ffffff;
+  --color-admin-soft: #f6f7f8;
+  --color-admin-ink: #202124;
+  --color-admin-muted: #667085;
+  --color-admin-line: #e4e7ec;
+  --color-admin-accent: #6f5747;
+  --radius-admin: 12px;
+  --shadow-admin-sm: 0 1px 2px rgb(16 24 40 / 0.04);
+  --shadow-admin: 0 16px 36px rgb(16 24 40 / 0.1);
 }
 
 /* Dark mode swaps the same semantic tokens, so component markup stays simple. */
@@ -34,6 +44,196 @@
   --color-footer-ink: #f2efe8;
   color-scheme: dark;
 }
+
+.dark .admin-theme {
+  --color-admin-bg: #101112;
+  --color-admin-surface: #191a1c;
+  --color-admin-soft: #222326;
+  --color-admin-ink: #f4f4f5;
+  --color-admin-muted: #a1a1aa;
+  --color-admin-line: #303136;
+  --color-admin-accent: #a8846d;
+}
+
+/* The administrator workspace has a restrained SaaS vocabulary distinct from
+   the editorial storefront while continuing to use the shared font and theme. */
+@layer components {
+  .admin-icon-button {
+    display: inline-grid;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--color-admin-line);
+    border-radius: 10px;
+    background: var(--color-admin-surface);
+    color: var(--color-admin-muted);
+    transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+  }
+
+  .admin-icon-button:hover {
+    border-color: color-mix(in srgb, var(--color-admin-muted) 55%, transparent);
+    color: var(--color-admin-ink);
+    background: var(--color-admin-soft);
+  }
+
+  .admin-control {
+    border: 1px solid var(--color-admin-line);
+    border-radius: 9px;
+    background: var(--color-admin-surface);
+    color: var(--color-admin-ink);
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.03);
+  }
+
+  .admin-control::placeholder {
+    color: var(--color-admin-muted);
+  }
+
+  .admin-control:focus,
+  .admin-control:focus-visible {
+    border-color: var(--color-admin-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-admin-accent) 14%, transparent);
+  }
+
+  .admin-button {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 9px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: transform 160ms ease, border-color 160ms ease, opacity 160ms ease, background-color 160ms ease;
+  }
+
+  .admin-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .admin-button.primary {
+    border: 1px solid var(--color-admin-accent);
+    background: var(--color-admin-accent);
+    color: white;
+  }
+
+  .admin-button.secondary {
+    border: 1px solid var(--color-admin-line);
+    background: var(--color-admin-surface);
+    color: var(--color-admin-ink);
+  }
+
+  .admin-pill {
+    display: inline-flex;
+    min-height: 26px;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--color-admin-soft);
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-admin-muted);
+  }
+
+  .admin-text-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-admin-accent);
+  }
+
+  .admin-chip {
+    display: inline-flex;
+    min-height: 38px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--color-admin-line);
+    border-radius: 999px;
+    background: var(--color-admin-surface);
+    padding: 0 13px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-admin-muted);
+  }
+
+  .admin-chip span {
+    display: grid;
+    min-width: 20px;
+    height: 20px;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--color-admin-soft);
+    font-size: 10px;
+  }
+
+  .admin-chip.active {
+    border-color: var(--color-admin-accent);
+    background: var(--color-admin-accent);
+    color: white;
+  }
+
+  .admin-chip.active span {
+    background: rgb(255 255 255 / 0.18);
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+  }
+
+  .admin-table th {
+    border-bottom: 1px solid var(--color-admin-line);
+    background: var(--color-admin-soft);
+    padding: 11px 16px;
+    color: var(--color-admin-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .admin-table td {
+    border-bottom: 1px solid var(--color-admin-line);
+    padding: 14px 16px;
+    vertical-align: middle;
+  }
+
+  .admin-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .admin-table tbody tr:hover {
+    background: color-mix(in srgb, var(--color-admin-soft) 70%, transparent);
+  }
+
+  .admin-status {
+    display: inline-flex;
+    min-height: 24px;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0 9px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .admin-status.success { background: #dcfce7; color: #166534; }
+  .admin-status.info { background: #dbeafe; color: #1e40af; }
+  .admin-status.danger { background: #fee2e2; color: #991b1b; }
+  .admin-status.accent { background: #ede9fe; color: #5b21b6; }
+  .admin-status.neutral { background: var(--color-admin-soft); color: var(--color-admin-muted); }
+}
+
+.dark .admin-status.success { background: #143523; color: #bbf7d0; }
+.dark .admin-status.info { background: #172554; color: #bfdbfe; }
+.dark .admin-status.danger { background: #450a0a; color: #fecaca; }
+.dark .admin-status.accent { background: #2e1065; color: #ddd6fe; }
 
 /* Predictable sizing prevents padding and borders from changing element widths. */
 * {

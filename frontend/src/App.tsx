@@ -158,7 +158,7 @@ function App() {
             <Route path="/payment-return" element={<PaymentReturnPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/*" element={<AdminPage />} />
             <Route path="/journal" element={<JournalPage />} />
             <Route path="/policies/:policyId" element={<PolicyPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
