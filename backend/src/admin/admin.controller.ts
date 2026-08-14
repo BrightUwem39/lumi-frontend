@@ -1,14 +1,34 @@
-import { Controller, Get, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Req,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common'
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import type { FastifyRequest } from 'fastify'
 import { CurrentAuthentication } from '../auth/decorators/current-auth.decorator.js'
 import { Roles } from '../auth/decorators/roles.decorator.js'
 import { RolesGuard } from '../auth/guards/roles.guard.js'
 import { SessionGuard } from '../auth/guards/session.guard.js'
+import { CsrfGuard } from '../auth/guards/csrf.guard.js'
 import type { RequestAuthentication } from '../auth/auth.types.js'
 import { NoStoreInterceptor } from '../auth/no-store.interceptor.js'
 import { UserRole } from '../generated/prisma/client.js'
 import { AdminService } from './admin.service.js'
+import {
+  AdminListQueryDto,
+  AdminOrderParamsDto,
+  AdminOrderQueryDto,
+  AdminProductParamsDto,
+  AdminProductQueryDto,
+  UpdateFulfillmentStatusDto,
+  UpdateInventoryDto,
+} from './dto/admin.dto.js'
 
 @ApiTags('administration')
 @ApiCookieAuth('lumi_session')
@@ -26,5 +46,45 @@ export class AdminController {
     @Req() request: FastifyRequest,
   ) {
     return this.admin.dashboard(authentication.user, request.headers['user-agent'])
+  }
+
+  @Get('products')
+  @ApiOperation({ summary: 'Lists products with administrator inventory data' })
+  products(@Query() query: AdminProductQueryDto) {
+    return this.admin.listProducts(query)
+  }
+
+  @Patch('products/:productId/inventory')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Sets on-hand inventory with a required audit reason' })
+  inventory(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminProductParamsDto,
+    @Body() input: UpdateInventoryDto,
+  ) {
+    return this.admin.updateInventory(authentication.user, params.productId, input)
+  }
+
+  @Get('customers')
+  @ApiOperation({ summary: 'Lists customers using a minimized administrator view' })
+  customers(@Query() query: AdminListQueryDto) {
+    return this.admin.listCustomers(query)
+  }
+
+  @Get('orders')
+  @ApiOperation({ summary: 'Lists orders for administrator fulfilment work' })
+  orders(@Query() query: AdminOrderQueryDto) {
+    return this.admin.listOrders(query)
+  }
+
+  @Patch('orders/:orderNumber/status')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Applies a valid forward fulfilment transition' })
+  fulfillmentStatus(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminOrderParamsDto,
+    @Body() input: UpdateFulfillmentStatusDto,
+  ) {
+    return this.admin.updateFulfillmentStatus(authentication.user, params.orderNumber, input)
   }
 }

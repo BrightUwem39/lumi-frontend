@@ -57,6 +57,11 @@ never be used in production.
 - `GET /api/v1/payments/paystack/status/:reference` — owner-authorized return status
 - `POST /api/v1/payments/paystack/webhook` — receive signed provider events
 - `GET /api/v1/admin/dashboard` — administrator-only operational overview with audited access
+- `GET /api/v1/admin/products` — administrator product and authoritative inventory listing
+- `PATCH /api/v1/admin/products/:productId/inventory` — audited, reservation-safe stock update
+- `GET /api/v1/admin/customers` — minimized administrator customer listing
+- `GET /api/v1/admin/orders` — administrator order and fulfilment listing
+- `PATCH /api/v1/admin/orders/:orderNumber/status` — audited forward-only fulfilment transition
 - `GET /api/docs-json` — OpenAPI schema when `API_DOCS_ENABLED=true`
 
 Catalog queries accept bounded `page` and `limit` values plus optional
