@@ -196,7 +196,7 @@ export function Navbar() {
             </Link>
 
             {/* Existing utility actions remain on the right at every width. */}
-            <div className="ml-auto flex shrink-0 items-center sm:gap-0.5">
+            <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-0.5">
               <button
                 type="button"
                 aria-label="Search"
@@ -320,13 +320,13 @@ export function Navbar() {
                 <p className="mb-3 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/50">
                   Categories
                 </p>
-                <div className="grid grid-cols-2 gap-x-5">
+                <div className="flex flex-col">
                   {categories.map((category) => (
                     <Link
                       key={category.label}
                       to={category.to}
                       onClick={() => setMobileOpen(false)}
-                      className="border-b border-line py-3 text-xs uppercase tracking-[0.12em]"
+                      className="border-b border-line py-3.5 text-xs uppercase tracking-[0.12em]"
                     >
                       {category.label}
                     </Link>
@@ -336,11 +336,11 @@ export function Navbar() {
 
               {/* On phones, favorites and appearance controls live here
                   instead of being duplicated in the navbar. */}
-              <div className="mt-auto grid grid-cols-2 gap-2 border-t border-line pt-5 sm:hidden">
+              <div className="mt-auto flex flex-col border-t border-line pt-5 sm:hidden">
                 <Link
                   to="/wishlist"
                   onClick={() => setMobileOpen(false)}
-                  className="flex min-h-12 min-w-0 items-center justify-center gap-2 border border-line px-3 text-[9px] font-medium uppercase tracking-[0.12em]"
+                  className="flex min-h-12 min-w-0 items-center gap-3 border-b border-line px-1 text-[9px] font-medium uppercase tracking-[0.12em]"
                 >
                   <FiHeart size={16} />
                   Favorites{wishlistCount > 0 ? ` (${wishlistCount})` : ''}
@@ -348,7 +348,7 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={toggleDarkMode}
-                  className="flex min-h-12 min-w-0 items-center justify-center gap-2 border border-line px-3 text-[9px] font-medium uppercase tracking-[0.12em]"
+                  className="flex min-h-12 min-w-0 items-center gap-3 border-b border-line px-1 text-left text-[9px] font-medium uppercase tracking-[0.12em]"
                 >
                   {darkMode ? <FiSun size={16} /> : <FiMoon size={16} />}
                   {darkMode ? 'Light mode' : 'Dark mode'}
