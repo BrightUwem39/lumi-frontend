@@ -23,13 +23,14 @@
   --color-line: #d8d5cd;
   --color-footer: #ebebeb;
   --color-footer-ink: #171713;
-  --color-admin-bg: #f3f4f6;
-  --color-admin-surface: #ffffff;
-  --color-admin-soft: #f6f7f8;
-  --color-admin-ink: #202124;
-  --color-admin-muted: #667085;
-  --color-admin-line: #e4e7ec;
-  --color-admin-accent: #6f5747;
+  --color-admin-bg: #f8f7f3;
+  --color-admin-surface: #fffefa;
+  --color-admin-soft: #efede6;
+  --color-admin-ink: #171713;
+  --color-admin-muted: #69675f;
+  --color-admin-line: #d8d5cd;
+  --color-admin-accent: #171713;
+  --color-admin-accent-contrast: #f8f7f3;
   --radius-admin: 12px;
   --shadow-admin-sm: 0 1px 2px rgb(16 24 40 / 0.04);
   --shadow-admin: 0 16px 36px rgb(16 24 40 / 0.1);
@@ -46,13 +47,14 @@
 }
 
 .dark .admin-theme {
-  --color-admin-bg: #101112;
-  --color-admin-surface: #191a1c;
-  --color-admin-soft: #222326;
-  --color-admin-ink: #f4f4f5;
-  --color-admin-muted: #a1a1aa;
-  --color-admin-line: #303136;
-  --color-admin-accent: #a8846d;
+  --color-admin-bg: #121210;
+  --color-admin-surface: #1c1c1a;
+  --color-admin-soft: #272622;
+  --color-admin-ink: #f2efe8;
+  --color-admin-muted: #aaa79f;
+  --color-admin-line: #34332f;
+  --color-admin-accent: #f2efe8;
+  --color-admin-accent-contrast: #121210;
 }
 
 /* The administrator workspace has a restrained SaaS vocabulary distinct from
@@ -115,7 +117,7 @@
   .admin-button.primary {
     border: 1px solid var(--color-admin-accent);
     background: var(--color-admin-accent);
-    color: white;
+    color: var(--color-admin-accent-contrast);
   }
 
   .admin-button.secondary {
@@ -173,7 +175,7 @@
   .admin-chip.active {
     border-color: var(--color-admin-accent);
     background: var(--color-admin-accent);
-    color: white;
+    color: var(--color-admin-accent-contrast);
   }
 
   .admin-chip.active span {
