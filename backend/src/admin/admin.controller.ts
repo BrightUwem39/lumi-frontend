@@ -131,6 +131,12 @@ export class AdminController {
     return this.admin.listOrders(query)
   }
 
+  @Get('orders/:orderNumber')
+  @ApiOperation({ summary: 'Returns complete administrator order detail' })
+  order(@Param() params: AdminOrderParamsDto) {
+    return this.admin.getOrder(params.orderNumber)
+  }
+
   @Patch('orders/:orderNumber/status')
   @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Applies a valid forward fulfilment transition' })

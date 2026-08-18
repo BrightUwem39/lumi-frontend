@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
 import type { PrismaService } from '../database/prisma.service.js'
-import { OrderStatus, ProductStatus, UserRole } from '../generated/prisma/client.js'
+import { OrderStatus, Prisma, ProductStatus, UserRole } from '../generated/prisma/client.js'
 import { AdminService } from './admin.service.js'
 
 describe('AdminService dashboard', () => {
@@ -309,6 +309,48 @@ describe('AdminService dashboard', () => {
     )).rejects.toBeInstanceOf(ConflictException)
     expect(transaction.inventory.upsert).not.toHaveBeenCalled()
     expect(transaction.auditLog.create).not.toHaveBeenCalled()
+  })
+
+  it('returns complete order detail with serialized money values', async () => {
+    const prisma = {
+      order: {
+        findUnique: vi.fn().mockResolvedValue({
+          number: 'LM-2026-ABCDEF123456',
+          email: 'customer@example.com',
+          shippingName: 'Lumi Customer',
+          shippingPhone: '+2348000000000',
+          shippingAddress: { line1: '1 Lumi Street', city: 'Lagos', region: 'Lagos', country: 'NG' },
+          status: OrderStatus.PAID,
+          currency: 'NGN',
+          subtotal: new Prisma.Decimal(200000),
+          discountTotal: new Prisma.Decimal(10000),
+          shippingTotal: new Prisma.Decimal(25000),
+          taxTotal: new Prisma.Decimal(0),
+          total: new Prisma.Decimal(215000),
+          paidAt: new Date(),
+          cancelledAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          items: [{
+            id: 'item-1', productId: 'product-1', productName: 'Lumi Shirt',
+            sku: 'LUMI-001', imageUrl: '/shirt.jpg', size: 'M', quantity: 2,
+            unitPrice: new Prisma.Decimal(100000), discountTotal: new Prisma.Decimal(0),
+            lineTotal: new Prisma.Decimal(200000),
+          }],
+        }),
+      },
+    }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.getOrder('LM-2026-ABCDEF123456')
+
+    expect(result).toMatchObject({
+      number: 'LM-2026-ABCDEF123456', total: '215000.00', lineCount: 1,
+      items: [{ unitPrice: '100000.00', lineTotal: '200000.00' }],
+    })
+    expect(prisma.order.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+      where: { number: 'LM-2026-ABCDEF123456' },
+    }))
   })
 
   it('enforces forward-only fulfilment transitions', async () => {

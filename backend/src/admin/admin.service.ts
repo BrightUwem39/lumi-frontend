@@ -536,6 +536,62 @@ export class AdminService {
     )
   }
 
+  async getOrder(orderNumber: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { number: orderNumber },
+      select: {
+        number: true,
+        email: true,
+        shippingName: true,
+        shippingPhone: true,
+        shippingAddress: true,
+        status: true,
+        currency: true,
+        subtotal: true,
+        discountTotal: true,
+        shippingTotal: true,
+        taxTotal: true,
+        total: true,
+        paidAt: true,
+        cancelledAt: true,
+        createdAt: true,
+        updatedAt: true,
+        items: {
+          orderBy: { id: 'asc' },
+          select: {
+            id: true,
+            productId: true,
+            productName: true,
+            sku: true,
+            imageUrl: true,
+            size: true,
+            quantity: true,
+            unitPrice: true,
+            discountTotal: true,
+            lineTotal: true,
+          },
+        },
+      },
+    })
+    if (!order) throw new NotFoundException('Order not found.')
+
+    return {
+      ...order,
+      subtotal: order.subtotal.toFixed(2),
+      discountTotal: order.discountTotal.toFixed(2),
+      shippingTotal: order.shippingTotal.toFixed(2),
+      taxTotal: order.taxTotal.toFixed(2),
+      total: order.total.toFixed(2),
+      lineCount: order.items.length,
+      items: order.items.map((item) => ({
+        ...item,
+        unitPrice: item.unitPrice.toFixed(2),
+        discountTotal: item.discountTotal.toFixed(2),
+        lineTotal: item.lineTotal.toFixed(2),
+      })),
+    }
+  }
+
   async updateFulfillmentStatus(
     actor: AuthenticatedUser,
     orderNumber: string,

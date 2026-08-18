@@ -84,6 +84,36 @@ export type AdminOrder = AdminRecentOrder & {
   lineCount: number
 }
 
+export type AdminOrderDetail = AdminOrder & {
+  shippingPhone: string
+  shippingAddress: {
+    line1: string
+    line2: string | null
+    city: string
+    region: string
+    postalCode: string | null
+    country: string
+  }
+  subtotal: string
+  discountTotal: string
+  shippingTotal: string
+  taxTotal: string
+  cancelledAt: string | null
+  updatedAt: string
+  items: Array<{
+    id: string
+    productId: string | null
+    productName: string
+    sku: string
+    imageUrl: string | null
+    size: string
+    quantity: number
+    unitPrice: string
+    discountTotal: string
+    lineTotal: string
+  }>
+}
+
 type Page<T> = {
   items: T[]
   page: number
@@ -134,6 +164,10 @@ export function fetchAdminCustomers() {
 
 export function fetchAdminOrders() {
   return apiRequest<Page<AdminOrder>>('/admin/orders?limit=50')
+}
+
+export function fetchAdminOrder(orderNumber: string) {
+  return apiRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(orderNumber)}`)
 }
 
 export function setAdminInventory(productId: string, onHand: number, reason: string) {
