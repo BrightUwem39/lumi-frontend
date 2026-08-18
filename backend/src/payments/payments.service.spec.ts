@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { PaymentEventStatus, PaymentProvider, PaymentStatus, Prisma } from '../generated/prisma/client.js'
 import type { PrismaService } from '../database/prisma.service.js'
 import type { PaystackClient } from './paystack.client.js'
+import type { BrevoEmailService } from '../auth/brevo-email.service.js'
 import { PaymentsService } from './payments.service.js'
 
 const secret = 'sk_test_payment-webhook-secret'
@@ -105,5 +106,6 @@ function createService(prisma: object, enabled: boolean, overrides: object = {})
   return new PaymentsService(
     prisma as PrismaService,
     paystack as PaystackClient,
+    { sendOperationalOrderAlert: vi.fn() } as unknown as BrevoEmailService,
   )
 }

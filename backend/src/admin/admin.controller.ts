@@ -42,7 +42,7 @@ import {
   CreateAdminCouponDto,
   UpdateAdminCouponStatusDto,
 } from './dto/admin-coupon.dto.js'
-import { UpdateShippingSettingsDto, UpdateStoreProfileDto, UpdateTaxSettingsDto } from './dto/admin-settings.dto.js'
+import { UpdateNotificationSettingsDto, UpdateShippingSettingsDto, UpdateStoreProfileDto, UpdateTaxSettingsDto } from './dto/admin-settings.dto.js'
 
 @ApiTags('administration')
 @ApiCookieAuth('lumi_session')
@@ -192,6 +192,16 @@ export class AdminController {
     @Body() input: UpdateTaxSettingsDto,
   ) {
     return this.admin.updateTaxSettings(authentication.user, input)
+  }
+
+  @Patch('settings/notifications')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Updates audited operational email notification settings' })
+  notificationSettings(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Body() input: UpdateNotificationSettingsDto,
+  ) {
+    return this.admin.updateNotificationSettings(authentication.user, input)
   }
 
   @Get('orders')

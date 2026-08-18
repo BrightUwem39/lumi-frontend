@@ -22,7 +22,7 @@ import type {
   UpdateAdminProductDto,
 } from './dto/admin-product.dto.js'
 import type { CreateAdminCouponDto, UpdateAdminCouponStatusDto } from './dto/admin-coupon.dto.js'
-import type { UpdateShippingSettingsDto, UpdateStoreProfileDto, UpdateTaxSettingsDto } from './dto/admin-settings.dto.js'
+import type { UpdateNotificationSettingsDto, UpdateShippingSettingsDto, UpdateStoreProfileDto, UpdateTaxSettingsDto } from './dto/admin-settings.dto.js'
 
 const fulfillmentStatuses = [
   OrderStatus.PAID,
@@ -112,6 +112,20 @@ const defaultTaxSettings = {
   taxRate: '0.00',
   taxLabel: 'VAT',
   pricesIncludeTax: true,
+}
+
+const notificationSettingsSelect = {
+  notificationEmail: true,
+  orderPaidAlerts: true,
+  lowStockAlerts: true,
+  lowStockThreshold: true,
+} satisfies Prisma.StoreSettingSelect
+
+const defaultNotificationSettings = {
+  notificationEmail: 'hello@lumi.com',
+  orderPaidAlerts: false,
+  lowStockAlerts: false,
+  lowStockThreshold: 10,
 }
 
 @Injectable()
@@ -636,6 +650,7 @@ export class AdminService {
       storeProfile: settings ? pickStoreProfile(settings) : defaultStoreProfile,
       shipping: settings ? toShippingSettings(settings) : defaultShippingSettings,
       tax: settings ? toTaxSettings(settings) : defaultTaxSettings,
+      notifications: settings ? toNotificationSettings(settings) : defaultNotificationSettings,
     }
   }
 
@@ -717,6 +732,31 @@ export class AdminService {
         },
       })
       return { tax: toTaxSettings(settings) }
+    })
+  }
+
+  async updateNotificationSettings(actor: AuthenticatedUser, input: UpdateNotificationSettingsDto) {
+    return this.prisma.$transaction(async (transaction) => {
+      const { reason, ...notifications } = input
+      const settings = await transaction.storeSetting.upsert({
+        where: { id: 'primary' },
+        create: { id: 'primary', ...notifications },
+        update: notifications,
+        select: notificationSettingsSelect,
+      })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'NOTIFICATION_SETTINGS_UPDATED',
+          resourceType: 'STORE_SETTINGS',
+          resourceId: 'primary',
+          result: 'SUCCESS',
+          reason,
+          metadata: { fields: Object.keys(notifications) },
+        },
+      })
+      return { notifications: toNotificationSettings(settings) }
     })
   }
 
@@ -956,6 +996,20 @@ function toTaxSettings(settings: {
     taxRate: settings.taxRate.toFixed(2),
     taxLabel: settings.taxLabel,
     pricesIncludeTax: settings.pricesIncludeTax,
+  }
+}
+
+function toNotificationSettings(settings: {
+  notificationEmail: string
+  orderPaidAlerts: boolean
+  lowStockAlerts: boolean
+  lowStockThreshold: number
+}) {
+  return {
+    notificationEmail: settings.notificationEmail,
+    orderPaidAlerts: settings.orderPaidAlerts,
+    lowStockAlerts: settings.lowStockAlerts,
+    lowStockThreshold: settings.lowStockThreshold,
   }
 }
 

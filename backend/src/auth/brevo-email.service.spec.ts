@@ -43,6 +43,28 @@ describe('BrevoEmailService', () => {
     expect(request).not.toHaveBeenCalled()
   })
 
+  it('sends an escaped paid-order and low-stock operational alert', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(null, { status: 201 }))
+    vi.stubGlobal('fetch', request)
+    const service = new BrevoEmailService(new ConfigService(settings))
+
+    await service.sendOperationalOrderAlert('admin@example.com', {
+      orderNumber: 'LM-123',
+      customerName: '<Bright>',
+      customerEmail: 'bright@example.com',
+      total: '125000.00',
+      currency: 'NGN',
+      lowStock: [{ name: 'Lumi & Tee', sku: 'TEE-1', available: 2 }],
+    })
+
+    const [, options] = request.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(String(options.body)) as { subject: string; htmlContent: string }
+    expect(body.subject).toContain('Paid order LM-123')
+    expect(body.htmlContent).toContain('&lt;Bright&gt;')
+    expect(body.htmlContent).toContain('Lumi &amp; Tee')
+    expect(body.htmlContent).not.toContain('<Bright>')
+  })
+
   it('returns a generic service error when Brevo rejects delivery', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
     const service = new BrevoEmailService(new ConfigService(settings))

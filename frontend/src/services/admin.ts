@@ -169,10 +169,18 @@ export type AdminTaxSettings = {
   pricesIncludeTax: boolean
 }
 
+export type AdminNotificationSettings = {
+  notificationEmail: string
+  orderPaidAlerts: boolean
+  lowStockAlerts: boolean
+  lowStockThreshold: number
+}
+
 export type AdminSettings = {
   storeProfile: AdminStoreProfile
   shipping: AdminShippingSettings
   tax: AdminTaxSettings
+  notifications: AdminNotificationSettings
 }
 
 type Page<T> = {
@@ -286,6 +294,14 @@ export function updateAdminTaxSettings(input: {
   reason: string
 }) {
   return apiRequest<{ tax: AdminTaxSettings }>('/admin/settings/tax', {
+    method: 'PATCH',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateAdminNotificationSettings(input: AdminNotificationSettings & { reason: string }) {
+  return apiRequest<{ notifications: AdminNotificationSettings }>('/admin/settings/notifications', {
     method: 'PATCH',
     headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

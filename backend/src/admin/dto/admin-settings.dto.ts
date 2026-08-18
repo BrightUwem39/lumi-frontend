@@ -54,3 +54,20 @@ export class UpdateTaxSettingsDto {
   @Transform(trim) @IsString() @Length(3, 500)
   reason!: string
 }
+
+export class UpdateNotificationSettingsDto {
+  @Transform(email) @IsEmail() @MaxLength(320)
+  notificationEmail!: string
+
+  @IsBoolean()
+  orderPaidAlerts!: boolean
+
+  @IsBoolean()
+  lowStockAlerts!: boolean
+
+  @Type(() => Number) @IsInt() @Min(0) @Max(1_000_000)
+  lowStockThreshold!: number
+
+  @Transform(trim) @IsString() @Length(3, 500)
+  reason!: string
+}

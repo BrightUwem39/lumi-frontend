@@ -13,6 +13,7 @@ import {
   Prisma,
 } from '../generated/prisma/client.js'
 import { hashToken } from '../auth/auth.crypto.js'
+import { BrevoEmailService } from '../auth/brevo-email.service.js'
 import { PrismaService } from '../database/prisma.service.js'
 import { PaystackClient, PaystackInitializationException } from './paystack.client.js'
 
@@ -37,6 +38,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paystack: PaystackClient,
+    private readonly email: BrevoEmailService,
   ) {}
 
   availability() {
@@ -268,13 +270,13 @@ export class PaymentsService {
         }
         const payloadHash = createHash('sha256').update(JSON.stringify(result)).digest('hex')
         if (result.status === 'success') {
-          await this.settlePayment(
+          const didSettle = await this.settlePayment(
             payment,
             `verification.success:${payment.providerReference}`,
             'verification.success',
             payloadHash,
           )
-          settled += 1
+          if (didSettle) settled += 1
         } else if (result.status === 'failed' || result.status === 'abandoned') {
           const didRelease = await this.releaseReservation(payment.id, payment.orderId, payment.order.items, {
             eventId: `verification.${result.status}:${payment.providerReference}`,
@@ -301,7 +303,7 @@ export class PaymentsService {
     eventType: string,
     payloadHash: string,
   ) {
-    await this.prisma.$transaction(async (transaction) => {
+    const settled = await this.prisma.$transaction(async (transaction) => {
       await transaction.paymentEvent.create({
         data: {
           paymentId: payment.id,
@@ -324,7 +326,7 @@ export class PaymentsService {
         },
       })
       if (claimed.count !== 1) {
-        return
+        return false
       }
       for (const item of payment.order.items) {
         if (!item.productId) throw new Error('Reserved product is missing.')
@@ -346,7 +348,55 @@ export class PaymentsService {
         data: { status: OrderStatus.PAID, paidAt },
       })
       if (orderClaimed.count !== 1) throw new Error('Pending order invariant failed.')
+      return true
     })
+    if (settled) await this.sendSettlementNotification(payment)
+    return settled
+  }
+
+  private async sendSettlementNotification(payment: PaymentWithOrder) {
+    try {
+      const settings = await this.prisma.storeSetting.findUnique({
+        where: { id: 'primary' },
+        select: {
+          notificationEmail: true,
+          orderPaidAlerts: true,
+          lowStockAlerts: true,
+          lowStockThreshold: true,
+        },
+      })
+      if (!settings || (!settings.orderPaidAlerts && !settings.lowStockAlerts)) return
+
+      const productIds = [...new Set(payment.order.items.flatMap((item) => item.productId ? [item.productId] : []))]
+      const products = settings.lowStockAlerts && productIds.length ? await this.prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: {
+          name: true,
+          sku: true,
+          inventory: { select: { onHand: true, reserved: true } },
+        },
+      }) : []
+      const lowStock = products.flatMap((product) => {
+        const available = Math.max(0, (product.inventory?.onHand ?? 0) - (product.inventory?.reserved ?? 0))
+        return available <= settings.lowStockThreshold
+          ? [{ name: product.name, sku: product.sku, available }]
+          : []
+      })
+      if (!settings.orderPaidAlerts && lowStock.length === 0) return
+
+      await this.email.sendOperationalOrderAlert(settings.notificationEmail, {
+        ...(settings.orderPaidAlerts ? {
+          orderNumber: payment.order.number,
+          customerName: payment.order.shippingName,
+          customerEmail: payment.order.email,
+          total: payment.order.total.toFixed(2),
+          currency: payment.order.currency,
+        } : {}),
+        lowStock,
+      })
+    } catch {
+      // A notification outage must never roll back a confirmed provider payment.
+    }
   }
 
   private async deferReconciliation(paymentId: string, reason: string) {

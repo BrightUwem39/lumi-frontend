@@ -8,6 +8,15 @@ type TransactionalEmail = {
   html: string
 }
 
+export type OperationalOrderAlert = {
+  orderNumber?: string
+  customerName?: string
+  customerEmail?: string
+  total?: string
+  currency?: string
+  lowStock: Array<{ name: string; sku: string; available: number }>
+}
+
 @Injectable()
 export class BrevoEmailService {
   constructor(private readonly config: ConfigService) {}
@@ -74,6 +83,39 @@ export class BrevoEmailService {
     })
   }
 
+  async sendOperationalOrderAlert(recipient: string, alert: OperationalOrderAlert) {
+    if (!this.isEnabled()) return
+
+    const orderLines = alert.orderNumber ? [
+      `Paid order: ${alert.orderNumber}`,
+      `Customer: ${alert.customerName} (${alert.customerEmail})`,
+      `Total: ${alert.currency} ${alert.total}`,
+    ] : []
+    const stockLines = alert.lowStock.map(
+      (product) => `${product.name} (${product.sku}): ${product.available} available`,
+    )
+    const sections = [
+      ...orderLines,
+      ...(stockLines.length ? ['', 'Low-stock products:', ...stockLines] : []),
+    ]
+    const orderHtml = alert.orderNumber ? `
+      <h1>New paid Lumi order</h1>
+      <p><strong>Order:</strong> ${escapeHtml(alert.orderNumber)}</p>
+      <p><strong>Customer:</strong> ${escapeHtml(alert.customerName ?? '')} (${escapeHtml(alert.customerEmail ?? '')})</p>
+      <p><strong>Total:</strong> ${escapeHtml(alert.currency ?? '')} ${escapeHtml(alert.total ?? '')}</p>
+    ` : ''
+    const stockHtml = alert.lowStock.length ? `
+      <h2>Low-stock products</h2>
+      <ul>${alert.lowStock.map((product) => `<li>${escapeHtml(product.name)} (${escapeHtml(product.sku)}): ${product.available} available</li>`).join('')}</ul>
+    ` : ''
+    await this.send({
+      recipient,
+      subject: alert.orderNumber ? `Paid order ${alert.orderNumber} · Lumi` : 'Lumi low-stock alert',
+      text: sections.join('\n'),
+      html: `${orderHtml}${stockHtml}`,
+    })
+  }
+
   private async send(email: TransactionalEmail) {
     let response: Response
     try {
@@ -104,4 +146,10 @@ export class BrevoEmailService {
       throw new ServiceUnavailableException('Email delivery is temporarily unavailable.')
     }
   }
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+  })[character]!)
 }

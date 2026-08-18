@@ -23,6 +23,7 @@ import { BrevoEmailService } from './brevo-email.service.js'
   ],
   exports: [
     AuthService,
+    BrevoEmailService,
     AuthCookies,
     SessionGuard,
     CsrfGuard,

@@ -464,6 +464,10 @@ model StoreSetting {
   taxRate         Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
   taxLabel        String   @default("VAT") @map("tax_label") @db.VarChar(40)
   pricesIncludeTax Boolean @default(true) @map("prices_include_tax")
+  notificationEmail String @default("hello@lumi.com") @map("notification_email") @db.VarChar(320)
+  orderPaidAlerts  Boolean  @default(false) @map("order_paid_alerts")
+  lowStockAlerts   Boolean  @default(false) @map("low_stock_alerts")
+  lowStockThreshold Int     @default(10) @map("low_stock_threshold")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

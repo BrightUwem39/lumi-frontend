@@ -548,6 +548,40 @@ describe('AdminService dashboard', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled()
   })
 
+  it('saves audited operational notification preferences', async () => {
+    const notifications = {
+      notificationEmail: 'orders@lumi.com',
+      orderPaidAlerts: true,
+      lowStockAlerts: true,
+      lowStockThreshold: 8,
+    }
+    const transaction = {
+      storeSetting: { upsert: vi.fn().mockResolvedValue(notifications) },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-notifications' }) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.updateNotificationSettings(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      { ...notifications, reason: 'Send alerts to the fulfilment inbox' },
+    )
+
+    expect(result).toEqual({ notifications })
+    expect(transaction.storeSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'primary' }, update: notifications,
+    }))
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'NOTIFICATION_SETTINGS_UPDATED',
+        reason: 'Send alerts to the fulfilment inbox',
+      }),
+    })
+  })
+
   it('enforces forward-only fulfilment transitions', async () => {
     const transaction = {
       order: {
