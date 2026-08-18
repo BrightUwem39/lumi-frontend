@@ -100,6 +100,19 @@ export type AdminOrderDetail = AdminOrder & {
   taxTotal: string
   cancelledAt: string | null
   updatedAt: string
+  refundableAmount: string
+  refunds: Array<{
+    id: string
+    status: 'REQUESTING' | 'PENDING' | 'PROCESSING' | 'NEEDS_ATTENTION' | 'PROCESSED' | 'FAILED'
+    amount: string
+    currency: string
+    reason: string
+    expectedAt: string | null
+    processedAt: string | null
+    failedAt: string | null
+    failureReason: string | null
+    createdAt: string
+  }>
   items: Array<{
     id: string
     productId: string | null
@@ -257,6 +270,21 @@ export function fetchAdminOrders() {
 
 export function fetchAdminOrder(orderNumber: string) {
   return apiRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(orderNumber)}`)
+}
+
+export function createAdminRefund(orderNumber: string, input: { amount?: number; reason: string }) {
+  return apiRequest<{
+    id: string
+    status: string
+    amount: string
+    currency: string
+    expectedAt: string | null
+    createdAt: string
+  }>(`/admin/orders/${encodeURIComponent(orderNumber)}/refunds`, {
+    method: 'POST',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
 }
 
 export function fetchAdminCoupons() {
