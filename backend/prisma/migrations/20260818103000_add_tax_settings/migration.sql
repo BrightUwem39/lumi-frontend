@@ -1,0 +1,5 @@
+ALTER TABLE "store_settings"
+ADD COLUMN "tax_enabled" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "tax_rate" DECIMAL(5,2) NOT NULL DEFAULT 0,
+ADD COLUMN "tax_label" VARCHAR(40) NOT NULL DEFAULT 'VAT',
+ADD COLUMN "prices_include_tax" BOOLEAN NOT NULL DEFAULT true;

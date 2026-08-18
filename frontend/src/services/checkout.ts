@@ -19,6 +19,7 @@ export type OrderDraft = {
   subtotal: string
   discountTotal: string
   couponCode: string | null
+  taxTotal: string
   shippingTotal: string
   total: string
   createdAt: string
@@ -67,8 +68,23 @@ export type CouponValidation = {
   currency: string
   subtotal: string
   discountTotal: string
+  taxTotal: string
+  taxLabel: string
+  pricesIncludeTax: boolean
   shippingTotal: string
   total: string
+}
+
+export type TaxTerms = {
+  currency: string
+  enabled: boolean
+  rate: number
+  label: string
+  pricesIncludeTax: boolean
+}
+
+export function fetchTaxTerms(currency = 'NGN') {
+  return apiRequest<TaxTerms>(`/checkout/tax-terms?currency=${encodeURIComponent(currency)}`)
 }
 
 export type ShippingTerms = {

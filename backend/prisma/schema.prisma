@@ -460,6 +460,10 @@ model StoreSetting {
   freeShippingThreshold Decimal @default(345000) @map("free_shipping_threshold") @db.Decimal(12, 2)
   deliveryMinDays Int      @default(2) @map("delivery_min_days")
   deliveryMaxDays Int      @default(5) @map("delivery_max_days")
+  taxEnabled      Boolean  @default(false) @map("tax_enabled")
+  taxRate         Decimal  @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  taxLabel        String   @default("VAT") @map("tax_label") @db.VarChar(40)
+  pricesIncludeTax Boolean @default(true) @map("prices_include_tax")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

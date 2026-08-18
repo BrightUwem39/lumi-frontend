@@ -37,3 +37,20 @@ export class UpdateShippingSettingsDto {
   @Transform(trim) @IsString() @Length(3, 500)
   reason!: string
 }
+
+export class UpdateTaxSettingsDto {
+  @IsBoolean()
+  taxEnabled!: boolean
+
+  @Type(() => Number) @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(100)
+  taxRate!: number
+
+  @Transform(trim) @IsString() @Length(2, 40)
+  taxLabel!: string
+
+  @IsBoolean()
+  pricesIncludeTax!: boolean
+
+  @Transform(trim) @IsString() @Length(3, 500)
+  reason!: string
+}

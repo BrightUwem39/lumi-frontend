@@ -30,6 +30,16 @@ export class CheckoutService {
     return { currency, ...terms }
   }
 
+  async getTaxTerms(currencyInput: string) {
+    const currency = currencyInput.trim().toUpperCase()
+    if (!/^[A-Z]{3}$/.test(currency)) throw new BadRequestException('A valid currency is required.')
+    const settings = currency === 'NGN' ? await this.prisma.storeSetting.findUnique({
+      where: { id: 'primary' },
+      select: { taxEnabled: true, taxRate: true, taxLabel: true, pricesIncludeTax: true },
+    }) : null
+    return { currency, ...taxTerms(settings ?? undefined) }
+  }
+
   async createDraft(
     userId: string | undefined,
     guestToken: string,
@@ -51,7 +61,7 @@ export class CheckoutService {
     try {
       const order = await this.prisma.$transaction(async (transaction) => {
         const pricing = await this.calculatePricing(transaction, cart.id, input.couponCode)
-        const { cartRecord, currency, subtotal, shippingTotal, discountTotal, total, coupon } = pricing
+        const { cartRecord, currency, subtotal, shippingTotal, discountTotal, taxTotal, total, coupon } = pricing
         const now = new Date()
         if (coupon) {
           const reservation = await transaction.coupon.updateMany({
@@ -88,6 +98,7 @@ export class CheckoutService {
             subtotal,
             couponId: coupon?.id,
             discountTotal,
+            taxTotal,
             shippingTotal,
             total,
             idempotencyKeyHash: keyHash,
@@ -141,6 +152,9 @@ export class CheckoutService {
       currency: pricing.currency,
       subtotal: pricing.subtotal.toFixed(2),
       discountTotal: pricing.discountTotal.toFixed(2),
+      taxTotal: pricing.taxTotal.toFixed(2),
+      taxLabel: pricing.tax.label,
+      pricesIncludeTax: pricing.tax.pricesIncludeTax,
       shippingTotal: pricing.shippingTotal.toFixed(2),
       total: pricing.total.toFixed(2),
     }
@@ -187,7 +201,7 @@ export class CheckoutService {
       (sum, item) => sum.add(item.product.price.mul(item.quantity)),
       new Prisma.Decimal(0),
     )
-    const configuredShipping = currency === 'NGN' ? await database.storeSetting.findUnique({
+    const configuredSettings = currency === 'NGN' ? await database.storeSetting.findUnique({
       where: { id: 'primary' },
       select: {
         shippingEnabled: true,
@@ -195,9 +209,13 @@ export class CheckoutService {
         freeShippingThreshold: true,
         deliveryMinDays: true,
         deliveryMaxDays: true,
+        taxEnabled: true,
+        taxRate: true,
+        taxLabel: true,
+        pricesIncludeTax: true,
       },
     }) : null
-    const shipping = shippingTerms(currency, configuredShipping ?? undefined)
+    const shipping = shippingTerms(currency, configuredSettings ?? undefined)
     if (!shipping.enabled) throw new BadRequestException('Shipping is temporarily unavailable.')
     const shippingTotal = subtotal.greaterThanOrEqualTo(shipping.freeThreshold)
       ? new Prisma.Decimal(0)
@@ -209,8 +227,13 @@ export class CheckoutService {
     const discountTotal = coupon
       ? calculateCouponDiscount(coupon, subtotal, currency, now)
       : new Prisma.Decimal(0)
-    const total = subtotal.sub(discountTotal).add(shippingTotal)
-    return { cartRecord, currency, subtotal, discountTotal, shippingTotal, total, coupon }
+    const tax = taxTerms(configuredSettings ?? undefined)
+    const discountedSubtotal = subtotal.sub(discountTotal)
+    const taxTotal = calculateTax(discountedSubtotal, tax)
+    const total = discountedSubtotal.add(shippingTotal).add(
+      tax.enabled && !tax.pricesIncludeTax ? taxTotal : new Prisma.Decimal(0),
+    )
+    return { cartRecord, currency, subtotal, discountTotal, taxTotal, shippingTotal, total, coupon, tax }
   }
 
 }
@@ -231,6 +254,29 @@ export function shippingTerms(currency: string, settings?: {
         deliveryMaxDays: settings?.deliveryMaxDays ?? 5,
       }
     : { enabled: true, price: 18, freeThreshold: 250, deliveryMinDays: 5, deliveryMaxDays: 12 }
+}
+
+export function taxTerms(settings?: {
+  taxEnabled: boolean
+  taxRate: { toString(): string }
+  taxLabel: string
+  pricesIncludeTax: boolean
+}) {
+  return {
+    enabled: settings?.taxEnabled ?? false,
+    rate: settings ? Number(settings.taxRate) : 0,
+    label: settings?.taxLabel ?? 'VAT',
+    pricesIncludeTax: settings?.pricesIncludeTax ?? true,
+  }
+}
+
+function calculateTax(subtotal: Prisma.Decimal, tax: ReturnType<typeof taxTerms>) {
+  if (!tax.enabled || tax.rate <= 0) return new Prisma.Decimal(0)
+  const rate = new Prisma.Decimal(tax.rate)
+  return (tax.pricesIncludeTax
+    ? subtotal.mul(rate).div(rate.add(100))
+    : subtotal.mul(rate).div(100)
+  ).toDecimalPlaces(2)
 }
 
 function calculateCouponDiscount(
@@ -268,6 +314,7 @@ export function toOrderResponse(order: {
     currency: string
     subtotal: Prisma.Decimal
     discountTotal: Prisma.Decimal
+    taxTotal: Prisma.Decimal
     shippingTotal: Prisma.Decimal
     total: Prisma.Decimal
     createdAt: Date
@@ -291,6 +338,7 @@ export function toOrderResponse(order: {
       subtotal: order.subtotal.toFixed(2),
       discountTotal: order.discountTotal.toFixed(2),
       couponCode: order.coupon?.code ?? null,
+      taxTotal: order.taxTotal.toFixed(2),
       shippingTotal: order.shippingTotal.toFixed(2),
       total: order.total.toFixed(2),
       createdAt: order.createdAt,

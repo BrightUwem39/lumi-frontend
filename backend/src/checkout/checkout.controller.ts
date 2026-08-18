@@ -24,6 +24,12 @@ export class CheckoutController {
     return this.checkout.getShippingTerms(currency)
   }
 
+  @Get('tax-terms')
+  @ApiOperation({ summary: 'Returns current public tax terms for a currency' })
+  taxTerms(@Query('currency') currency = 'NGN') {
+    return this.checkout.getTaxTerms(currency)
+  }
+
   @Post('orders')
   @UseGuards(CartCsrfGuard)
   @ApiOperation({ summary: 'Creates an idempotent, non-payable order draft from the cart' })

@@ -162,9 +162,17 @@ export type AdminShippingSettings = {
   deliveryMaxDays: number
 }
 
+export type AdminTaxSettings = {
+  taxEnabled: boolean
+  taxRate: string
+  taxLabel: string
+  pricesIncludeTax: boolean
+}
+
 export type AdminSettings = {
   storeProfile: AdminStoreProfile
   shipping: AdminShippingSettings
+  tax: AdminTaxSettings
 }
 
 type Page<T> = {
@@ -264,6 +272,20 @@ export function updateAdminShippingSettings(input: {
   reason: string
 }) {
   return apiRequest<{ shipping: AdminShippingSettings }>('/admin/settings/shipping', {
+    method: 'PATCH',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateAdminTaxSettings(input: {
+  taxEnabled: boolean
+  taxRate: number
+  taxLabel: string
+  pricesIncludeTax: boolean
+  reason: string
+}) {
+  return apiRequest<{ tax: AdminTaxSettings }>('/admin/settings/tax', {
     method: 'PATCH',
     headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

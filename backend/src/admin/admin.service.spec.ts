@@ -499,6 +499,55 @@ describe('AdminService dashboard', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled()
   })
 
+  it('saves audited tax settings with a serialized percentage rate', async () => {
+    const transaction = {
+      storeSetting: { upsert: vi.fn().mockResolvedValue({
+        taxEnabled: true,
+        taxRate: new Prisma.Decimal(7.5),
+        taxLabel: 'VAT',
+        pricesIncludeTax: false,
+      }) },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-tax' }) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.updateTaxSettings(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      {
+        taxEnabled: true, taxRate: 7.5, taxLabel: 'VAT', pricesIncludeTax: false,
+        reason: 'Configured statutory VAT',
+      },
+    )
+
+    expect(result).toEqual({ tax: {
+      taxEnabled: true, taxRate: '7.50', taxLabel: 'VAT', pricesIncludeTax: false,
+    } })
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'TAX_SETTINGS_UPDATED', reason: 'Configured statutory VAT' }),
+    })
+  })
+
+  it('requires a positive tax rate when tax calculation is enabled', async () => {
+    const prisma = { $transaction: vi.fn() }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    await expect(service.updateTaxSettings(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      {
+        taxEnabled: true, taxRate: 0, taxLabel: 'VAT', pricesIncludeTax: true,
+        reason: 'Invalid zero-rate test',
+      },
+    )).rejects.toBeInstanceOf(BadRequestException)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
   it('enforces forward-only fulfilment transitions', async () => {
     const transaction = {
       order: {

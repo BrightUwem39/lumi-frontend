@@ -22,7 +22,7 @@ import type {
   UpdateAdminProductDto,
 } from './dto/admin-product.dto.js'
 import type { CreateAdminCouponDto, UpdateAdminCouponStatusDto } from './dto/admin-coupon.dto.js'
-import type { UpdateShippingSettingsDto, UpdateStoreProfileDto } from './dto/admin-settings.dto.js'
+import type { UpdateShippingSettingsDto, UpdateStoreProfileDto, UpdateTaxSettingsDto } from './dto/admin-settings.dto.js'
 
 const fulfillmentStatuses = [
   OrderStatus.PAID,
@@ -98,6 +98,20 @@ const defaultShippingSettings = {
   freeShippingThreshold: '345000.00',
   deliveryMinDays: 2,
   deliveryMaxDays: 5,
+}
+
+const taxSettingsSelect = {
+  taxEnabled: true,
+  taxRate: true,
+  taxLabel: true,
+  pricesIncludeTax: true,
+} satisfies Prisma.StoreSettingSelect
+
+const defaultTaxSettings = {
+  taxEnabled: false,
+  taxRate: '0.00',
+  taxLabel: 'VAT',
+  pricesIncludeTax: true,
 }
 
 @Injectable()
@@ -621,6 +635,7 @@ export class AdminService {
     return {
       storeProfile: settings ? pickStoreProfile(settings) : defaultStoreProfile,
       shipping: settings ? toShippingSettings(settings) : defaultShippingSettings,
+      tax: settings ? toTaxSettings(settings) : defaultTaxSettings,
     }
   }
 
@@ -674,6 +689,34 @@ export class AdminService {
         },
       })
       return { shipping: toShippingSettings(settings) }
+    })
+  }
+
+  async updateTaxSettings(actor: AuthenticatedUser, input: UpdateTaxSettingsDto) {
+    if (input.taxEnabled && input.taxRate <= 0) {
+      throw new BadRequestException('Enter a tax rate greater than zero before enabling tax.')
+    }
+    return this.prisma.$transaction(async (transaction) => {
+      const { reason, ...tax } = input
+      const settings = await transaction.storeSetting.upsert({
+        where: { id: 'primary' },
+        create: { id: 'primary', ...tax },
+        update: tax,
+        select: taxSettingsSelect,
+      })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'TAX_SETTINGS_UPDATED',
+          resourceType: 'STORE_SETTINGS',
+          resourceId: 'primary',
+          result: 'SUCCESS',
+          reason,
+          metadata: { fields: Object.keys(tax) },
+        },
+      })
+      return { tax: toTaxSettings(settings) }
     })
   }
 
@@ -899,6 +942,20 @@ function toShippingSettings(settings: {
     freeShippingThreshold: settings.freeShippingThreshold.toFixed(2),
     deliveryMinDays: settings.deliveryMinDays,
     deliveryMaxDays: settings.deliveryMaxDays,
+  }
+}
+
+function toTaxSettings(settings: {
+  taxEnabled: boolean
+  taxRate: { toFixed(digits: number): string }
+  taxLabel: string
+  pricesIncludeTax: boolean
+}) {
+  return {
+    taxEnabled: settings.taxEnabled,
+    taxRate: settings.taxRate.toFixed(2),
+    taxLabel: settings.taxLabel,
+    pricesIncludeTax: settings.pricesIncludeTax,
   }
 }
 

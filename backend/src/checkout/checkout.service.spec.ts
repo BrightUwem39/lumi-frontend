@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { OrderStatus, Prisma } from '../generated/prisma/client.js'
 import type { CartService } from '../cart/cart.service.js'
 import type { PrismaService } from '../database/prisma.service.js'
-import { CheckoutService, shippingTerms } from './checkout.service.js'
+import { CheckoutService, shippingTerms, taxTerms } from './checkout.service.js'
 
 const input = {
   email: 'customer@example.com', firstName: 'Amara', lastName: 'Okafor',
@@ -22,6 +22,12 @@ describe('CheckoutService', () => {
       deliveryMinDays: 3,
       deliveryMaxDays: 7,
     })).toEqual({ enabled: true, price: 30000, freeThreshold: 400000, deliveryMinDays: 3, deliveryMaxDays: 7 })
+    expect(taxTerms({
+      taxEnabled: true,
+      taxRate: new Prisma.Decimal(7.5),
+      taxLabel: 'VAT',
+      pricesIncludeTax: false,
+    })).toEqual({ enabled: true, rate: 7.5, label: 'VAT', pricesIncludeTax: false })
   })
 
   it('requires a bounded idempotency key before accessing the cart', async () => {
@@ -42,6 +48,7 @@ describe('CheckoutService', () => {
       email: input.email, shippingName: 'Amara Okafor', shippingAddress: input,
       currency: 'USD', subtotal: new Prisma.Decimal(189),
       discountTotal: new Prisma.Decimal(0),
+      taxTotal: new Prisma.Decimal(0),
       shippingTotal: new Prisma.Decimal(18), total: new Prisma.Decimal(207),
       createdAt: new Date('2026-08-10T00:00:00Z'),
       items: [{ productName: 'Luna Silk Dress', imageUrl: '/luna.jpg', size: 'M',
@@ -153,7 +160,17 @@ describe('CheckoutService', () => {
       createdAt: now, updatedAt: now,
     }
     const transaction = {
-      storeSetting: { findUnique: vi.fn().mockResolvedValue(null) },
+      storeSetting: { findUnique: vi.fn().mockResolvedValue({
+        shippingEnabled: true,
+        shippingFee: new Prisma.Decimal(25000),
+        freeShippingThreshold: new Prisma.Decimal(345000),
+        deliveryMinDays: 2,
+        deliveryMaxDays: 5,
+        taxEnabled: true,
+        taxRate: new Prisma.Decimal(7.5),
+        taxLabel: 'VAT',
+        pricesIncludeTax: false,
+      }) },
       cart: {
         findUniqueOrThrow: vi.fn().mockResolvedValue(cartRecord),
         update: vi.fn().mockResolvedValue({}),
@@ -166,7 +183,7 @@ describe('CheckoutService', () => {
         number: 'LM-2026-ABCDEF123456', status: OrderStatus.DRAFT,
         email: data.email, shippingName: data.shippingName,
         shippingAddress: data.shippingAddress, currency: data.currency,
-        subtotal: data.subtotal, discountTotal: data.discountTotal,
+        subtotal: data.subtotal, discountTotal: data.discountTotal, taxTotal: data.taxTotal,
         shippingTotal: data.shippingTotal, total: data.total, createdAt: now,
         coupon: { code: coupon.code },
         items: [{ productName: 'Lumi Shirt', imageUrl: null, size: 'M', quantity: 1,
@@ -188,7 +205,9 @@ describe('CheckoutService', () => {
       { ...input, couponCode: 'LUMI10' },
     )
 
-    expect(result).toMatchObject({ couponCode: 'LUMI10', discountTotal: '10000.00', total: '115000.00' })
+    expect(result).toMatchObject({
+      couponCode: 'LUMI10', discountTotal: '10000.00', taxTotal: '6750.00', total: '121750.00',
+    })
     expect(transaction.coupon.updateMany).toHaveBeenCalledWith(expect.objectContaining({
       data: { usageCount: { increment: 1 } },
     }))

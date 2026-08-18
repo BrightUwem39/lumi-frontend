@@ -19,6 +19,7 @@ export type DemoOrder = {
   subtotal: number
   discount: number
   couponCode: string | null
+  tax: number
   shipping: number
   total: number
 }

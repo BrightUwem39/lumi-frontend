@@ -14,7 +14,7 @@ import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import { commerceTerms, formatMoney } from '../lib/currency'
 import { ApiError } from '../services/api'
-import { fetchShippingTerms, validateCoupon, type CouponValidation } from '../services/checkout'
+import { fetchShippingTerms, fetchTaxTerms, validateCoupon, type CouponValidation } from '../services/checkout'
 import { useShopStore } from '../store/useShopStore'
 
 export function CartPage() {
@@ -31,6 +31,7 @@ export function CartPage() {
   const [couponValidation, setCouponValidation] = useState<CouponValidation | null>(null)
   const [couponBusy, setCouponBusy] = useState(false)
   const [remoteTerms, setRemoteTerms] = useState<Awaited<ReturnType<typeof fetchShippingTerms>> | null>(null)
+  const [remoteTax, setRemoteTax] = useState<Awaited<ReturnType<typeof fetchTaxTerms>> | null>(null)
 
   useEffect(() => {
     if (!couponCode) {
@@ -62,15 +63,31 @@ export function CartPage() {
     ? { shipping: remoteTerms.price, freeShippingThreshold: remoteTerms.freeThreshold }
     : fallbackTerms
   const discount = couponValidation ? Number(couponValidation.discountTotal) : 0
+  const taxableSubtotal = subtotal - discount
+  const tax = couponValidation
+    ? Number(couponValidation.taxTotal)
+    : remoteTax?.enabled
+      ? remoteTax.pricesIncludeTax
+        ? taxableSubtotal * remoteTax.rate / (100 + remoteTax.rate)
+        : taxableSubtotal * remoteTax.rate / 100
+      : 0
   const shipping = couponValidation
     ? Number(couponValidation.shippingTotal)
     : subtotal === 0 || subtotal >= terms.freeShippingThreshold ? 0 : terms.shipping
-  const total = couponValidation ? Number(couponValidation.total) : subtotal + shipping
+  const total = couponValidation
+    ? Number(couponValidation.total)
+    : taxableSubtotal + shipping + (remoteTax?.enabled && !remoteTax.pricesIncludeTax ? tax : 0)
   const remainingForFreeShipping = Math.max(0, terms.freeShippingThreshold - subtotal)
 
   useEffect(() => {
     let cancelled = false
     void fetchShippingTerms(cartCurrency).then((value) => { if (!cancelled) setRemoteTerms(value) }).catch(() => undefined)
+    return () => { cancelled = true }
+  }, [cartCurrency])
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchTaxTerms(cartCurrency).then((value) => { if (!cancelled) setRemoteTax(value) }).catch(() => undefined)
     return () => { cancelled = true }
   }, [cartCurrency])
 
@@ -273,6 +290,7 @@ export function CartPage() {
                   label="Shipping"
                   value={shipping === 0 ? 'Free' : formatMoney(shipping, cartCurrency)}
                 />
+                {tax > 0 && <SummaryRow label={`${couponValidation?.taxLabel ?? remoteTax?.label ?? 'Tax'}${couponValidation?.pricesIncludeTax ?? remoteTax?.pricesIncludeTax ? ' (included)' : ''}`} value={formatMoney(tax, cartCurrency)} />}
               </div>
 
               {remainingForFreeShipping > 0 ? (

@@ -74,6 +74,7 @@ export function CheckoutPage() {
         subtotal: Number(order.subtotal),
         discount: Number(order.discountTotal),
         couponCode: order.couponCode,
+        tax: Number(order.taxTotal),
         shipping: Number(order.shippingTotal),
         total: Number(order.total),
       }
