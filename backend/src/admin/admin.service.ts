@@ -15,6 +15,11 @@ import type {
   UpdateFulfillmentStatusDto,
   UpdateInventoryDto,
 } from './dto/admin.dto.js'
+import type {
+  CreateAdminProductDto,
+  DeleteAdminProductDto,
+  UpdateAdminProductDto,
+} from './dto/admin-product.dto.js'
 
 const fulfillmentStatuses = [
   OrderStatus.PAID,
@@ -28,6 +33,31 @@ const revenueStatuses = [
   OrderStatus.SHIPPED,
   OrderStatus.DELIVERED,
 ] as const
+
+const adminProductSelect = {
+  id: true,
+  slug: true,
+  sku: true,
+  name: true,
+  description: true,
+  category: true,
+  color: true,
+  sizes: true,
+  price: true,
+  compareAtPrice: true,
+  currency: true,
+  status: true,
+  publishedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  inventory: { select: { onHand: true, reserved: true, version: true } },
+  images: {
+    select: { url: true, altText: true, position: true },
+    orderBy: { position: 'asc' as const },
+  },
+} satisfies Prisma.ProductSelect
+
+type AdminProductRecord = Prisma.ProductGetPayload<{ select: typeof adminProductSelect }>
 
 @Injectable()
 export class AdminService {
@@ -200,30 +230,185 @@ export class AdminService {
         skip,
         take: query.limit,
         orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
-        select: {
-          id: true,
-          slug: true,
-          sku: true,
-          name: true,
-          category: true,
-          price: true,
-          currency: true,
-          status: true,
-          updatedAt: true,
-          inventory: { select: { onHand: true, reserved: true, version: true } },
-          images: { select: { url: true, altText: true }, orderBy: { position: 'asc' }, take: 1 },
-        },
+        select: adminProductSelect,
       }),
     ])
     return paginated(
-      products.map((product) => ({
-        ...product,
-        price: product.price.toFixed(2),
-        available: Math.max(0, (product.inventory?.onHand ?? 0) - (product.inventory?.reserved ?? 0)),
-      })),
+      products.map(toAdminProduct),
       query,
       total,
     )
+  }
+
+  async createProduct(actor: AuthenticatedUser, input: CreateAdminProductDto) {
+    return this.prisma.$transaction(async (transaction) => {
+      const duplicate = await transaction.product.findFirst({
+        where: { OR: [{ slug: input.slug }, { sku: input.sku }] },
+        select: { slug: true, sku: true },
+      })
+      if (duplicate) {
+        throw new ConflictException(
+          duplicate.slug === input.slug ? 'A product already uses this slug.' : 'A product already uses this SKU.',
+        )
+      }
+      validateProductValues(input.price, input.compareAtPrice, input.status, input.images.length)
+      const { images, onHand, reason, ...productInput } = input
+      const product = await transaction.product.create({
+        data: {
+          ...productInput,
+          currency: 'NGN',
+          publishedAt: input.status === ProductStatus.PUBLISHED ? new Date() : null,
+          images: {
+            create: images.map((image, position) => ({ ...image, position })),
+          },
+          inventory: { create: { onHand, reserved: 0 } },
+        },
+        select: adminProductSelect,
+      })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'PRODUCT_CREATED',
+          resourceType: 'PRODUCT',
+          resourceId: product.id,
+          result: 'SUCCESS',
+          reason,
+          metadata: { sku: product.sku, slug: product.slug, status: product.status },
+        },
+      })
+      return toAdminProduct(product)
+    })
+  }
+
+  async updateProduct(actor: AuthenticatedUser, productId: string, input: UpdateAdminProductDto) {
+    return this.prisma.$transaction(async (transaction) => {
+      const existing = await transaction.product.findUnique({
+        where: { id: productId },
+        select: adminProductSelect,
+      })
+      if (!existing) throw new NotFoundException('Product not found.')
+
+      if (input.slug || input.sku) {
+        const duplicate = await transaction.product.findFirst({
+          where: {
+            id: { not: productId },
+            OR: [
+              ...(input.slug ? [{ slug: input.slug }] : []),
+              ...(input.sku ? [{ sku: input.sku }] : []),
+            ],
+          },
+          select: { slug: true, sku: true },
+        })
+        if (duplicate) {
+          throw new ConflictException(
+            input.slug && duplicate.slug === input.slug
+              ? 'A product already uses this slug.'
+              : 'A product already uses this SKU.',
+          )
+        }
+      }
+
+      const nextPrice = input.price ?? Number(existing.price)
+      const nextCompareAtPrice = input.compareAtPrice === undefined
+        ? existing.compareAtPrice ? Number(existing.compareAtPrice) : null
+        : input.compareAtPrice
+      const nextStatus = input.status ?? existing.status
+      const nextImageCount = input.images?.length ?? existing.images.length
+      validateProductValues(nextPrice, nextCompareAtPrice, nextStatus, nextImageCount)
+      if (input.onHand !== undefined && input.onHand < (existing.inventory?.reserved ?? 0)) {
+        throw new ConflictException('On-hand inventory cannot be lower than reserved inventory.')
+      }
+
+      const product = await transaction.product.update({
+        where: { id: productId },
+        data: {
+          slug: input.slug,
+          sku: input.sku,
+          name: input.name,
+          description: input.description,
+          category: input.category,
+          color: input.color,
+          sizes: input.sizes,
+          price: input.price,
+          ...(input.compareAtPrice !== undefined ? { compareAtPrice: input.compareAtPrice } : {}),
+          status: input.status,
+          ...(input.status !== undefined ? {
+            publishedAt: input.status === ProductStatus.PUBLISHED
+              ? existing.publishedAt ?? new Date()
+              : null,
+          } : {}),
+          ...(input.images ? {
+            images: {
+              deleteMany: {},
+              create: input.images.map((image, position) => ({ ...image, position })),
+            },
+          } : {}),
+          ...(input.onHand !== undefined ? {
+            inventory: {
+              upsert: {
+                create: { onHand: input.onHand, reserved: 0 },
+                update: { onHand: input.onHand, version: { increment: 1 } },
+              },
+            },
+          } : {}),
+        },
+        select: adminProductSelect,
+      })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'PRODUCT_UPDATED',
+          resourceType: 'PRODUCT',
+          resourceId: product.id,
+          result: 'SUCCESS',
+          reason: input.reason,
+          metadata: {
+            sku: product.sku,
+            status: product.status,
+            fields: Object.keys(input).filter((field) => field !== 'reason'),
+          },
+        },
+      })
+      return toAdminProduct(product)
+    })
+  }
+
+  async deleteProduct(actor: AuthenticatedUser, productId: string, input: DeleteAdminProductDto) {
+    return this.prisma.$transaction(async (transaction) => {
+      const product = await transaction.product.findUnique({
+        where: { id: productId },
+        select: {
+          id: true,
+          sku: true,
+          slug: true,
+          status: true,
+          inventory: { select: { reserved: true } },
+        },
+      })
+      if (!product) throw new NotFoundException('Product not found.')
+      if (product.status !== ProductStatus.ARCHIVED) {
+        throw new BadRequestException('Archive the product before permanently deleting it.')
+      }
+      if ((product.inventory?.reserved ?? 0) > 0) {
+        throw new ConflictException('This product has reserved inventory and cannot be deleted.')
+      }
+      await transaction.product.delete({ where: { id: productId } })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'PRODUCT_DELETED',
+          resourceType: 'PRODUCT',
+          resourceId: product.id,
+          result: 'SUCCESS',
+          reason: input.reason,
+          metadata: { sku: product.sku, slug: product.slug },
+        },
+      })
+      return { id: product.id, deleted: true }
+    })
   }
 
   async updateInventory(actor: AuthenticatedUser, productId: string, input: UpdateInventoryDto) {
@@ -415,4 +600,27 @@ function startOfUtcDay(value: Date) {
 
 function sumOrderTotals(orders: Array<{ total: { toString(): string } }>) {
   return orders.reduce((sum, order) => sum + Number(order.total), 0)
+}
+
+function toAdminProduct(product: AdminProductRecord) {
+  return {
+    ...product,
+    price: product.price.toFixed(2),
+    compareAtPrice: product.compareAtPrice?.toFixed(2) ?? null,
+    available: Math.max(0, (product.inventory?.onHand ?? 0) - (product.inventory?.reserved ?? 0)),
+  }
+}
+
+function validateProductValues(
+  price: number,
+  compareAtPrice: number | null | undefined,
+  status: ProductStatus,
+  imageCount: number,
+) {
+  if (compareAtPrice !== null && compareAtPrice !== undefined && compareAtPrice <= price) {
+    throw new BadRequestException('Compare-at price must be higher than the selling price.')
+  }
+  if (status === ProductStatus.PUBLISHED && imageCount === 0) {
+    throw new BadRequestException('Published products must have at least one image.')
+  }
 }

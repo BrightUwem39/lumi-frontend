@@ -35,14 +35,36 @@ export type AdminProduct = {
   slug: string
   sku: string
   name: string
+  description: string
   category: string
+  color: string
+  sizes: string[]
   price: string
+  compareAtPrice: string | null
   currency: string
   status: string
+  publishedAt: string | null
+  createdAt: string
   updatedAt: string
   inventory: { onHand: number; reserved: number; version: number } | null
-  images: { url: string; altText: string }[]
+  images: { url: string; altText: string; position: number }[]
   available: number
+}
+
+export type AdminProductInput = {
+  slug: string
+  sku: string
+  name: string
+  description: string
+  category: string
+  color: string
+  sizes: string[]
+  price: number
+  compareAtPrice: number | null
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  images: Array<{ url: string; altText: string }>
+  onHand: number
+  reason: string
 }
 
 export type AdminCustomer = {
@@ -80,6 +102,30 @@ export function fetchAdminRevenueAnalytics(days: 7 | 30 | 90 = 30) {
 
 export function fetchAdminProducts() {
   return apiRequest<Page<AdminProduct>>('/admin/products?limit=50')
+}
+
+export function createAdminProduct(input: AdminProductInput) {
+  return apiRequest<AdminProduct>('/admin/products', {
+    method: 'POST',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateAdminProduct(productId: string, input: AdminProductInput) {
+  return apiRequest<AdminProduct>(`/admin/products/${productId}`, {
+    method: 'PATCH',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteAdminProduct(productId: string, reason: string) {
+  return apiRequest<{ id: string; deleted: true }>(`/admin/products/${productId}`, {
+    method: 'DELETE',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  })
 }
 
 export function fetchAdminCustomers() {

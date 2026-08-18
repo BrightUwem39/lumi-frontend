@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
 import type { PrismaService } from '../database/prisma.service.js'
-import { OrderStatus, UserRole } from '../generated/prisma/client.js'
+import { OrderStatus, ProductStatus, UserRole } from '../generated/prisma/client.js'
 import { AdminService } from './admin.service.js'
 
 describe('AdminService dashboard', () => {
@@ -152,6 +152,133 @@ describe('AdminService dashboard', () => {
       skip: 0,
       take: 20,
     }))
+  })
+
+  it('creates a complete draft product and records the reason', async () => {
+    const createdAt = new Date('2026-08-18T10:00:00.000Z')
+    const transaction = {
+      product: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({
+          id: 'product-new', slug: 'new-silk-shirt', sku: 'LUMI-NEW-SHIRT',
+          name: 'New Silk Shirt', description: 'A softly tailored silk shirt.', category: 'Women',
+          color: 'Ivory', sizes: ['S', 'M'], price: 185000, compareAtPrice: 210000,
+          currency: 'NGN', status: ProductStatus.DRAFT, publishedAt: null,
+          createdAt, updatedAt: createdAt, inventory: { onHand: 12, reserved: 0, version: 0 },
+          images: [{ url: '/images/new-shirt.jpg', altText: 'New Silk Shirt', position: 0 }],
+        }),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-product-create' }) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.createProduct(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      {
+        slug: 'new-silk-shirt', sku: 'LUMI-NEW-SHIRT', name: 'New Silk Shirt',
+        description: 'A softly tailored silk shirt.', category: 'Women', color: 'Ivory',
+        sizes: ['S', 'M'], price: 185000, compareAtPrice: 210000,
+        status: ProductStatus.DRAFT, onHand: 12,
+        images: [{ url: '/images/new-shirt.jpg', altText: 'New Silk Shirt' }],
+        reason: 'Preparing the autumn catalog',
+      },
+    )
+
+    expect(result).toEqual(expect.objectContaining({
+      id: 'product-new', price: '185000.00', compareAtPrice: '210000.00', available: 12,
+    }))
+    expect(transaction.product.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        currency: 'NGN',
+        images: { create: [{ url: '/images/new-shirt.jpg', altText: 'New Silk Shirt', position: 0 }] },
+        inventory: { create: { onHand: 12, reserved: 0 } },
+      }),
+    }))
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'PRODUCT_CREATED', reason: 'Preparing the autumn catalog' }),
+    })
+  })
+
+  it('updates product content, publication state, images, and inventory together', async () => {
+    const createdAt = new Date('2026-08-01T00:00:00.000Z')
+    const existing = {
+      id: 'product-1', slug: 'silk-shirt', sku: 'LUMI-SHIRT', name: 'Silk Shirt',
+      description: 'An original silk shirt description.', category: 'Women', color: 'White',
+      sizes: ['S'], price: 150000, compareAtPrice: null, currency: 'NGN',
+      status: ProductStatus.DRAFT, publishedAt: null, createdAt, updatedAt: createdAt,
+      inventory: { onHand: 5, reserved: 1, version: 1 },
+      images: [{ url: '/images/old.jpg', altText: 'Old shirt', position: 0 }],
+    }
+    const transaction = {
+      product: {
+        findUnique: vi.fn().mockResolvedValue(existing),
+        findFirst: vi.fn().mockResolvedValue(null),
+        update: vi.fn().mockResolvedValue({
+          ...existing, name: 'Refined Silk Shirt', price: 175000,
+          status: ProductStatus.PUBLISHED, publishedAt: new Date(),
+          inventory: { onHand: 9, reserved: 1, version: 2 },
+          images: [{ url: '/images/new.jpg', altText: 'Refined Silk Shirt', position: 0 }],
+        }),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-product-update' }) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.updateProduct(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      'product-1',
+      {
+        name: 'Refined Silk Shirt', price: 175000, status: ProductStatus.PUBLISHED,
+        images: [{ url: '/images/new.jpg', altText: 'Refined Silk Shirt' }],
+        onHand: 9, reason: 'Approved for storefront publication',
+      },
+    )
+
+    expect(result.status).toBe(ProductStatus.PUBLISHED)
+    expect(result.available).toBe(8)
+    expect(transaction.product.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        status: ProductStatus.PUBLISHED,
+        images: expect.objectContaining({ deleteMany: {} }),
+        inventory: expect.objectContaining({ upsert: expect.any(Object) }),
+      }),
+    }))
+  })
+
+  it('only permanently deletes archived products without reserved stock', async () => {
+    const transaction = {
+      product: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'product-1', sku: 'LUMI-SHIRT', slug: 'silk-shirt',
+          status: ProductStatus.ARCHIVED, inventory: { reserved: 0 },
+        }),
+        delete: vi.fn().mockResolvedValue({ id: 'product-1' }),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-product-delete' }) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    await expect(service.deleteProduct(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      'product-1',
+      { reason: 'Duplicate archived catalog entry' },
+    )).resolves.toEqual({ id: 'product-1', deleted: true })
+    expect(transaction.product.delete).toHaveBeenCalledWith({ where: { id: 'product-1' } })
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'PRODUCT_DELETED' }),
+    })
   })
 
   it('refuses inventory totals that would consume reserved units', async () => {

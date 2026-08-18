@@ -12,24 +12,29 @@ import {
   LuCircleDollarSign,
   LuClock3,
   LuDownload,
+  LuImage,
   LuLayoutDashboard,
   LuLogOut,
   LuMenu,
   LuPackage,
+  LuPlus,
   LuRefreshCw,
   LuSearch,
   LuSettings,
   LuShoppingBag,
   LuStore,
   LuTrendingUp,
+  LuTrash2,
   LuUsers,
   LuX,
 } from 'react-icons/lu'
-import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { formatMoney } from '../lib/currency'
 import { LumiLogo } from '../components/LumiLogo'
 import { ApiError } from '../services/api'
 import {
+  createAdminProduct,
+  deleteAdminProduct,
   fetchAdminCustomers,
   fetchAdminDashboard,
   fetchAdminOrders,
@@ -37,10 +42,12 @@ import {
   fetchAdminRevenueAnalytics,
   setAdminInventory,
   setAdminOrderStatus,
+  updateAdminProduct,
   type AdminCustomer,
   type AdminDashboard,
   type AdminOrder,
   type AdminProduct,
+  type AdminProductInput,
   type AdminRevenueAnalytics,
 } from '../services/admin'
 import { useAuthStore } from '../store/useAuthStore'
@@ -176,8 +183,8 @@ export function AdminPage() {
             <Routes>
               <Route index element={<Overview data={data} reload={load} analyticsDays={analyticsDays} setAnalyticsDays={setAnalyticsDays} />} />
               <Route path="products" element={<ProductsPage products={data.products} query={globalSearch} />} />
-              <Route path="products/new" element={<ProductIntegrationPage mode="new" />} />
-              <Route path="products/:productId" element={<ProductIntegrationPage mode="edit" />} />
+              <Route path="products/new" element={<ProductEditorPage mode="new" products={data.products} reload={load} />} />
+              <Route path="products/:productId" element={<ProductEditorPage mode="edit" products={data.products} reload={load} />} />
               <Route path="orders" element={<OrdersPage orders={data.orders} query={globalSearch} />} />
               <Route path="orders/:orderNumber" element={<OrderDetailPage orders={data.orders} reload={load} />} />
               <Route path="customers" element={<CustomersPage customers={data.customers} query={globalSearch} />} />
@@ -283,9 +290,152 @@ function AnalyticsPage({ data, analyticsDays, setAnalyticsDays }: { data: AdminD
   return <div className="space-y-5"><PageHeader title="Analytics" description="Verified revenue performance from completed Paystack-backed orders." actions={<DateRangeControl value={analyticsDays} onChange={setAnalyticsDays} />} /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Revenue" value={formatMoney(revenue, analytics.revenue.currency)} detail={comparison} icon={<LuCircleDollarSign />} /><StatCard label="Paid orders" value={String(analytics.orders.total)} detail={`Last ${analyticsDays} days`} icon={<LuShoppingBag />} /><StatCard label="Average order value" value={formatMoney(aov, analytics.revenue.currency)} detail="Revenue ÷ paid orders" icon={<LuTrendingUp />} /><StatCard label="Units available" value={String(data.products.reduce((sum, product) => sum + product.available, 0))} detail="Across published catalog" icon={<LuBoxes />} /></div><Panel title="Revenue performance" subtitle={`Daily paid revenue · last ${analyticsDays} days`}><RevenueChart analytics={analytics} /></Panel><Panel title="Next analytics integrations" subtitle="Conversion, refunds, traffic, and category mix"><IntegrationNote text="Revenue time-series and period comparison are now live. Conversion, traffic, refunds, and category performance remain queued for later verified endpoints." /></Panel></div>
 }
 
-function ProductIntegrationPage({ mode }: { mode: 'new' | 'edit' }) {
-  const { productId } = useParams()
-  return <div className="space-y-5"><Link to="/admin/products" className="admin-text-link"><LuArrowLeft /> Back to products</Link><PageHeader title={mode === 'new' ? 'Add product' : 'Edit product'} description={mode === 'new' ? 'Create catalog media, pricing, variants, and inventory.' : `Product ${productId ?? ''}`} /><Panel title="Product editor integration" subtitle="Protected write endpoint required"><IntegrationNote text="The current backend intentionally exposes catalog reads and safe inventory adjustment only. Product creation, media upload, metadata editing, and archive operations remain disabled until explicit administrator endpoints and audit tests are added." /></Panel></div>
+type ProductFormState = {
+  slug: string
+  sku: string
+  name: string
+  description: string
+  category: string
+  color: string
+  sizes: string
+  price: string
+  compareAtPrice: string
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  onHand: string
+  reason: string
+  images: Array<{ url: string; altText: string }>
+}
+
+function ProductEditorPage({ mode, products, reload }: { mode: 'new' | 'edit'; products: AdminProduct[]; reload: () => Promise<void> }) {
+  const { productId = '' } = useParams()
+  const navigate = useNavigate()
+  const product = products.find((item) => item.id === productId)
+  const [form, setForm] = useState<ProductFormState>(() => productFormState(product))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [deleteReason, setDeleteReason] = useState('')
+
+  useEffect(() => setForm(productFormState(product)), [productId, product])
+
+  if (mode === 'edit' && !product) {
+    return <EmptyState title="Product not found" detail="The product may be outside the current result window or was removed." action={<Link to="/admin/products" className="admin-button secondary">Back to products</Link>} />
+  }
+
+  const setValue = <Key extends keyof ProductFormState>(key: Key, value: ProductFormState[Key]) => {
+    setForm((current) => ({ ...current, [key]: value }))
+  }
+  const updateImage = (index: number, field: 'url' | 'altText', value: string) => {
+    setForm((current) => ({
+      ...current,
+      images: current.images.map((image, imageIndex) => imageIndex === index ? { ...image, [field]: value } : image),
+    }))
+  }
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    const sizes = [...new Set(form.sizes.split(',').map((size) => size.trim()).filter(Boolean))]
+    const images = form.images.filter((image) => image.url.trim() || image.altText.trim()).map((image) => ({ url: image.url.trim(), altText: image.altText.trim() }))
+    if (!sizes.length) {
+      setError('Add at least one size, such as S, M, L or One size.')
+      setBusy(false)
+      return
+    }
+    if (images.some((image) => !image.url || !image.altText)) {
+      setError('Every image needs both a URL and accessible alternative text.')
+      setBusy(false)
+      return
+    }
+    if (form.status === 'PUBLISHED' && !images.length) {
+      setError('Published products must have at least one image.')
+      setBusy(false)
+      return
+    }
+    const input: AdminProductInput = {
+      slug: form.slug.trim(),
+      sku: form.sku.trim().toUpperCase(),
+      name: form.name.trim(),
+      description: form.description.trim(),
+      category: form.category.trim(),
+      color: form.color.trim(),
+      sizes,
+      price: Number(form.price),
+      compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : null,
+      status: form.status,
+      images,
+      onHand: Number(form.onHand),
+      reason: form.reason.trim(),
+    }
+    try {
+      if (mode === 'new') await createAdminProduct(input)
+      else await updateAdminProduct(productId, input)
+      await reload()
+      navigate('/admin/products', { replace: true })
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'The product could not be saved.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const removeProduct = async () => {
+    if (!product || deleteConfirmation !== product.name || deleteReason.trim().length < 3) return
+    setBusy(true)
+    setError('')
+    try {
+      await deleteAdminProduct(product.id, deleteReason.trim())
+      await reload()
+      navigate('/admin/products', { replace: true })
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'The product could not be deleted.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return <div className="space-y-6">
+    <Link to="/admin/products" className="admin-text-link"><LuArrowLeft /> Back to products</Link>
+    <form onSubmit={submit} className="space-y-6">
+      <PageHeader title={mode === 'new' ? 'Add product' : 'Edit product'} description={mode === 'new' ? 'Create catalog content, pricing, media, sizes, and opening inventory.' : `Editing ${product?.name ?? productId}`} actions={<><Link to="/admin/products" className="admin-button secondary">Cancel</Link><button disabled={busy} className="admin-button primary">{busy ? 'Saving…' : mode === 'new' ? 'Create product' : 'Save changes'}</button></>} />
+      {error && <div role="alert" className="border-l-2 border-red-700 bg-red-50 p-4 text-sm text-red-900 dark:bg-red-950 dark:text-red-100">{error}</div>}
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.42fr)]">
+        <div className="min-w-0 space-y-6">
+          <Panel title="Product information" subtitle="Customer-facing catalog content">
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="md:col-span-2"><AdminField label="Product name"><input required minLength={2} maxLength={200} value={form.name} onChange={(event) => { setValue('name', event.target.value); if (mode === 'new') setValue('slug', slugify(event.target.value)) }} className="admin-control h-11 w-full px-3" /></AdminField></div>
+              <AdminField label="Slug"><input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={form.slug} onChange={(event) => setValue('slug', slugify(event.target.value))} className="admin-control h-11 w-full px-3" /></AdminField>
+              <AdminField label="SKU"><input required minLength={3} maxLength={80} value={form.sku} onChange={(event) => setValue('sku', event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))} placeholder="LUMI-PRODUCT-NAME" className="admin-control h-11 w-full px-3 uppercase" /></AdminField>
+              <div className="md:col-span-2"><AdminField label="Description"><textarea required minLength={10} maxLength={5000} rows={6} value={form.description} onChange={(event) => setValue('description', event.target.value)} className="admin-control w-full resize-y p-3" /></AdminField></div>
+              <AdminField label="Category"><input required minLength={2} maxLength={100} value={form.category} onChange={(event) => setValue('category', event.target.value)} placeholder="Women" className="admin-control h-11 w-full px-3" /></AdminField>
+              <AdminField label="Colour"><input required minLength={2} maxLength={80} value={form.color} onChange={(event) => setValue('color', event.target.value)} placeholder="Black" className="admin-control h-11 w-full px-3" /></AdminField>
+              <div className="md:col-span-2"><AdminField label="Sizes — separate with commas"><input required value={form.sizes} onChange={(event) => setValue('sizes', event.target.value)} placeholder="XS, S, M, L" className="admin-control h-11 w-full px-3" /></AdminField></div>
+            </div>
+          </Panel>
+          <Panel title="Pricing and inventory" subtitle="NGN pricing and authoritative opening stock">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <AdminField label="Selling price (₦)"><input required type="number" min="0.01" step="0.01" value={form.price} onChange={(event) => setValue('price', event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField>
+              <AdminField label="Compare-at price (₦)"><input type="number" min="0.01" step="0.01" value={form.compareAtPrice} onChange={(event) => setValue('compareAtPrice', event.target.value)} placeholder="Optional" className="admin-control h-11 w-full px-3" /></AdminField>
+              <AdminField label="On-hand units"><input required type="number" min={product?.inventory?.reserved ?? 0} max="1000000" value={form.onHand} onChange={(event) => setValue('onHand', event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField>
+            </div>
+          </Panel>
+        </div>
+        <div className="min-w-0 space-y-6">
+          <Panel title="Media" subtitle="HTTPS or storefront-relative image URLs" action={<LuImage className="text-admin-muted" />}>
+            <div className="space-y-5">
+              {form.images.map((image, index) => <div key={index} className="border-b border-admin-line pb-5 last:border-0 last:pb-0"><div className="mb-3 aspect-[4/5] w-full overflow-hidden bg-admin-soft">{image.url ? <img src={image.url} alt="" className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center text-admin-muted"><LuImage size={24} /></span>}</div><div className="space-y-3"><AdminField label={`Image ${index + 1} URL`}><input value={image.url} onChange={(event) => updateImage(index, 'url', event.target.value)} placeholder="https://… or /images/…" className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Alternative text"><input value={image.altText} onChange={(event) => updateImage(index, 'altText', event.target.value)} placeholder="Describe the product image" className="admin-control h-11 w-full px-3" /></AdminField><button type="button" onClick={() => setValue('images', form.images.filter((_, imageIndex) => imageIndex !== index))} className="admin-text-link text-red-700 dark:text-red-300"><LuTrash2 /> Remove image</button></div></div>)}
+              {form.images.length < 8 && <button type="button" onClick={() => setValue('images', [...form.images, { url: '', altText: form.name }])} className="admin-button secondary w-full"><LuPlus /> Add image</button>}
+            </div>
+          </Panel>
+          <Panel title="Publishing" subtitle="Storefront visibility and audit trail">
+            <div className="space-y-5"><AdminField label="Product status"><select value={form.status} onChange={(event) => setValue('status', event.target.value as ProductFormState['status'])} className="admin-control h-11 w-full px-3"><option value="DRAFT">Draft — hidden</option><option value="PUBLISHED">Published — visible</option><option value="ARCHIVED">Archived — unavailable</option></select></AdminField><AdminField label="Reason for this change"><textarea required minLength={3} maxLength={500} rows={4} value={form.reason} onChange={(event) => setValue('reason', event.target.value)} placeholder="New season product, price correction, catalog update…" className="admin-control w-full resize-y p-3" /></AdminField><p className="text-xs leading-5 text-admin-muted">Published products require at least one image. Every save is recorded in the administrator audit log.</p></div>
+          </Panel>
+        </div>
+      </div>
+    </form>
+    {product?.status === 'ARCHIVED' && <Panel title="Permanent deletion" subtitle="Only archived products without reserved stock can be removed"><div className="grid gap-4 md:grid-cols-2"><AdminField label={`Type “${product.name}” to confirm`}><input value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Deletion reason"><input minLength={3} maxLength={500} value={deleteReason} onChange={(event) => setDeleteReason(event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField><button type="button" disabled={busy || deleteConfirmation !== product.name || deleteReason.trim().length < 3} onClick={() => void removeProduct()} className="admin-button border border-red-700 text-red-700 disabled:cursor-not-allowed disabled:opacity-35 md:col-span-2 md:justify-self-start"><LuTrash2 /> Delete permanently</button></div></Panel>}
+  </div>
 }
 
 function IntegrationPage() {
@@ -371,6 +521,32 @@ function AdminGate({ title, detail }: { title: string; detail: string }) { retur
 function AdminLoading() { return <main className="admin-theme grid min-h-screen place-items-center bg-admin-bg"><p className="text-sm font-medium text-admin-muted">Checking administrator access…</p></main> }
 function AdminPanelLoading() { return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="skeleton-shimmer h-40 border border-admin-line" />)}</div> }
 function AdminError({ message, retry }: { message: string; retry: () => Promise<void> }) { return <div role="alert" className="mb-5 flex flex-wrap items-center justify-between gap-4 border border-red-300 bg-red-50 p-4 text-sm text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100"><span className="flex items-center gap-2"><LuCircleAlert />{message}</span><button type="button" onClick={() => void retry()} className="admin-button secondary">Try again</button></div> }
+
+function productFormState(product?: AdminProduct): ProductFormState {
+  return product ? {
+    slug: product.slug,
+    sku: product.sku,
+    name: product.name,
+    description: product.description,
+    category: product.category,
+    color: product.color,
+    sizes: product.sizes.join(', '),
+    price: product.price,
+    compareAtPrice: product.compareAtPrice ?? '',
+    status: product.status as ProductFormState['status'],
+    onHand: String(product.inventory?.onHand ?? 0),
+    reason: '',
+    images: product.images.map(({ url, altText }) => ({ url, altText })),
+  } : {
+    slug: '', sku: '', name: '', description: '', category: '', color: '', sizes: '',
+    price: '', compareAtPrice: '', status: 'DRAFT', onHand: '0', reason: '',
+    images: [{ url: '', altText: '' }],
+  }
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
 
 function navigationClass(active: boolean) { return `flex min-h-12 items-center gap-3 border-b border-admin-line px-1 text-[10px] font-medium uppercase tracking-[0.12em] transition-colors ${active ? 'text-admin-ink' : 'text-admin-muted hover:text-admin-ink'} ${active ? 'before:h-4 before:w-px before:bg-admin-ink' : ''}` }
 function nextStatus(status: string) { return ({ PAID: 'PROCESSING', PROCESSING: 'SHIPPED', SHIPPED: 'DELIVERED' } as Record<string, string>)[status] }

@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
+  Post,
   Query,
   Req,
   UseGuards,
@@ -30,6 +32,11 @@ import {
   UpdateFulfillmentStatusDto,
   UpdateInventoryDto,
 } from './dto/admin.dto.js'
+import {
+  CreateAdminProductDto,
+  DeleteAdminProductDto,
+  UpdateAdminProductDto,
+} from './dto/admin-product.dto.js'
 
 @ApiTags('administration')
 @ApiCookieAuth('lumi_session')
@@ -55,6 +62,16 @@ export class AdminController {
     return this.admin.listProducts(query)
   }
 
+  @Post('products')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Creates a catalog product' })
+  createProduct(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Body() input: CreateAdminProductDto,
+  ) {
+    return this.admin.createProduct(authentication.user, input)
+  }
+
   @Get('analytics/revenue')
   @ApiOperation({ summary: 'Returns daily administrator revenue analytics' })
   revenueAnalytics(
@@ -78,6 +95,28 @@ export class AdminController {
     @Body() input: UpdateInventoryDto,
   ) {
     return this.admin.updateInventory(authentication.user, params.productId, input)
+  }
+
+  @Patch('products/:productId')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Updates catalog product details and publication state' })
+  updateProduct(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminProductParamsDto,
+    @Body() input: UpdateAdminProductDto,
+  ) {
+    return this.admin.updateProduct(authentication.user, params.productId, input)
+  }
+
+  @Delete('products/:productId')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Permanently deletes an archived catalog product' })
+  deleteProduct(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminProductParamsDto,
+    @Body() input: DeleteAdminProductDto,
+  ) {
+    return this.admin.deleteProduct(authentication.user, params.productId, input)
   }
 
   @Get('customers')
