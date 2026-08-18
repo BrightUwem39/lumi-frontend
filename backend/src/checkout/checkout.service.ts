@@ -13,6 +13,23 @@ export class CheckoutService {
     private readonly carts: CartService,
   ) {}
 
+  async getShippingTerms(currencyInput: string) {
+    const currency = currencyInput.trim().toUpperCase()
+    if (!/^[A-Z]{3}$/.test(currency)) throw new BadRequestException('A valid currency is required.')
+    const settings = currency === 'NGN' ? await this.prisma.storeSetting.findUnique({
+      where: { id: 'primary' },
+      select: {
+        shippingEnabled: true,
+        shippingFee: true,
+        freeShippingThreshold: true,
+        deliveryMinDays: true,
+        deliveryMaxDays: true,
+      },
+    }) : null
+    const terms = shippingTerms(currency, settings ?? undefined)
+    return { currency, ...terms }
+  }
+
   async createDraft(
     userId: string | undefined,
     guestToken: string,
@@ -170,7 +187,18 @@ export class CheckoutService {
       (sum, item) => sum.add(item.product.price.mul(item.quantity)),
       new Prisma.Decimal(0),
     )
-    const shipping = shippingTerms(currency)
+    const configuredShipping = currency === 'NGN' ? await database.storeSetting.findUnique({
+      where: { id: 'primary' },
+      select: {
+        shippingEnabled: true,
+        shippingFee: true,
+        freeShippingThreshold: true,
+        deliveryMinDays: true,
+        deliveryMaxDays: true,
+      },
+    }) : null
+    const shipping = shippingTerms(currency, configuredShipping ?? undefined)
+    if (!shipping.enabled) throw new BadRequestException('Shipping is temporarily unavailable.')
     const shippingTotal = subtotal.greaterThanOrEqualTo(shipping.freeThreshold)
       ? new Prisma.Decimal(0)
       : new Prisma.Decimal(shipping.price)
@@ -187,10 +215,22 @@ export class CheckoutService {
 
 }
 
-export function shippingTerms(currency: string) {
+export function shippingTerms(currency: string, settings?: {
+  shippingEnabled: boolean
+  shippingFee: { toString(): string }
+  freeShippingThreshold: { toString(): string }
+  deliveryMinDays: number
+  deliveryMaxDays: number
+}) {
   return currency === 'NGN'
-    ? { price: 25_000, freeThreshold: 345_000 }
-    : { price: 18, freeThreshold: 250 }
+    ? {
+        enabled: settings?.shippingEnabled ?? true,
+        price: settings ? Number(settings.shippingFee) : 25_000,
+        freeThreshold: settings ? Number(settings.freeShippingThreshold) : 345_000,
+        deliveryMinDays: settings?.deliveryMinDays ?? 2,
+        deliveryMaxDays: settings?.deliveryMaxDays ?? 5,
+      }
+    : { enabled: true, price: 18, freeThreshold: 250, deliveryMinDays: 5, deliveryMaxDays: 12 }
 }
 
 function calculateCouponDiscount(

@@ -1,0 +1,6 @@
+ALTER TABLE "store_settings"
+ADD COLUMN "shipping_enabled" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN "shipping_fee" DECIMAL(12,2) NOT NULL DEFAULT 25000,
+ADD COLUMN "free_shipping_threshold" DECIMAL(12,2) NOT NULL DEFAULT 345000,
+ADD COLUMN "delivery_min_days" INTEGER NOT NULL DEFAULT 2,
+ADD COLUMN "delivery_max_days" INTEGER NOT NULL DEFAULT 5;

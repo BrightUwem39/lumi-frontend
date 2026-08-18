@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Get, Headers, Post, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import type { AuthenticatedRequest } from '../auth/guards/session.guard.js'
 import { OptionalSessionGuard } from '../auth/guards/optional-session.guard.js'
@@ -17,6 +17,12 @@ export class CheckoutController {
     private readonly checkout: CheckoutService,
     private readonly cartCookies: CartCookies,
   ) {}
+
+  @Get('shipping-terms')
+  @ApiOperation({ summary: 'Returns current public shipping terms for a currency' })
+  shippingTerms(@Query('currency') currency = 'NGN') {
+    return this.checkout.getShippingTerms(currency)
+  }
 
   @Post('orders')
   @UseGuards(CartCsrfGuard)

@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer'
-import { IsEmail, IsIn, IsString, Length, Matches, MaxLength } from 'class-validator'
+import { IsBoolean, IsEmail, IsIn, IsInt, IsNumber, IsString, Length, Matches, Max, MaxLength, Min } from 'class-validator'
+import { Type } from 'class-transformer'
 
 const trim = ({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value
 const upper = ({ value }: { value: unknown }) => typeof value === 'string' ? value.trim().toUpperCase() : value
@@ -15,4 +16,24 @@ export class UpdateStoreProfileDto {
   @Transform(upper) @Matches(/^[A-Z]{2}$/) countryCode!: string
   @Transform(upper) @IsIn(['NGN']) defaultCurrency!: string
   @Transform(trim) @IsString() @Length(3, 500) reason!: string
+}
+
+export class UpdateShippingSettingsDto {
+  @IsBoolean()
+  shippingEnabled!: boolean
+
+  @Type(() => Number) @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(1_000_000_000)
+  shippingFee!: number
+
+  @Type(() => Number) @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(1_000_000_000)
+  freeShippingThreshold!: number
+
+  @Type(() => Number) @IsInt() @Min(1) @Max(60)
+  deliveryMinDays!: number
+
+  @Type(() => Number) @IsInt() @Min(1) @Max(90)
+  deliveryMaxDays!: number
+
+  @Transform(trim) @IsString() @Length(3, 500)
+  reason!: string
 }

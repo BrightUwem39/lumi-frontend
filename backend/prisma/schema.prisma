@@ -455,6 +455,11 @@ model StoreSetting {
   city            String   @default("Lagos") @db.VarChar(100)
   countryCode     String   @default("NG") @map("country_code") @db.Char(2)
   defaultCurrency String   @default("NGN") @map("default_currency") @db.Char(3)
+  shippingEnabled Boolean  @default(true) @map("shipping_enabled")
+  shippingFee     Decimal  @default(25000) @map("shipping_fee") @db.Decimal(12, 2)
+  freeShippingThreshold Decimal @default(345000) @map("free_shipping_threshold") @db.Decimal(12, 2)
+  deliveryMinDays Int      @default(2) @map("delivery_min_days")
+  deliveryMaxDays Int      @default(5) @map("delivery_max_days")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

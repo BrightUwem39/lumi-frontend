@@ -448,6 +448,57 @@ describe('AdminService dashboard', () => {
     })
   })
 
+  it('saves audited shipping terms and serializes the monetary values', async () => {
+    const transaction = {
+      storeSetting: { upsert: vi.fn().mockResolvedValue({
+        shippingEnabled: true,
+        shippingFee: new Prisma.Decimal(30000),
+        freeShippingThreshold: new Prisma.Decimal(400000),
+        deliveryMinDays: 3,
+        deliveryMaxDays: 7,
+      }) },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-shipping' }) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.updateShippingSettings(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      {
+        shippingEnabled: true, shippingFee: 30000, freeShippingThreshold: 400000,
+        deliveryMinDays: 3, deliveryMaxDays: 7, reason: 'Updated courier pricing',
+      },
+    )
+
+    expect(result).toEqual({ shipping: {
+      shippingEnabled: true, shippingFee: '30000.00', freeShippingThreshold: '400000.00',
+      deliveryMinDays: 3, deliveryMaxDays: 7,
+    } })
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'SHIPPING_SETTINGS_UPDATED', reason: 'Updated courier pricing' }),
+    })
+  })
+
+  it('rejects a delivery window whose maximum is lower than its minimum', async () => {
+    const prisma = { $transaction: vi.fn() }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    await expect(service.updateShippingSettings(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      {
+        shippingEnabled: true, shippingFee: 25000, freeShippingThreshold: 345000,
+        deliveryMinDays: 8, deliveryMaxDays: 4, reason: 'Invalid delivery window test',
+      },
+    )).rejects.toBeInstanceOf(BadRequestException)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
   it('enforces forward-only fulfilment transitions', async () => {
     const transaction = {
       order: {

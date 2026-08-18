@@ -14,7 +14,7 @@ import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import { commerceTerms, formatMoney } from '../lib/currency'
 import { ApiError } from '../services/api'
-import { validateCoupon, type CouponValidation } from '../services/checkout'
+import { fetchShippingTerms, validateCoupon, type CouponValidation } from '../services/checkout'
 import { useShopStore } from '../store/useShopStore'
 
 export function CartPage() {
@@ -30,6 +30,7 @@ export function CartPage() {
   const [couponMessage, setCouponMessage] = useState('')
   const [couponValidation, setCouponValidation] = useState<CouponValidation | null>(null)
   const [couponBusy, setCouponBusy] = useState(false)
+  const [remoteTerms, setRemoteTerms] = useState<Awaited<ReturnType<typeof fetchShippingTerms>> | null>(null)
 
   useEffect(() => {
     if (!couponCode) {
@@ -56,13 +57,22 @@ export function CartPage() {
   )
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const cartCurrency = items[0]?.product.currency ?? 'NGN'
-  const terms = commerceTerms(cartCurrency)
+  const fallbackTerms = commerceTerms(cartCurrency)
+  const terms = remoteTerms?.currency === cartCurrency
+    ? { shipping: remoteTerms.price, freeShippingThreshold: remoteTerms.freeThreshold }
+    : fallbackTerms
   const discount = couponValidation ? Number(couponValidation.discountTotal) : 0
   const shipping = couponValidation
     ? Number(couponValidation.shippingTotal)
     : subtotal === 0 || subtotal >= terms.freeShippingThreshold ? 0 : terms.shipping
   const total = couponValidation ? Number(couponValidation.total) : subtotal + shipping
   const remainingForFreeShipping = Math.max(0, terms.freeShippingThreshold - subtotal)
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchShippingTerms(cartCurrency).then((value) => { if (!cancelled) setRemoteTerms(value) }).catch(() => undefined)
+    return () => { cancelled = true }
+  }, [cartCurrency])
 
   const applyCoupon = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -276,6 +286,7 @@ export function CartPage() {
                   You qualify for free shipping.
                 </p>
               )}
+              {remoteTerms?.enabled && <p className="mt-2 text-[10px] text-ink/55">Estimated delivery: {remoteTerms.deliveryMinDays}–{remoteTerms.deliveryMaxDays} business days.</p>}
 
               <div className="mt-6 flex min-w-0 items-end justify-between gap-3">
                 <span className="text-sm">Total</span>
@@ -287,13 +298,13 @@ export function CartPage() {
                 Taxes calculated at checkout
               </p>
 
-              <Link
+              {remoteTerms?.enabled === false ? <p role="status" className="mt-6 border border-line p-4 text-center text-xs leading-5 text-ink/60">Shipping is temporarily unavailable. Please check back shortly.</p> : <Link
                 to="/checkout"
                 className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 bg-ink px-3 text-[8px] font-medium uppercase tracking-[0.11em] text-canvas min-[380px]:min-h-13 min-[380px]:gap-3 min-[380px]:px-5 min-[380px]:text-[9px] min-[380px]:tracking-[0.16em]"
               >
                 <FiShoppingBag size={15} />
                 Proceed to checkout
-              </Link>
+              </Link>}
             </aside>
           </div>
           )}

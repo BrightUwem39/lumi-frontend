@@ -154,7 +154,18 @@ export type AdminStoreProfile = {
   defaultCurrency: string
 }
 
-export type AdminSettings = { storeProfile: AdminStoreProfile }
+export type AdminShippingSettings = {
+  shippingEnabled: boolean
+  shippingFee: string
+  freeShippingThreshold: string
+  deliveryMinDays: number
+  deliveryMaxDays: number
+}
+
+export type AdminSettings = {
+  storeProfile: AdminStoreProfile
+  shipping: AdminShippingSettings
+}
 
 type Page<T> = {
   items: T[]
@@ -237,7 +248,22 @@ export function fetchAdminSettings() {
 }
 
 export function updateAdminStoreProfile(input: AdminStoreProfile & { reason: string }) {
-  return apiRequest<AdminSettings>('/admin/settings/store-profile', {
+  return apiRequest<{ storeProfile: AdminStoreProfile }>('/admin/settings/store-profile', {
+    method: 'PATCH',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateAdminShippingSettings(input: {
+  shippingEnabled: boolean
+  shippingFee: number
+  freeShippingThreshold: number
+  deliveryMinDays: number
+  deliveryMaxDays: number
+  reason: string
+}) {
+  return apiRequest<{ shipping: AdminShippingSettings }>('/admin/settings/shipping', {
     method: 'PATCH',
     headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

@@ -71,6 +71,19 @@ export type CouponValidation = {
   total: string
 }
 
+export type ShippingTerms = {
+  currency: string
+  enabled: boolean
+  price: number
+  freeThreshold: number
+  deliveryMinDays: number
+  deliveryMaxDays: number
+}
+
+export function fetchShippingTerms(currency = 'NGN') {
+  return apiRequest<ShippingTerms>(`/checkout/shipping-terms?currency=${encodeURIComponent(currency)}`)
+}
+
 export function validateCoupon(couponCode: string) {
   return apiRequest<CouponValidation>('/checkout/coupons/validate', {
     method: 'POST',

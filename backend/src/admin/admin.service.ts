@@ -22,7 +22,7 @@ import type {
   UpdateAdminProductDto,
 } from './dto/admin-product.dto.js'
 import type { CreateAdminCouponDto, UpdateAdminCouponStatusDto } from './dto/admin-coupon.dto.js'
-import type { UpdateStoreProfileDto } from './dto/admin-settings.dto.js'
+import type { UpdateShippingSettingsDto, UpdateStoreProfileDto } from './dto/admin-settings.dto.js'
 
 const fulfillmentStatuses = [
   OrderStatus.PAID,
@@ -82,6 +82,22 @@ const defaultStoreProfile = {
   city: 'Lagos',
   countryCode: 'NG',
   defaultCurrency: 'NGN',
+}
+
+const shippingSettingsSelect = {
+  shippingEnabled: true,
+  shippingFee: true,
+  freeShippingThreshold: true,
+  deliveryMinDays: true,
+  deliveryMaxDays: true,
+} satisfies Prisma.StoreSettingSelect
+
+const defaultShippingSettings = {
+  shippingEnabled: true,
+  shippingFee: '25000.00',
+  freeShippingThreshold: '345000.00',
+  deliveryMinDays: 2,
+  deliveryMaxDays: 5,
 }
 
 @Injectable()
@@ -601,11 +617,11 @@ export class AdminService {
   }
 
   async getSettings() {
-    const storeProfile = await this.prisma.storeSetting.findUnique({
-      where: { id: 'primary' },
-      select: storeProfileSelect,
-    })
-    return { storeProfile: storeProfile ?? defaultStoreProfile }
+    const settings = await this.prisma.storeSetting.findUnique({ where: { id: 'primary' } })
+    return {
+      storeProfile: settings ? pickStoreProfile(settings) : defaultStoreProfile,
+      shipping: settings ? toShippingSettings(settings) : defaultShippingSettings,
+    }
   }
 
   async updateStoreProfile(actor: AuthenticatedUser, input: UpdateStoreProfileDto) {
@@ -630,6 +646,34 @@ export class AdminService {
         },
       })
       return { storeProfile }
+    })
+  }
+
+  async updateShippingSettings(actor: AuthenticatedUser, input: UpdateShippingSettingsDto) {
+    if (input.deliveryMaxDays < input.deliveryMinDays) {
+      throw new BadRequestException('Maximum delivery days cannot be lower than minimum delivery days.')
+    }
+    return this.prisma.$transaction(async (transaction) => {
+      const { reason, ...shipping } = input
+      const settings = await transaction.storeSetting.upsert({
+        where: { id: 'primary' },
+        create: { id: 'primary', ...shipping },
+        update: shipping,
+        select: shippingSettingsSelect,
+      })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'SHIPPING_SETTINGS_UPDATED',
+          resourceType: 'STORE_SETTINGS',
+          resourceId: 'primary',
+          result: 'SUCCESS',
+          reason,
+          metadata: { fields: Object.keys(shipping) },
+        },
+      })
+      return { shipping: toShippingSettings(settings) }
     })
   }
 
@@ -817,6 +861,44 @@ function toAdminCoupon<T extends {
     value: coupon.value.toFixed(2),
     minimumSubtotal: coupon.minimumSubtotal?.toFixed(2) ?? null,
     maximumDiscount: coupon.maximumDiscount?.toFixed(2) ?? null,
+  }
+}
+
+function pickStoreProfile(settings: {
+  storeName: string
+  tagline: string
+  supportEmail: string
+  supportPhone: string
+  addressLine: string
+  city: string
+  countryCode: string
+  defaultCurrency: string
+}) {
+  return {
+    storeName: settings.storeName,
+    tagline: settings.tagline,
+    supportEmail: settings.supportEmail,
+    supportPhone: settings.supportPhone,
+    addressLine: settings.addressLine,
+    city: settings.city,
+    countryCode: settings.countryCode,
+    defaultCurrency: settings.defaultCurrency,
+  }
+}
+
+function toShippingSettings(settings: {
+  shippingEnabled: boolean
+  shippingFee: { toFixed(digits: number): string }
+  freeShippingThreshold: { toFixed(digits: number): string }
+  deliveryMinDays: number
+  deliveryMaxDays: number
+}) {
+  return {
+    shippingEnabled: settings.shippingEnabled,
+    shippingFee: settings.shippingFee.toFixed(2),
+    freeShippingThreshold: settings.freeShippingThreshold.toFixed(2),
+    deliveryMinDays: settings.deliveryMinDays,
+    deliveryMaxDays: settings.deliveryMaxDays,
   }
 }
 

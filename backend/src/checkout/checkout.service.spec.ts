@@ -13,8 +13,15 @@ const input = {
 
 describe('CheckoutService', () => {
   it('uses NGN shipping terms aligned with the storefront', () => {
-    expect(shippingTerms('NGN')).toEqual({ price: 25_000, freeThreshold: 345_000 })
-    expect(shippingTerms('USD')).toEqual({ price: 18, freeThreshold: 250 })
+    expect(shippingTerms('NGN')).toEqual({ enabled: true, price: 25_000, freeThreshold: 345_000, deliveryMinDays: 2, deliveryMaxDays: 5 })
+    expect(shippingTerms('USD')).toEqual({ enabled: true, price: 18, freeThreshold: 250, deliveryMinDays: 5, deliveryMaxDays: 12 })
+    expect(shippingTerms('NGN', {
+      shippingEnabled: true,
+      shippingFee: new Prisma.Decimal(30000),
+      freeShippingThreshold: new Prisma.Decimal(400000),
+      deliveryMinDays: 3,
+      deliveryMaxDays: 7,
+    })).toEqual({ enabled: true, price: 30000, freeThreshold: 400000, deliveryMinDays: 3, deliveryMaxDays: 7 })
   })
 
   it('requires a bounded idempotency key before accessing the cart', async () => {
@@ -65,6 +72,7 @@ describe('CheckoutService', () => {
   it('validates an active percentage code against authoritative cart prices', async () => {
     const now = new Date()
     const prisma = {
+      storeSetting: { findUnique: vi.fn().mockResolvedValue(null) },
       cart: { findUniqueOrThrow: vi.fn().mockResolvedValue({
         id: 'cart-1', status: 'ACTIVE', items: [{
           productId: 'product-1', size: 'M', quantity: 1,
@@ -100,6 +108,7 @@ describe('CheckoutService', () => {
 
   it('rejects an unknown discount code instead of silently ignoring it', async () => {
     const prisma = {
+      storeSetting: { findUnique: vi.fn().mockResolvedValue(null) },
       cart: { findUniqueOrThrow: vi.fn().mockResolvedValue({
         id: 'cart-1', status: 'ACTIVE', items: [{
           productId: 'product-1', size: 'M', quantity: 1,
@@ -144,6 +153,7 @@ describe('CheckoutService', () => {
       createdAt: now, updatedAt: now,
     }
     const transaction = {
+      storeSetting: { findUnique: vi.fn().mockResolvedValue(null) },
       cart: {
         findUniqueOrThrow: vi.fn().mockResolvedValue(cartRecord),
         update: vi.fn().mockResolvedValue({}),
