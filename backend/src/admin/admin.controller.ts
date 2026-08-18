@@ -29,6 +29,8 @@ import {
   AdminProductParamsDto,
   AdminProductQueryDto,
   AdminRevenueQueryDto,
+  AdminSecurityActionDto,
+  AdminSessionParamsDto,
   UpdateFulfillmentStatusDto,
   UpdateInventoryDto,
 } from './dto/admin.dto.js'
@@ -202,6 +204,33 @@ export class AdminController {
     @Body() input: UpdateNotificationSettingsDto,
   ) {
     return this.admin.updateNotificationSettings(authentication.user, input)
+  }
+
+  @Get('settings/security')
+  @ApiOperation({ summary: 'Returns administrator sessions and recent security activity' })
+  accountSecurity(@CurrentAuthentication() authentication: RequestAuthentication) {
+    return this.admin.getAccountSecurity(authentication.user, authentication.session.id)
+  }
+
+  @Delete('settings/security/sessions/:sessionId')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Revokes another administrator session' })
+  revokeSession(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminSessionParamsDto,
+    @Body() input: AdminSecurityActionDto,
+  ) {
+    return this.admin.revokeSession(authentication.user, authentication.session.id, params.sessionId, input.reason)
+  }
+
+  @Post('settings/security/sessions/revoke-others')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Revokes every other session for the administrator' })
+  revokeOtherSessions(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Body() input: AdminSecurityActionDto,
+  ) {
+    return this.admin.revokeOtherSessions(authentication.user, authentication.session.id, input.reason)
   }
 
   @Get('orders')

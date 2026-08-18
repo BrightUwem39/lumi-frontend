@@ -582,6 +582,75 @@ describe('AdminService dashboard', () => {
     })
   })
 
+  it('marks the current administrator session without exposing private hashes', async () => {
+    const session = {
+      id: 'session-current', userAgent: 'Browser', createdAt: new Date(0),
+      lastSeenAt: new Date(0), expiresAt: new Date(Date.now() + 60_000), revokedAt: null,
+    }
+    const prisma = {
+      session: { findMany: vi.fn().mockResolvedValue([session]) },
+      auditLog: { findMany: vi.fn().mockResolvedValue([]) },
+    }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.getAccountSecurity(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      'session-current',
+    )
+
+    expect(result.sessions[0]).toMatchObject({ id: 'session-current', current: true, status: 'ACTIVE' })
+    expect(result.sessions[0]).not.toHaveProperty('tokenHash')
+    expect(result.sessions[0]).not.toHaveProperty('ipHash')
+  })
+
+  it('revokes only other active sessions and records the reason', async () => {
+    const transaction = {
+      session: { updateMany: vi.fn().mockResolvedValue({ count: 2 }) },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-security' }) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    await expect(service.revokeOtherSessions(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      'session-current',
+      'Removed access from old devices',
+    )).resolves.toEqual({ revoked: 2 })
+
+    expect(transaction.session.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ userId: 'admin-1', id: { not: 'session-current' } }),
+    }))
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'ADMIN_OTHER_SESSIONS_REVOKED',
+        reason: 'Removed access from old devices',
+        metadata: { revokedCount: 2 },
+      }),
+    })
+  })
+
+  it('does not revoke the current session through session management', async () => {
+    const prisma = { $transaction: vi.fn() }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    await expect(service.revokeSession(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      'session-current',
+      'session-current',
+      'Accidental current-session request',
+    )).rejects.toBeInstanceOf(BadRequestException)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
   it('enforces forward-only fulfilment transitions', async () => {
     const transaction = {
       order: {

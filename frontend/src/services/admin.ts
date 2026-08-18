@@ -183,6 +183,26 @@ export type AdminSettings = {
   notifications: AdminNotificationSettings
 }
 
+export type AdminSecurity = {
+  sessions: Array<{
+    id: string
+    userAgent: string | null
+    createdAt: string
+    lastSeenAt: string
+    expiresAt: string
+    revokedAt: string | null
+    current: boolean
+    status: 'ACTIVE' | 'EXPIRED' | 'REVOKED'
+  }>
+  activity: Array<{
+    id: string
+    action: string
+    result: string
+    reason: string | null
+    createdAt: string
+  }>
+}
+
 type Page<T> = {
   items: T[]
   page: number
@@ -261,6 +281,26 @@ export function setAdminCouponStatus(couponId: string, active: boolean, reason: 
 
 export function fetchAdminSettings() {
   return apiRequest<AdminSettings>('/admin/settings')
+}
+
+export function fetchAdminSecurity() {
+  return apiRequest<AdminSecurity>('/admin/settings/security')
+}
+
+export function revokeAdminSession(sessionId: string, reason: string) {
+  return apiRequest<{ revoked: number }>(`/admin/settings/security/sessions/${sessionId}`, {
+    method: 'DELETE',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function revokeOtherAdminSessions(reason: string) {
+  return apiRequest<{ revoked: number }>('/admin/settings/security/sessions/revoke-others', {
+    method: 'POST',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  })
 }
 
 export function updateAdminStoreProfile(input: AdminStoreProfile & { reason: string }) {

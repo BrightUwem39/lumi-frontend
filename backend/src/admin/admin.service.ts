@@ -760,6 +760,101 @@ export class AdminService {
     })
   }
 
+  async getAccountSecurity(actor: AuthenticatedUser, currentSessionId: string) {
+    const [sessions, activity] = await Promise.all([
+      this.prisma.session.findMany({
+        where: { userId: actor.id },
+        orderBy: [{ lastSeenAt: 'desc' }, { createdAt: 'desc' }],
+        take: 10,
+        select: {
+          id: true,
+          userAgent: true,
+          createdAt: true,
+          lastSeenAt: true,
+          expiresAt: true,
+          revokedAt: true,
+        },
+      }),
+      this.prisma.auditLog.findMany({
+        where: { actorUserId: actor.id, resourceType: 'ADMIN_SECURITY' },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { id: true, action: true, result: true, reason: true, createdAt: true },
+      }),
+    ])
+    const now = new Date()
+    return {
+      sessions: sessions.map((session) => ({
+        ...session,
+        current: session.id === currentSessionId,
+        status: session.revokedAt ? 'REVOKED' : session.expiresAt <= now ? 'EXPIRED' : 'ACTIVE',
+      })),
+      activity,
+    }
+  }
+
+  async revokeSession(
+    actor: AuthenticatedUser,
+    currentSessionId: string,
+    sessionId: string,
+    reason: string,
+  ) {
+    if (sessionId === currentSessionId) {
+      throw new BadRequestException('Use sign out to end the current session.')
+    }
+    return this.prisma.$transaction(async (transaction) => {
+      const revoked = await transaction.session.updateMany({
+        where: {
+          id: sessionId,
+          userId: actor.id,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        data: { revokedAt: new Date() },
+      })
+      if (revoked.count !== 1) throw new NotFoundException('Active session not found.')
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'ADMIN_SESSION_REVOKED',
+          resourceType: 'ADMIN_SECURITY',
+          resourceId: sessionId,
+          result: 'SUCCESS',
+          reason,
+        },
+      })
+      return { revoked: 1 }
+    })
+  }
+
+  async revokeOtherSessions(actor: AuthenticatedUser, currentSessionId: string, reason: string) {
+    return this.prisma.$transaction(async (transaction) => {
+      const revoked = await transaction.session.updateMany({
+        where: {
+          userId: actor.id,
+          id: { not: currentSessionId },
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        data: { revokedAt: new Date() },
+      })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'ADMIN_OTHER_SESSIONS_REVOKED',
+          resourceType: 'ADMIN_SECURITY',
+          resourceId: actor.id,
+          result: 'SUCCESS',
+          reason,
+          metadata: { revokedCount: revoked.count },
+        },
+      })
+      return { revoked: revoked.count }
+    })
+  }
+
   async listOrders(query: AdminOrderQueryDto) {
     const where: Prisma.OrderWhereInput = {
       ...(query.status ? { status: query.status } : {}),

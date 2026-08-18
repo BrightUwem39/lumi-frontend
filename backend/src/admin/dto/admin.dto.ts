@@ -67,6 +67,18 @@ export class AdminOrderParamsDto {
   orderNumber!: string
 }
 
+export class AdminSessionParamsDto {
+  @IsUUID()
+  sessionId!: string
+}
+
+export class AdminSecurityActionDto {
+  @Transform(trimOptional)
+  @IsString()
+  @Length(3, 500)
+  reason!: string
+}
+
 export class UpdateInventoryDto {
   @IsInt()
   @Min(0)
