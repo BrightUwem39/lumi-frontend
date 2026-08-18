@@ -88,6 +88,7 @@
     background: var(--color-admin-surface);
     color: var(--color-admin-ink);
     box-shadow: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
   }
 
   .admin-control::placeholder {
@@ -97,7 +98,13 @@
   .admin-control:focus,
   .admin-control:focus-visible {
     border-color: var(--color-admin-accent);
-    box-shadow: inset 0 -1px 0 var(--color-admin-accent);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-admin-accent) 12%, transparent);
+  }
+
+  .admin-theme :where(.admin-button, .admin-icon-button, .admin-text-link, .admin-chip):focus-visible {
+    outline: 2px solid var(--color-admin-ink);
+    outline-offset: 3px;
   }
 
   .admin-button {
@@ -250,6 +257,13 @@
 .dark .admin-status.info { background: #172554; color: #bfdbfe; }
 .dark .admin-status.danger { background: #450a0a; color: #fecaca; }
 .dark .admin-status.accent { background: #2e1065; color: #ddd6fe; }
+
+@media (max-width: 359px) {
+  .admin-page-actions > * {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+}
 
 /* Predictable sizing prevents padding and borders from changing element widths. */
 * {
