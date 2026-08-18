@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { AuthenticatedUser } from '../auth/auth.types.js'
 import { PrismaService } from '../database/prisma.service.js'
 import {
+  CouponType,
   OrderStatus,
   ProductStatus,
   UserRole,
@@ -20,6 +21,7 @@ import type {
   DeleteAdminProductDto,
   UpdateAdminProductDto,
 } from './dto/admin-product.dto.js'
+import type { CreateAdminCouponDto, UpdateAdminCouponStatusDto } from './dto/admin-coupon.dto.js'
 
 const fulfillmentStatuses = [
   OrderStatus.PAID,
@@ -493,6 +495,88 @@ export class AdminService {
     )
   }
 
+  async listCoupons() {
+    const coupons = await this.prisma.coupon.findMany({
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      select: {
+        id: true,
+        code: true,
+        type: true,
+        value: true,
+        minimumSubtotal: true,
+        maximumDiscount: true,
+        usageLimit: true,
+        usageCount: true,
+        startsAt: true,
+        expiresAt: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+    return coupons.map(toAdminCoupon)
+  }
+
+  async createCoupon(actor: AuthenticatedUser, input: CreateAdminCouponDto) {
+    validateCoupon(input)
+    return this.prisma.$transaction(async (transaction) => {
+      const duplicate = await transaction.coupon.findUnique({
+        where: { code: input.code },
+        select: { id: true },
+      })
+      if (duplicate) throw new ConflictException('A discount already uses this code.')
+      const { reason, startsAt, expiresAt, ...values } = input
+      const coupon = await transaction.coupon.create({
+        data: {
+          ...values,
+          startsAt: startsAt ? new Date(startsAt) : null,
+          expiresAt: expiresAt ? new Date(expiresAt) : null,
+        },
+      })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'COUPON_CREATED',
+          resourceType: 'COUPON',
+          resourceId: coupon.id,
+          result: 'SUCCESS',
+          reason,
+          metadata: { code: coupon.code, type: coupon.type, active: coupon.active },
+        },
+      })
+      return toAdminCoupon(coupon)
+    })
+  }
+
+  async updateCouponStatus(
+    actor: AuthenticatedUser,
+    couponId: string,
+    input: UpdateAdminCouponStatusDto,
+  ) {
+    return this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.coupon.findUnique({ where: { id: couponId } })
+      if (!current) throw new NotFoundException('Discount not found.')
+      const coupon = await transaction.coupon.update({
+        where: { id: couponId },
+        data: { active: input.active },
+      })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: input.active ? 'COUPON_ACTIVATED' : 'COUPON_DEACTIVATED',
+          resourceType: 'COUPON',
+          resourceId: coupon.id,
+          result: 'SUCCESS',
+          reason: input.reason,
+          metadata: { code: coupon.code, previousActive: current.active, active: coupon.active },
+        },
+      })
+      return toAdminCoupon(coupon)
+    })
+  }
+
   async listOrders(query: AdminOrderQueryDto) {
     const where: Prisma.OrderWhereInput = {
       ...(query.status ? { status: query.status } : {}),
@@ -664,6 +748,31 @@ function toAdminProduct(product: AdminProductRecord) {
     price: product.price.toFixed(2),
     compareAtPrice: product.compareAtPrice?.toFixed(2) ?? null,
     available: Math.max(0, (product.inventory?.onHand ?? 0) - (product.inventory?.reserved ?? 0)),
+  }
+}
+
+function toAdminCoupon<T extends {
+  value: { toFixed(digits: number): string }
+  minimumSubtotal: { toFixed(digits: number): string } | null
+  maximumDiscount: { toFixed(digits: number): string } | null
+}>(coupon: T) {
+  return {
+    ...coupon,
+    value: coupon.value.toFixed(2),
+    minimumSubtotal: coupon.minimumSubtotal?.toFixed(2) ?? null,
+    maximumDiscount: coupon.maximumDiscount?.toFixed(2) ?? null,
+  }
+}
+
+function validateCoupon(input: CreateAdminCouponDto) {
+  if (input.type === CouponType.PERCENTAGE && input.value > 100) {
+    throw new BadRequestException('Percentage discounts cannot exceed 100%.')
+  }
+  if (input.type === CouponType.FIXED_AMOUNT && input.maximumDiscount !== undefined) {
+    throw new BadRequestException('A maximum discount only applies to percentage codes.')
+  }
+  if (input.startsAt && input.expiresAt && new Date(input.startsAt) >= new Date(input.expiresAt)) {
+    throw new BadRequestException('The expiry date must be later than the start date.')
   }
 }
 

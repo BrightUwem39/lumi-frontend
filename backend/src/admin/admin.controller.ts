@@ -37,6 +37,11 @@ import {
   DeleteAdminProductDto,
   UpdateAdminProductDto,
 } from './dto/admin-product.dto.js'
+import {
+  AdminCouponParamsDto,
+  CreateAdminCouponDto,
+  UpdateAdminCouponStatusDto,
+} from './dto/admin-coupon.dto.js'
 
 @ApiTags('administration')
 @ApiCookieAuth('lumi_session')
@@ -123,6 +128,33 @@ export class AdminController {
   @ApiOperation({ summary: 'Lists customers using a minimized administrator view' })
   customers(@Query() query: AdminListQueryDto) {
     return this.admin.listCustomers(query)
+  }
+
+  @Get('discounts')
+  @ApiOperation({ summary: 'Lists administrator discount codes' })
+  discounts() {
+    return this.admin.listCoupons()
+  }
+
+  @Post('discounts')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Creates an audited discount code' })
+  createDiscount(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Body() input: CreateAdminCouponDto,
+  ) {
+    return this.admin.createCoupon(authentication.user, input)
+  }
+
+  @Patch('discounts/:couponId/status')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Activates or deactivates a discount code' })
+  discountStatus(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminCouponParamsDto,
+    @Body() input: UpdateAdminCouponStatusDto,
+  ) {
+    return this.admin.updateCouponStatus(authentication.user, params.couponId, input)
   }
 
   @Get('orders')

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
 import type { PrismaService } from '../database/prisma.service.js'
-import { OrderStatus, Prisma, ProductStatus, UserRole } from '../generated/prisma/client.js'
+import { CouponType, OrderStatus, Prisma, ProductStatus, UserRole } from '../generated/prisma/client.js'
 import { AdminService } from './admin.service.js'
 
 describe('AdminService dashboard', () => {
@@ -351,6 +351,56 @@ describe('AdminService dashboard', () => {
     expect(prisma.order.findUnique).toHaveBeenCalledWith(expect.objectContaining({
       where: { number: 'LM-2026-ABCDEF123456' },
     }))
+  })
+
+  it('creates an audited percentage discount with serialized values', async () => {
+    const transaction = {
+      coupon: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({
+          id: 'coupon-1', code: 'LUMI10', type: CouponType.PERCENTAGE,
+          value: new Prisma.Decimal(10), minimumSubtotal: new Prisma.Decimal(50000),
+          maximumDiscount: new Prisma.Decimal(20000), usageLimit: 100, usageCount: 0,
+          startsAt: null, expiresAt: null, active: true,
+          createdAt: new Date(), updatedAt: new Date(),
+        }),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-coupon' }) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new AdminService(prisma as unknown as PrismaService)
+    const actor = {
+      id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+      role: UserRole.ADMINISTRATOR,
+    }
+
+    const result = await service.createCoupon(actor, {
+      code: 'LUMI10', type: CouponType.PERCENTAGE, value: 10,
+      minimumSubtotal: 50000, maximumDiscount: 20000, usageLimit: 100,
+      active: true, reason: 'Launch campaign',
+    })
+
+    expect(result).toMatchObject({ code: 'LUMI10', value: '10.00', maximumDiscount: '20000.00' })
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'COUPON_CREATED', reason: 'Launch campaign' }),
+    })
+  })
+
+  it('rejects percentage discounts above 100 percent', async () => {
+    const prisma = { $transaction: vi.fn() }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    await expect(service.createCoupon(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      {
+        code: 'TOO-MUCH', type: CouponType.PERCENTAGE, value: 101,
+        active: true, reason: 'Invalid campaign test',
+      },
+    )).rejects.toBeInstanceOf(BadRequestException)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
   })
 
   it('enforces forward-only fulfilment transitions', async () => {

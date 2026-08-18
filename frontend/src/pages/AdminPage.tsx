@@ -33,18 +33,22 @@ import { formatMoney } from '../lib/currency'
 import { LumiLogo } from '../components/LumiLogo'
 import { ApiError } from '../services/api'
 import {
+  createAdminCoupon,
   createAdminProduct,
   deleteAdminProduct,
   fetchAdminCustomers,
+  fetchAdminCoupons,
   fetchAdminDashboard,
   fetchAdminOrder,
   fetchAdminOrders,
   fetchAdminProducts,
   fetchAdminRevenueAnalytics,
   setAdminInventory,
+  setAdminCouponStatus,
   setAdminOrderStatus,
   updateAdminProduct,
   type AdminCustomer,
+  type AdminCoupon,
   type AdminDashboard,
   type AdminOrder,
   type AdminOrderDetail,
@@ -60,6 +64,7 @@ type AdminData = {
   products: AdminProduct[]
   orders: AdminOrder[]
   customers: AdminCustomer[]
+  coupons: AdminCoupon[]
 }
 
 type NavigationItem = { label: string; to: string; icon: ReactNode }
@@ -102,14 +107,15 @@ export function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      const [dashboard, revenueAnalytics, products, orders, customers] = await Promise.all([
+      const [dashboard, revenueAnalytics, products, orders, customers, coupons] = await Promise.all([
         fetchAdminDashboard(),
         fetchAdminRevenueAnalytics(analyticsDays),
         fetchAdminProducts(),
         fetchAdminOrders(),
         fetchAdminCustomers(),
+        fetchAdminCoupons(),
       ])
-      setData({ dashboard, revenueAnalytics, products: products.items, orders: orders.items, customers: customers.items })
+      setData({ dashboard, revenueAnalytics, products: products.items, orders: orders.items, customers: customers.items, coupons })
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : 'The Admin workspace could not be loaded.')
     } finally {
@@ -192,7 +198,7 @@ export function AdminPage() {
               <Route path="customers" element={<CustomersPage customers={data.customers} query={globalSearch} />} />
               <Route path="inventory" element={<InventoryPage products={data.products} query={globalSearch} reload={load} />} />
               <Route path="analytics" element={<AnalyticsPage data={data} analyticsDays={analyticsDays} setAnalyticsDays={setAnalyticsDays} />} />
-              <Route path="discounts" element={<IntegrationPage />} />
+              <Route path="discounts" element={<DiscountsPage coupons={data.coupons} reload={load} />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
@@ -456,8 +462,62 @@ function ProductEditorPage({ mode, products, reload }: { mode: 'new' | 'edit'; p
   </div>
 }
 
-function IntegrationPage() {
-  return <div className="space-y-5"><PageHeader title="Discounts" description="Plan and manage future campaign codes." actions={<button type="button" disabled className="admin-button primary disabled:opacity-45"><LuBadgePercent /> Create discount</button>} /><div className="grid gap-4 sm:grid-cols-3"><StatCard label="Active codes" value="—" detail="Discount endpoint pending" icon={<LuBadgePercent />} /><StatCard label="Redemptions" value="—" detail="Usage data unavailable" icon={<LuCheck />} /><StatCard label="Discount value" value="—" detail="No simulated totals" icon={<LuCircleDollarSign />} /></div><Panel title="Discount integration" subtitle="No production discount operations are exposed yet"><IntegrationNote text="Percentage and fixed-amount campaigns, usage limits, validity windows, and applicable products will appear here once audited discount endpoints are available." /></Panel></div>
+function DiscountsPage({ coupons, reload }: { coupons: AdminCoupon[]; reload: () => Promise<void> }) {
+  const [creating, setCreating] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [type, setType] = useState<AdminCoupon['type']>('PERCENTAGE')
+  const active = coupons.filter((coupon) => couponState(coupon) === 'ACTIVE').length
+  const scheduled = coupons.filter((coupon) => couponState(coupon) === 'SCHEDULED').length
+  const redemptions = coupons.reduce((sum, coupon) => sum + coupon.usageCount, 0)
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const form = event.currentTarget
+    const fields = new FormData(form)
+    setBusy(true)
+    setError('')
+    try {
+      const startsAt = String(fields.get('startsAt') || '')
+      const expiresAt = String(fields.get('expiresAt') || '')
+      await createAdminCoupon({
+        code: String(fields.get('code')),
+        type,
+        value: Number(fields.get('value')),
+        ...optionalNumber('minimumSubtotal', fields),
+        ...(type === 'PERCENTAGE' ? optionalNumber('maximumDiscount', fields) : {}),
+        ...optionalInteger('usageLimit', fields),
+        ...(startsAt ? { startsAt: new Date(startsAt).toISOString() } : {}),
+        ...(expiresAt ? { expiresAt: new Date(expiresAt).toISOString() } : {}),
+        active: fields.get('active') === 'on',
+        reason: String(fields.get('reason')),
+      })
+      form.reset()
+      setType('PERCENTAGE')
+      setCreating(false)
+      await reload()
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'Discount could not be created.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const toggle = async (coupon: AdminCoupon) => {
+    setBusy(true)
+    setError('')
+    try {
+      const active = !coupon.active
+      await setAdminCouponStatus(coupon.id, active, `${active ? 'Activated' : 'Deactivated'} from the administrator discount workspace`)
+      await reload()
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'Discount status could not be updated.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return <div className="space-y-5"><PageHeader title="Discounts" description="Create and control audited percentage and fixed-amount campaign codes." actions={<button type="button" onClick={() => setCreating((value) => !value)} className="admin-button primary"><LuBadgePercent />{creating ? 'Close form' : 'Create discount'}</button>} />{error && <AdminError message={error} retry={reload} />}<div className="grid gap-4 sm:grid-cols-3"><StatCard label="Active codes" value={String(active)} detail="Available within current rules" icon={<LuBadgePercent />} /><StatCard label="Redemptions" value={redemptions.toLocaleString()} detail="Recorded coupon uses" icon={<LuCheck />} /><StatCard label="Scheduled" value={String(scheduled)} detail="Campaigns starting later" icon={<LuClock3 />} /></div>{creating && <Panel title="Create discount" subtitle="All changes are recorded in the administrator audit log"><form onSubmit={submit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><AdminField label="Discount code"><input name="code" required minLength={3} maxLength={64} pattern="[A-Za-z0-9][A-Za-z0-9_-]+" placeholder="LUMI10" className="admin-control h-11 w-full px-3 uppercase" /></AdminField><AdminField label="Discount type"><select value={type} onChange={(event) => setType(event.target.value as AdminCoupon['type'])} className="admin-control h-11 w-full px-3"><option value="PERCENTAGE">Percentage</option><option value="FIXED_AMOUNT">Fixed amount</option></select></AdminField><AdminField label={type === 'PERCENTAGE' ? 'Percentage value' : 'Amount (NGN)'}><input name="value" type="number" required min="0.01" max={type === 'PERCENTAGE' ? 100 : 1_000_000_000} step="0.01" className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Minimum subtotal (optional)"><input name="minimumSubtotal" type="number" min="0" step="0.01" className="admin-control h-11 w-full px-3" /></AdminField>{type === 'PERCENTAGE' && <AdminField label="Maximum discount (optional)"><input name="maximumDiscount" type="number" min="0.01" step="0.01" className="admin-control h-11 w-full px-3" /></AdminField>}<AdminField label="Usage limit (optional)"><input name="usageLimit" type="number" min="1" max="1000000" step="1" className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Starts at (optional)"><input name="startsAt" type="datetime-local" className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Expires at (optional)"><input name="expiresAt" type="datetime-local" className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Creation reason"><input name="reason" required minLength={3} maxLength={500} placeholder="Seasonal campaign" className="admin-control h-11 w-full px-3" /></AdminField><label className="flex min-h-11 items-center gap-3 text-sm"><input name="active" type="checkbox" defaultChecked className="size-4 accent-current" /> Activate immediately or at the start date</label><div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-3"><button disabled={busy} className="admin-button primary">{busy ? 'Creating…' : 'Create discount'}</button><button type="button" onClick={() => setCreating(false)} className="admin-button secondary">Cancel</button></div></form></Panel>}<Panel title="Campaign codes" subtitle={`${coupons.length} configured discount${coupons.length === 1 ? '' : 's'}`}>{coupons.length ? <div className="grid gap-3 md:grid-cols-2">{coupons.map((coupon) => { const state = couponState(coupon); return <article key={coupon.id} className="border border-admin-line p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-display text-xl tracking-wide">{coupon.code}</p><p className="mt-1 text-xs text-admin-muted">{couponValue(coupon)} discount</p></div><StatusBadge value={state} /></div><dl className="mt-5 grid grid-cols-2 gap-x-4 border-y border-admin-line py-3 text-xs"><Detail label="Usage" value={`${coupon.usageCount}${coupon.usageLimit ? ` / ${coupon.usageLimit}` : ''}`} /><Detail label="Minimum order" value={coupon.minimumSubtotal ? formatMoney(Number(coupon.minimumSubtotal), 'NGN') : 'None'} /><Detail label="Starts" value={coupon.startsAt ? formatDate(coupon.startsAt) : 'Immediately'} /><Detail label="Expires" value={coupon.expiresAt ? formatDate(coupon.expiresAt) : 'No expiry'} /></dl><button type="button" disabled={busy} onClick={() => void toggle(coupon)} className="admin-button secondary mt-4 w-full justify-center">{coupon.active ? 'Deactivate' : 'Activate'}</button></article> })}</div> : <EmptyState title="No discount codes yet" detail="Create the first campaign code when you are ready." compact />}</Panel></div>
 }
 
 function SettingsPage() {
@@ -575,4 +635,8 @@ function formatDate(value: string) { return new Intl.DateTimeFormat('en-NG', { d
 function formatShortDate(value?: string) { return value ? new Intl.DateTimeFormat('en-NG', { day: '2-digit', month: 'short', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00.000Z`)) : '—' }
 function formatCompactMoney(value: number) { return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', notation: 'compact', maximumFractionDigits: 1 }).format(value) }
 function formatShippingAddress(address: AdminOrderDetail['shippingAddress']) { return [address.line1, address.line2, address.city, address.region, address.postalCode, address.country].filter(Boolean).join(', ') }
+function couponState(coupon: AdminCoupon) { const now = Date.now(); if (!coupon.active) return 'DISABLED'; if (coupon.usageLimit !== null && coupon.usageCount >= coupon.usageLimit) return 'EXHAUSTED'; if (coupon.startsAt && new Date(coupon.startsAt).getTime() > now) return 'SCHEDULED'; if (coupon.expiresAt && new Date(coupon.expiresAt).getTime() <= now) return 'EXPIRED'; return 'ACTIVE' }
+function couponValue(coupon: AdminCoupon) { return coupon.type === 'PERCENTAGE' ? `${Number(coupon.value)}%` : formatMoney(Number(coupon.value), 'NGN') }
+function optionalNumber<Key extends 'minimumSubtotal' | 'maximumDiscount'>(key: Key, fields: FormData): Partial<Record<Key, number>> { const value = String(fields.get(key) || '').trim(); return value ? { [key]: Number(value) } as Partial<Record<Key, number>> : {} }
+function optionalInteger(key: 'usageLimit', fields: FormData): Partial<Record<'usageLimit', number>> { const value = String(fields.get(key) || '').trim(); return value ? { usageLimit: Number(value) } : {} }
 function dayPeriod() { const hour = new Date().getHours(); return hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening' }

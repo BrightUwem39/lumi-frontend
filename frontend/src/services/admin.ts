@@ -114,6 +114,35 @@ export type AdminOrderDetail = AdminOrder & {
   }>
 }
 
+export type AdminCoupon = {
+  id: string
+  code: string
+  type: 'PERCENTAGE' | 'FIXED_AMOUNT'
+  value: string
+  minimumSubtotal: string | null
+  maximumDiscount: string | null
+  usageLimit: number | null
+  usageCount: number
+  startsAt: string | null
+  expiresAt: string | null
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type AdminCouponInput = {
+  code: string
+  type: AdminCoupon['type']
+  value: number
+  minimumSubtotal?: number
+  maximumDiscount?: number
+  usageLimit?: number
+  startsAt?: string
+  expiresAt?: string
+  active: boolean
+  reason: string
+}
+
 type Page<T> = {
   items: T[]
   page: number
@@ -168,6 +197,26 @@ export function fetchAdminOrders() {
 
 export function fetchAdminOrder(orderNumber: string) {
   return apiRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(orderNumber)}`)
+}
+
+export function fetchAdminCoupons() {
+  return apiRequest<AdminCoupon[]>('/admin/discounts')
+}
+
+export function createAdminCoupon(input: AdminCouponInput) {
+  return apiRequest<AdminCoupon>('/admin/discounts', {
+    method: 'POST',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function setAdminCouponStatus(couponId: string, active: boolean, reason: string) {
+  return apiRequest<AdminCoupon>(`/admin/discounts/${couponId}/status`, {
+    method: 'PATCH',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ active, reason }),
+  })
 }
 
 export function setAdminInventory(productId: string, onHand: number, reason: string) {
