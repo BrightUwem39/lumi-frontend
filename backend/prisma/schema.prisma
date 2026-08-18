@@ -76,6 +76,14 @@ enum RefundStatus {
   FAILED
 }
 
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  RECEIVED
+  COMPLETED
+}
+
 enum CouponType {
   PERCENTAGE
   FIXED_AMOUNT
@@ -111,6 +119,7 @@ model User {
   auditEventsAsActor  AuditLog[]               @relation("AuditActor")
   auditEventsAsTarget AuditLog[]               @relation("AuditTargetUser")
   refundsInitiated    Refund[]                 @relation("RefundInitiator")
+  returnsCreated      ProductReturn[]          @relation("ReturnCreator")
 
   @@index([status])
   @@map("users")
@@ -340,6 +349,7 @@ model Order {
   coupon   Coupon?     @relation(fields: [couponId], references: [id], onDelete: SetNull)
   items    OrderItem[]
   payments Payment[]
+  returns  ProductReturn[]
 
   @@index([userId, createdAt])
   @@index([email, createdAt])
@@ -362,6 +372,7 @@ model OrderItem {
 
   order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  returnItems ReturnItem[]
 
   @@index([orderId])
   @@index([productId])
@@ -421,6 +432,45 @@ model Refund {
   @@index([status, createdAt])
   @@index([initiatedByUserId])
   @@map("refunds")
+}
+
+model ProductReturn {
+  id              String       @id @default(uuid()) @db.Uuid
+  orderId         String       @map("order_id") @db.Uuid
+  status          ReturnStatus @default(REQUESTED)
+  reason          String       @db.VarChar(500)
+  resolutionNote  String?      @map("resolution_note") @db.VarChar(500)
+  createdByUserId String       @map("created_by_user_id") @db.Uuid
+  approvedAt      DateTime?    @map("approved_at")
+  rejectedAt      DateTime?    @map("rejected_at")
+  receivedAt      DateTime?    @map("received_at")
+  completedAt     DateTime?    @map("completed_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  createdBy User         @relation("ReturnCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  items     ReturnItem[]
+
+  @@index([orderId, status])
+  @@index([createdByUserId])
+  @@index([status, createdAt])
+  @@map("product_returns")
+}
+
+model ReturnItem {
+  id                String @id @default(uuid()) @db.Uuid
+  returnId          String @map("return_id") @db.Uuid
+  orderItemId       String @map("order_item_id") @db.Uuid
+  quantity          Int
+  restockedQuantity Int    @default(0) @map("restocked_quantity")
+
+  productReturn ProductReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  orderItem     OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+
+  @@unique([returnId, orderItemId])
+  @@index([orderItemId])
+  @@map("return_items")
 }
 
 model PaymentEvent {

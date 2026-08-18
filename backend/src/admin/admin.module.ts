@@ -3,10 +3,11 @@ import { AuthModule } from '../auth/auth.module.js'
 import { PaymentsModule } from '../payments/payments.module.js'
 import { AdminController } from './admin.controller.js'
 import { AdminService } from './admin.service.js'
+import { ReturnsService } from './returns.service.js'
 
 @Module({
   imports: [AuthModule, PaymentsModule],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, ReturnsService],
 })
 export class AdminModule {}

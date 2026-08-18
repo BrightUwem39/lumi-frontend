@@ -23,6 +23,13 @@ import { NoStoreInterceptor } from '../auth/no-store.interceptor.js'
 import { UserRole } from '../generated/prisma/client.js'
 import { RefundsService } from '../payments/refunds.service.js'
 import { AdminService } from './admin.service.js'
+import { ReturnsService } from './returns.service.js'
+import {
+  AdminReturnParamsDto,
+  CompleteAdminReturnDto,
+  CreateAdminReturnDto,
+  UpdateAdminReturnStatusDto,
+} from './dto/admin-return.dto.js'
 import {
   AdminListQueryDto,
   AdminOrderParamsDto,
@@ -58,6 +65,7 @@ export class AdminController {
   constructor(
     private readonly admin: AdminService,
     private readonly refunds: RefundsService,
+    private readonly returns: ReturnsService,
   ) {}
 
   @Get('dashboard')
@@ -259,6 +267,39 @@ export class AdminController {
     @Body() input: CreateAdminRefundDto,
   ) {
     return this.refunds.initiate(authentication.user, params.orderNumber, input)
+  }
+
+  @Post('orders/:orderNumber/returns')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Opens an audited product return for eligible order items' })
+  createReturn(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminOrderParamsDto,
+    @Body() input: CreateAdminReturnDto,
+  ) {
+    return this.returns.create(authentication.user, params.orderNumber, input)
+  }
+
+  @Patch('returns/:returnId/status')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Applies a valid audited return status transition' })
+  updateReturnStatus(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminReturnParamsDto,
+    @Body() input: UpdateAdminReturnStatusDto,
+  ) {
+    return this.returns.updateStatus(authentication.user, params.returnId, input)
+  }
+
+  @Post('returns/:returnId/complete')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Completes a received return and applies explicit inventory restock quantities' })
+  completeReturn(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminReturnParamsDto,
+    @Body() input: CompleteAdminReturnDto,
+  ) {
+    return this.returns.complete(authentication.user, params.returnId, input)
   }
 
   @Patch('orders/:orderNumber/status')

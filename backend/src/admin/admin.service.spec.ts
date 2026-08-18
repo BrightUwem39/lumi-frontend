@@ -332,6 +332,7 @@ describe('AdminService dashboard', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           payments: [],
+          returns: [],
           items: [{
             id: 'item-1', productId: 'product-1', productName: 'Lumi Shirt',
             sku: 'LUMI-001', imageUrl: '/shirt.jpg', size: 'M', quantity: 2,
@@ -347,7 +348,7 @@ describe('AdminService dashboard', () => {
 
     expect(result).toMatchObject({
       number: 'LM-2026-ABCDEF123456', total: '215000.00', refundableAmount: '0.00', lineCount: 1,
-      items: [{ unitPrice: '100000.00', lineTotal: '200000.00' }],
+      items: [{ unitPrice: '100000.00', lineTotal: '200000.00', returnableQuantity: 2 }],
     })
     expect(prisma.order.findUnique).toHaveBeenCalledWith(expect.objectContaining({
       where: { number: 'LM-2026-ABCDEF123456' },

@@ -941,6 +941,30 @@ export class AdminService {
             },
           },
         },
+        returns: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            status: true,
+            reason: true,
+            resolutionNote: true,
+            approvedAt: true,
+            rejectedAt: true,
+            receivedAt: true,
+            completedAt: true,
+            createdAt: true,
+            items: {
+              orderBy: { id: 'asc' },
+              select: {
+                id: true,
+                orderItemId: true,
+                quantity: true,
+                restockedQuantity: true,
+                orderItem: { select: { productName: true, sku: true, size: true, productId: true } },
+              },
+            },
+          },
+        },
         items: {
           orderBy: { id: 'asc' },
           select: {
@@ -960,11 +984,18 @@ export class AdminService {
     })
     if (!order) throw new NotFoundException('Order not found.')
 
-    const { payments, ...orderFields } = order
+    const { payments, returns, ...orderFields } = order
     const refunds = payments[0]?.refunds ?? []
     const committedRefund = refunds
       .filter((refund) => refund.status !== 'FAILED')
       .reduce((sum, refund) => sum.plus(refund.amount), new Prisma.Decimal(0))
+    const returnedByOrderItem = new Map<string, number>()
+    for (const productReturn of returns) {
+      if (productReturn.status === 'REJECTED') continue
+      for (const item of productReturn.items) {
+        returnedByOrderItem.set(item.orderItemId, (returnedByOrderItem.get(item.orderItemId) ?? 0) + item.quantity)
+      }
+    }
     return {
       ...orderFields,
       subtotal: order.subtotal.toFixed(2),
@@ -977,11 +1008,13 @@ export class AdminService {
         ? Prisma.Decimal.max(payments[0].amount.minus(committedRefund), 0).toFixed(2)
         : '0.00',
       refunds: refunds.map((refund) => ({ ...refund, amount: refund.amount.toFixed(2) })),
+      returns,
       items: order.items.map((item) => ({
         ...item,
         unitPrice: item.unitPrice.toFixed(2),
         discountTotal: item.discountTotal.toFixed(2),
         lineTotal: item.lineTotal.toFixed(2),
+        returnableQuantity: Math.max(0, item.quantity - (returnedByOrderItem.get(item.id) ?? 0)),
       })),
     }
   }
