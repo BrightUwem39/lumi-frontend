@@ -6,7 +6,7 @@ import { NoStoreInterceptor } from '../auth/no-store.interceptor.js'
 import { CartCsrfGuard } from '../cart/cart-csrf.guard.js'
 import { CartCookies } from '../cart/cart.cookies.js'
 import { CheckoutService } from './checkout.service.js'
-import { CreateOrderDto } from './dto/create-order.dto.js'
+import { CreateOrderDto, ValidateCouponDto } from './dto/create-order.dto.js'
 
 @ApiTags('checkout')
 @Controller({ path: 'checkout', version: '1' })
@@ -33,6 +33,22 @@ export class CheckoutController {
       cartToken,
       idempotencyKey ?? '',
       input,
+    )
+  }
+
+  @Post('coupons/validate')
+  @UseGuards(CartCsrfGuard)
+  @ApiOperation({ summary: 'Validates a discount code against the current server cart' })
+  validateCoupon(
+    @Req() request: AuthenticatedRequest,
+    @Body() input: ValidateCouponDto,
+  ) {
+    const cartToken = this.cartCookies.readCartToken(request)
+    if (!cartToken) throw new Error('Cart token missing after CSRF validation')
+    return this.checkout.validateCoupon(
+      request.authentication?.user.id,
+      cartToken,
+      input.couponCode,
     )
   }
 }

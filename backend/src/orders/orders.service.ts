@@ -37,9 +37,20 @@ export class OrdersService {
     if (order.status !== OrderStatus.DRAFT) {
       throw new BadRequestException('Only an unpaid order draft can be cancelled.')
     }
-    await this.prisma.order.updateMany({
-      where: { id: order.id, status: OrderStatus.DRAFT },
-      data: { status: OrderStatus.CANCELLED, cancelledAt: new Date() },
+    await this.prisma.$transaction(async (transaction) => {
+      const cancelled = await transaction.order.updateMany({
+        where: { id: order.id, status: OrderStatus.DRAFT },
+        data: { status: OrderStatus.CANCELLED, cancelledAt: new Date() },
+      })
+      if (cancelled.count !== 1) {
+        throw new BadRequestException('Only an unpaid order draft can be cancelled.')
+      }
+      if (order.couponId) {
+        await transaction.coupon.updateMany({
+          where: { id: order.couponId, usageCount: { gt: 0 } },
+          data: { usageCount: { decrement: 1 } },
+        })
+      }
     })
     const updated = await this.findOwned(orderNumber, userId, guestToken)
     if (!updated) throw new NotFoundException('Order not found')
@@ -54,7 +65,7 @@ export class OrdersService {
     if (!ownership.length) return null
     return this.prisma.order.findFirst({
       where: { number: orderNumber, OR: ownership },
-      include: { items: true },
+      include: { items: true, coupon: { select: { code: true } } },
     })
   }
 }

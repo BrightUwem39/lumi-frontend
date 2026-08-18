@@ -17,6 +17,8 @@ export type OrderDraft = {
   }
   currency: string
   subtotal: string
+  discountTotal: string
+  couponCode: string | null
   shippingTotal: string
   total: string
   createdAt: string
@@ -43,6 +45,7 @@ export function createOrderDraft(
     region: string
     postalCode?: string
     country: string
+    couponCode?: string
   },
   idempotencyKey: string,
 ) {
@@ -52,6 +55,28 @@ export function createOrderDraft(
     headers: {
       'Content-Type': 'application/json',
       'Idempotency-Key': idempotencyKey,
+      ...cartCsrfHeaders(),
+    },
+  })
+}
+
+export type CouponValidation = {
+  code: string
+  type: 'PERCENTAGE' | 'FIXED_AMOUNT'
+  value: string
+  currency: string
+  subtotal: string
+  discountTotal: string
+  shippingTotal: string
+  total: string
+}
+
+export function validateCoupon(couponCode: string) {
+  return apiRequest<CouponValidation>('/checkout/coupons/validate', {
+    method: 'POST',
+    ...jsonBody({ couponCode }),
+    headers: {
+      'Content-Type': 'application/json',
       ...cartCsrfHeaders(),
     },
   })

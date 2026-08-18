@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   LuArrowLeft as FiArrowLeft,
@@ -13,6 +13,8 @@ import { PageLoadingSkeleton } from '../components/LoadingSkeleton'
 import { PageReveal } from '../components/PageReveal'
 import { useCatalog } from '../hooks/useCatalog'
 import { commerceTerms, formatMoney } from '../lib/currency'
+import { ApiError } from '../services/api'
+import { validateCoupon, type CouponValidation } from '../services/checkout'
 import { useShopStore } from '../store/useShopStore'
 
 export function CartPage() {
@@ -22,9 +24,19 @@ export function CartPage() {
   const cartSizes = useShopStore((state) => state.cartSizes)
   const updateCartQuantity = useShopStore((state) => state.updateCartQuantity)
   const removeFromCart = useShopStore((state) => state.removeFromCart)
-  const [coupon, setCoupon] = useState('')
+  const couponCode = useShopStore((state) => state.couponCode)
+  const setCouponCode = useShopStore((state) => state.setCouponCode)
+  const [coupon, setCoupon] = useState(couponCode ?? '')
   const [couponMessage, setCouponMessage] = useState('')
-  const [discountRate, setDiscountRate] = useState(0)
+  const [couponValidation, setCouponValidation] = useState<CouponValidation | null>(null)
+  const [couponBusy, setCouponBusy] = useState(false)
+
+  useEffect(() => {
+    if (!couponCode) {
+      setCouponValidation(null)
+      setCouponMessage((current) => current.includes('applied') ? 'Your cart changed. Apply the code again.' : current)
+    }
+  }, [couponCode])
 
   // Product records and stored quantities are joined for display and totals.
   const items = useMemo(
@@ -45,19 +57,29 @@ export function CartPage() {
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const cartCurrency = items[0]?.product.currency ?? 'NGN'
   const terms = commerceTerms(cartCurrency)
-  const discount = subtotal * discountRate
-  const shipping = subtotal === 0 || subtotal >= terms.freeShippingThreshold ? 0 : terms.shipping
-  const total = subtotal - discount + shipping
+  const discount = couponValidation ? Number(couponValidation.discountTotal) : 0
+  const shipping = couponValidation
+    ? Number(couponValidation.shippingTotal)
+    : subtotal === 0 || subtotal >= terms.freeShippingThreshold ? 0 : terms.shipping
+  const total = couponValidation ? Number(couponValidation.total) : subtotal + shipping
   const remainingForFreeShipping = Math.max(0, terms.freeShippingThreshold - subtotal)
 
-  const applyCoupon = (event: FormEvent<HTMLFormElement>) => {
+  const applyCoupon = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (coupon.trim().toUpperCase() === 'LUMI10') {
-      setDiscountRate(0.1)
-      setCouponMessage('LUMI10 applied — you saved 10%.')
-    } else {
-      setDiscountRate(0)
-      setCouponMessage('That code is not valid. Try LUMI10.')
+    setCouponBusy(true)
+    setCouponMessage('')
+    try {
+      const validation = await validateCoupon(coupon)
+      setCouponValidation(validation)
+      setCouponCode(validation.code)
+      setCoupon(validation.code)
+      setCouponMessage(`${validation.code} applied — you saved ${formatMoney(Number(validation.discountTotal), validation.currency)}.`)
+    } catch (caught) {
+      setCouponValidation(null)
+      setCouponCode(null)
+      setCouponMessage(caught instanceof ApiError ? caught.message : 'This discount code could not be checked.')
+    } finally {
+      setCouponBusy(false)
     }
   }
 
@@ -193,7 +215,6 @@ export function CartPage() {
             <aside className="min-w-0 w-full overflow-hidden border border-line p-4 min-[380px]:p-5 sm:p-7 lg:ml-auto lg:max-w-xl xl:sticky xl:top-32 xl:ml-0 xl:max-w-none">
               <h2 className="text-xl min-[380px]:text-2xl">Order summary</h2>
 
-              {/* The coupon is intentionally frontend-only until checkout APIs exist. */}
               <form onSubmit={applyCoupon} className="mt-6">
                 <label
                   htmlFor="coupon-code"
@@ -207,6 +228,8 @@ export function CartPage() {
                     value={coupon}
                     onChange={(event) => {
                       setCoupon(event.target.value)
+                      setCouponValidation(null)
+                      setCouponCode(null)
                       setCouponMessage('')
                     }}
                     placeholder="Enter code"
@@ -214,9 +237,10 @@ export function CartPage() {
                   />
                   <button
                     type="submit"
+                    disabled={couponBusy || !coupon.trim()}
                     className="min-h-10 self-end px-1 text-[9px] font-medium uppercase tracking-[0.14em] min-[380px]:self-auto min-[380px]:px-3 min-[380px]:tracking-[0.15em]"
                   >
-                    Apply
+                    {couponBusy ? 'Checking…' : 'Apply'}
                   </button>
                 </div>
                 <p

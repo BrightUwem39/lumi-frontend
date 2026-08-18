@@ -34,6 +34,7 @@ describe('CheckoutService', () => {
       number: 'LM-2026-ABCDEF123456', status: OrderStatus.DRAFT,
       email: input.email, shippingName: 'Amara Okafor', shippingAddress: input,
       currency: 'USD', subtotal: new Prisma.Decimal(189),
+      discountTotal: new Prisma.Decimal(0),
       shippingTotal: new Prisma.Decimal(18), total: new Prisma.Decimal(207),
       createdAt: new Date('2026-08-10T00:00:00Z'),
       items: [{ productName: 'Luna Silk Dress', imageUrl: '/luna.jpg', size: 'M',
@@ -59,5 +60,130 @@ describe('CheckoutService', () => {
       payable: false,
     })
     expect(carts.resolveCart).not.toHaveBeenCalled()
+  })
+
+  it('validates an active percentage code against authoritative cart prices', async () => {
+    const now = new Date()
+    const prisma = {
+      cart: { findUniqueOrThrow: vi.fn().mockResolvedValue({
+        id: 'cart-1', status: 'ACTIVE', items: [{
+          productId: 'product-1', size: 'M', quantity: 1,
+          product: {
+            name: 'Lumi Shirt', sku: 'LUMI-001', currency: 'NGN',
+            price: new Prisma.Decimal(100000), status: 'PUBLISHED',
+            publishedAt: new Date(now.getTime() - 1000), sizes: ['M'],
+            inventory: { onHand: 5, reserved: 0 }, images: [],
+          },
+        }],
+      }) },
+      coupon: { findUnique: vi.fn().mockResolvedValue({
+        id: 'coupon-1', code: 'LUMI10', type: 'PERCENTAGE',
+        value: new Prisma.Decimal(10), minimumSubtotal: null,
+        maximumDiscount: null, usageLimit: 100, usageCount: 2,
+        startsAt: null, expiresAt: null, active: true,
+        createdAt: now, updatedAt: now,
+      }) },
+    }
+    const carts = { resolveCart: vi.fn().mockResolvedValue({ id: 'cart-1' }) }
+    const service = new CheckoutService(
+      prisma as unknown as PrismaService,
+      carts as unknown as CartService,
+    )
+
+    const result = await service.validateCoupon(undefined, 'guest-token', 'LUMI10')
+
+    expect(result).toMatchObject({
+      code: 'LUMI10', subtotal: '100000.00', discountTotal: '10000.00',
+      shippingTotal: '25000.00', total: '115000.00',
+    })
+  })
+
+  it('rejects an unknown discount code instead of silently ignoring it', async () => {
+    const prisma = {
+      cart: { findUniqueOrThrow: vi.fn().mockResolvedValue({
+        id: 'cart-1', status: 'ACTIVE', items: [{
+          productId: 'product-1', size: 'M', quantity: 1,
+          product: {
+            name: 'Lumi Shirt', sku: 'LUMI-001', currency: 'NGN',
+            price: new Prisma.Decimal(100000), status: 'PUBLISHED',
+            publishedAt: new Date('2026-01-01'), sizes: ['M'],
+            inventory: { onHand: 5, reserved: 0 }, images: [],
+          },
+        }],
+      }) },
+      coupon: { findUnique: vi.fn().mockResolvedValue(null) },
+    }
+    const carts = { resolveCart: vi.fn().mockResolvedValue({ id: 'cart-1' }) }
+    const service = new CheckoutService(
+      prisma as unknown as PrismaService,
+      carts as unknown as CartService,
+    )
+
+    await expect(service.validateCoupon(undefined, 'guest-token', 'NOTREAL'))
+      .rejects.toBeInstanceOf(BadRequestException)
+  })
+
+  it('stores the verified discount and reserves one use on the order draft', async () => {
+    const now = new Date()
+    const cartRecord = {
+      id: 'cart-1', status: 'ACTIVE', items: [{
+        productId: 'product-1', size: 'M', quantity: 1,
+        product: {
+          name: 'Lumi Shirt', sku: 'LUMI-001', currency: 'NGN',
+          price: new Prisma.Decimal(100000), status: 'PUBLISHED',
+          publishedAt: new Date(now.getTime() - 1000), sizes: ['M'],
+          inventory: { onHand: 5, reserved: 0 }, images: [],
+        },
+      }],
+    }
+    const coupon = {
+      id: 'coupon-1', code: 'LUMI10', type: 'PERCENTAGE',
+      value: new Prisma.Decimal(10), minimumSubtotal: null,
+      maximumDiscount: null, usageLimit: 100, usageCount: 2,
+      startsAt: null, expiresAt: null, active: true,
+      createdAt: now, updatedAt: now,
+    }
+    const transaction = {
+      cart: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue(cartRecord),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      coupon: {
+        findUnique: vi.fn().mockResolvedValue(coupon),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      order: { create: vi.fn().mockImplementation(({ data }) => ({
+        number: 'LM-2026-ABCDEF123456', status: OrderStatus.DRAFT,
+        email: data.email, shippingName: data.shippingName,
+        shippingAddress: data.shippingAddress, currency: data.currency,
+        subtotal: data.subtotal, discountTotal: data.discountTotal,
+        shippingTotal: data.shippingTotal, total: data.total, createdAt: now,
+        coupon: { code: coupon.code },
+        items: [{ productName: 'Lumi Shirt', imageUrl: null, size: 'M', quantity: 1,
+          unitPrice: new Prisma.Decimal(100000), lineTotal: new Prisma.Decimal(100000) }],
+      })) },
+    }
+    const prisma = {
+      order: { findUnique: vi.fn().mockResolvedValue(null) },
+      $transaction: vi.fn((operation) => operation(transaction)),
+    }
+    const carts = { resolveCart: vi.fn().mockResolvedValue({ id: 'cart-1' }) }
+    const service = new CheckoutService(
+      prisma as unknown as PrismaService,
+      carts as unknown as CartService,
+    )
+
+    const result = await service.createDraft(
+      undefined, 'guest-token', 'idempotency_key_1234567890',
+      { ...input, couponCode: 'LUMI10' },
+    )
+
+    expect(result).toMatchObject({ couponCode: 'LUMI10', discountTotal: '10000.00', total: '115000.00' })
+    expect(transaction.coupon.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: { usageCount: { increment: 1 } },
+    }))
+    expect(transaction.order.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ couponId: 'coupon-1', discountTotal: new Prisma.Decimal(10000) }),
+    }))
   })
 })

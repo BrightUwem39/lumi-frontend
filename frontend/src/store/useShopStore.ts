@@ -18,6 +18,7 @@ type ShopState = {
   wishlistCount: number
   cartItems: Record<string, number>
   cartSizes: Record<string, string>
+  couponCode: string | null
   wishlistItems: string[]
   comparisonItems: string[]
   recentlyViewedItems: string[]
@@ -26,6 +27,7 @@ type ShopState = {
   removeFromCart: (productId: string) => void
   clearCart: () => void
   setCartItems: (items: Record<string, number>, sizes?: Record<string, string>) => void
+  setCouponCode: (couponCode: string | null) => void
   toggleWishlist: (productId: string) => void
   setWishlistItems: (productIds: string[]) => void
   toggleComparison: (productId: string) => void
@@ -42,6 +44,7 @@ export const useShopStore = create<ShopState>()(
       wishlistCount: 0,
       cartItems: {},
       cartSizes: {},
+      couponCode: null,
       wishlistItems: [],
       comparisonItems: [],
       recentlyViewedItems: [],
@@ -66,6 +69,7 @@ export const useShopStore = create<ShopState>()(
               ? { ...state.cartSizes, [productId]: nextSize }
               : state.cartSizes,
             cartCount: countCartItems(cartItems),
+            couponCode: null,
           }
         })
         if (cartMutationsReady()) {
@@ -93,7 +97,7 @@ export const useShopStore = create<ShopState>()(
           else cartItems[productId] = nextQuantity
           if (nextQuantity <= 0) delete cartSizes[productId]
 
-          return { cartItems, cartSizes, cartCount: countCartItems(cartItems) }
+          return { cartItems, cartSizes, cartCount: countCartItems(cartItems), couponCode: null }
         })
         if (cartMutationsReady()) {
           const request = nextQuantity <= 0
@@ -120,7 +124,7 @@ export const useShopStore = create<ShopState>()(
           const cartSizes = { ...state.cartSizes }
           delete cartItems[productId]
           delete cartSizes[productId]
-          return { cartItems, cartSizes, cartCount: countCartItems(cartItems) }
+          return { cartItems, cartSizes, cartCount: countCartItems(cartItems), couponCode: null }
         })
         if (cartMutationsReady()) {
           void removeCartProduct(productId).catch(() => {
@@ -140,7 +144,7 @@ export const useShopStore = create<ShopState>()(
         set((state) => {
           previousItems = state.cartItems
           previousSizes = state.cartSizes
-          return { cartItems: {}, cartSizes: {}, cartCount: 0 }
+          return { cartItems: {}, cartSizes: {}, cartCount: 0, couponCode: null }
         })
         if (cartMutationsReady()) {
           void clearServerCart().catch(() => {
@@ -158,6 +162,7 @@ export const useShopStore = create<ShopState>()(
       },
       setCartItems: (items, sizes = {}) =>
         set({ cartItems: items, cartSizes: sizes, cartCount: countCartItems(items) }),
+      setCouponCode: (couponCode) => set({ couponCode }),
       toggleWishlist: (productId) => {
         let adding = false
         set((state) => {

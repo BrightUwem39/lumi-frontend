@@ -6,6 +6,16 @@ const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value
 const email = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim().toLowerCase() : value
+const couponCode = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim().toUpperCase() || undefined : value
+
+export class ValidateCouponDto {
+  @Transform(couponCode)
+  @IsString()
+  @Length(3, 64)
+  @Matches(/^[A-Z0-9][A-Z0-9_-]+$/)
+  couponCode!: string
+}
 
 export class CreateOrderDto {
   @Transform(email) @IsEmail() @MaxLength(320) email!: string
@@ -25,4 +35,11 @@ export class CreateOrderDto {
   @IsString()
   @Matches(/^[A-Z]{2}$/)
   country!: string
+
+  @Transform(couponCode)
+  @IsString()
+  @Length(3, 64)
+  @Matches(/^[A-Z0-9][A-Z0-9_-]+$/)
+  @IsOptional()
+  couponCode?: string
 }

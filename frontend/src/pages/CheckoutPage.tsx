@@ -15,6 +15,7 @@ export function CheckoutPage() {
   const cartItems = useShopStore((state) => state.cartItems)
   const cartSizes = useShopStore((state) => state.cartSizes)
   const clearCart = useShopStore((state) => state.clearCart)
+  const couponCode = useShopStore((state) => state.couponCode)
   const navigate = useNavigate()
   const idempotencyKey = useRef(crypto.randomUUID())
   const [submitting, setSubmitting] = useState(false)
@@ -49,6 +50,7 @@ export function CheckoutPage() {
         region: String(data.get('region')),
         postalCode: String(data.get('postalCode') ?? '') || undefined,
         country: String(data.get('country')),
+        ...(couponCode ? { couponCode } : {}),
       }, idempotencyKey.current)
       const receipt: DemoOrder = {
         orderNumber: order.number,
@@ -70,6 +72,8 @@ export function CheckoutPage() {
           price: Number(item.unitPrice),
         })),
         subtotal: Number(order.subtotal),
+        discount: Number(order.discountTotal),
+        couponCode: order.couponCode,
         shipping: Number(order.shippingTotal),
         total: Number(order.total),
       }
@@ -138,6 +142,7 @@ export function CheckoutPage() {
             <div className="mt-4 flex justify-between border-t border-line pt-4 text-sm">
               <span>Browser estimate</span><span>{formatMoney(estimate, cartCurrency)}</span>
             </div>
+            {couponCode && <p className="mt-3 text-[10px] font-medium uppercase tracking-[0.12em]">Discount code: {couponCode}</p>}
             <p className="mt-3 text-[9px] leading-4 text-ink/45">The API will replace this estimate with authoritative product and shipping totals.</p>
             {error && <p role="alert" className="mt-4 text-xs leading-5 text-red-700">{error}</p>}
             <button disabled={submitting} className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 bg-ink px-4 text-[9px] uppercase tracking-[0.14em] text-canvas disabled:opacity-50">

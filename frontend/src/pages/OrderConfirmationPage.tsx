@@ -46,7 +46,8 @@ export function OrderConfirmationPage() {
           items: draft.items.map((item, index) => ({ id: `${draft.number}-${index}`,
             name: item.name, image: item.image ?? '', quantity: item.quantity,
             price: Number(item.unitPrice) })),
-          subtotal: Number(draft.subtotal), shipping: Number(draft.shippingTotal),
+          subtotal: Number(draft.subtotal), discount: Number(draft.discountTotal),
+          couponCode: draft.couponCode, shipping: Number(draft.shippingTotal),
           total: Number(draft.total),
         }
         if (!cancelled) setOrder(receipt)
@@ -162,6 +163,7 @@ export function OrderConfirmationPage() {
             </div>
             <div className="space-y-3 border-b border-line py-5 text-xs">
               <PriceRow label="Subtotal" value={formatMoney(order.subtotal, currencyCode)} />
+              {order.discount > 0 && <PriceRow label={order.couponCode ? `Discount (${order.couponCode})` : 'Discount'} value={`−${formatMoney(order.discount, currencyCode)}`} />}
               <PriceRow label="Shipping" value={order.shipping ? formatMoney(order.shipping, currencyCode) : 'Free'} />
               <PriceRow label="Payment" value={paid ? 'Confirmed' : pending ? 'Pending provider confirmation' : order.paymentMethod} />
             </div>

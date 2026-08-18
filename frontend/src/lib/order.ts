@@ -17,6 +17,8 @@ export type DemoOrder = {
     price: number
   }>
   subtotal: number
+  discount: number
+  couponCode: string | null
   shipping: number
   total: number
 }
