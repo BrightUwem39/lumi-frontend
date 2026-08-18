@@ -84,6 +84,32 @@ export type AdminOrder = AdminRecentOrder & {
   lineCount: number
 }
 
+export type AdminReturnStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'RECEIVED' | 'COMPLETED'
+
+export type AdminReturn = {
+  id: string
+  status: AdminReturnStatus
+  reason: string
+  resolutionNote: string | null
+  approvedAt: string | null
+  rejectedAt: string | null
+  receivedAt: string | null
+  completedAt: string | null
+  createdAt: string
+  items: Array<{
+    id: string
+    orderItemId: string
+    quantity: number
+    restockedQuantity: number
+    orderItem: {
+      productName: string
+      sku: string
+      size: string
+      productId: string | null
+    }
+  }>
+}
+
 export type AdminOrderDetail = AdminOrder & {
   shippingPhone: string
   shippingAddress: {
@@ -113,6 +139,7 @@ export type AdminOrderDetail = AdminOrder & {
     failureReason: string | null
     createdAt: string
   }>
+  returns: AdminReturn[]
   items: Array<{
     id: string
     productId: string | null
@@ -124,6 +151,7 @@ export type AdminOrderDetail = AdminOrder & {
     unitPrice: string
     discountTotal: string
     lineTotal: string
+    returnableQuantity: number
   }>
 }
 
@@ -281,6 +309,39 @@ export function createAdminRefund(orderNumber: string, input: { amount?: number;
     expectedAt: string | null
     createdAt: string
   }>(`/admin/orders/${encodeURIComponent(orderNumber)}/refunds`, {
+    method: 'POST',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function createAdminReturn(orderNumber: string, input: {
+  items: Array<{ orderItemId: string; quantity: number }>
+  reason: string
+}) {
+  return apiRequest<AdminReturn>(`/admin/orders/${encodeURIComponent(orderNumber)}/returns`, {
+    method: 'POST',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateAdminReturnStatus(
+  returnId: string,
+  input: { status: 'APPROVED' | 'REJECTED' | 'RECEIVED'; resolutionNote: string },
+) {
+  return apiRequest<AdminReturn>(`/admin/returns/${returnId}/status`, {
+    method: 'PATCH',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function completeAdminReturn(returnId: string, input: {
+  items: Array<{ returnItemId: string; quantity: number }>
+  resolutionNote: string
+}) {
+  return apiRequest<AdminReturn>(`/admin/returns/${returnId}/complete`, {
     method: 'POST',
     headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

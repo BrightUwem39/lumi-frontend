@@ -36,6 +36,8 @@ import {
   createAdminCoupon,
   createAdminProduct,
   createAdminRefund,
+  createAdminReturn,
+  completeAdminReturn,
   deleteAdminProduct,
   fetchAdminCustomers,
   fetchAdminCoupons,
@@ -49,6 +51,7 @@ import {
   setAdminInventory,
   setAdminCouponStatus,
   setAdminOrderStatus,
+  updateAdminReturnStatus,
   revokeAdminSession,
   revokeOtherAdminSessions,
   updateAdminProduct,
@@ -64,6 +67,7 @@ import {
   type AdminProduct,
   type AdminProductInput,
   type AdminRevenueAnalytics,
+  type AdminReturn,
   type AdminSettings,
   type AdminSecurity,
   type AdminNotificationSettings,
@@ -308,7 +312,7 @@ function OrderDetailPage({ reload }: { orders: AdminOrder[]; reload: () => Promi
   if (!order) return <EmptyState title="Order not found" detail={error || 'This order is no longer available.'} action={<Link to="/admin/orders" className="admin-button secondary">Back to orders</Link>} />
   const next = nextStatus(order.status)
   const refresh = async () => { await Promise.all([reload(), loadOrder()]) }
-  return <div className="space-y-5"><Link to="/admin/orders" className="admin-text-link"><LuArrowLeft /> Back to orders</Link>{error && <AdminError message={error} retry={loadOrder} />}<PageHeader title={order.number} description={`Created ${formatDate(order.createdAt)} · ${order.lineCount} line item${order.lineCount === 1 ? '' : 's'}`} actions={<StatusBadge value={order.status} />} /><div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]"><div className="space-y-6"><Panel title="Order summary" subtitle="Server-authoritative payment and fulfilment state"><dl className="grid gap-4 sm:grid-cols-2"><Detail label="Customer" value={order.shippingName} /><Detail label="Email" value={order.email} /><Detail label="Phone" value={order.shippingPhone} /><Detail label="Paid at" value={order.paidAt ? formatDate(order.paidAt) : 'Not paid'} /><Detail label="Payment" value={paymentLabel(order.status)} /><Detail label="Fulfilment" value={titleCase(order.status)} /></dl></Panel><Panel title="Order items" subtitle={`${order.lineCount} purchased line item${order.lineCount === 1 ? '' : 's'}`}><div className="divide-y divide-admin-line">{order.items.map((item) => <article key={item.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:items-center"><div className="size-14 overflow-hidden bg-admin-soft">{item.imageUrl ? <img src={item.imageUrl} alt="" className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center text-admin-muted"><LuPackage /></span>}</div><div className="min-w-0"><p className="font-semibold leading-5">{item.productName}</p><p className="mt-1 text-xs text-admin-muted">{item.sku} · Size {item.size} · Qty {item.quantity}</p><p className="mt-1 text-xs text-admin-muted">{formatMoney(Number(item.unitPrice), order.currency)} each</p></div><p className="font-semibold tabular-nums sm:text-right">{formatMoney(Number(item.lineTotal), order.currency)}</p></article>)}</div></Panel><Panel title="Shipping address" subtitle="Delivery information supplied at checkout"><address className="not-italic text-sm leading-7"><strong className="block font-semibold">{order.shippingName}</strong><span className="block text-admin-muted">{formatShippingAddress(order.shippingAddress)}</span><span className="block text-admin-muted">{order.shippingPhone}</span></address></Panel></div><div className="space-y-6"><Panel title="Price breakdown" subtitle="Captured order totals"><dl className="space-y-3"><PriceRow label="Subtotal" value={formatMoney(Number(order.subtotal), order.currency)} /><PriceRow label="Discount" value={`−${formatMoney(Number(order.discountTotal), order.currency)}`} /><PriceRow label="Shipping" value={formatMoney(Number(order.shippingTotal), order.currency)} /><PriceRow label="Tax" value={formatMoney(Number(order.taxTotal), order.currency)} /><div className="border-t border-admin-line pt-3"><PriceRow label="Total" value={formatMoney(Number(order.total), order.currency)} strong /></div></dl></Panel><RefundPanel order={order} reload={refresh} /><Panel title="Status timeline" subtitle="Only confirmed server states are shown"><StatusTimeline status={order.status} /></Panel><Panel title="Order action" subtitle="Forward-only transitions are audited">{next ? <OrderStatusForm order={order} reload={refresh} /> : <EmptyState title="No fulfilment action available" detail="This order cannot move forward from its current state." compact />}</Panel></div></div></div>
+  return <div className="space-y-5"><Link to="/admin/orders" className="admin-text-link"><LuArrowLeft /> Back to orders</Link>{error && <AdminError message={error} retry={loadOrder} />}<PageHeader title={order.number} description={`Created ${formatDate(order.createdAt)} · ${order.lineCount} line item${order.lineCount === 1 ? '' : 's'}`} actions={<StatusBadge value={order.status} />} /><div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]"><div className="space-y-6"><Panel title="Order summary" subtitle="Server-authoritative payment and fulfilment state"><dl className="grid gap-4 sm:grid-cols-2"><Detail label="Customer" value={order.shippingName} /><Detail label="Email" value={order.email} /><Detail label="Phone" value={order.shippingPhone} /><Detail label="Paid at" value={order.paidAt ? formatDate(order.paidAt) : 'Not paid'} /><Detail label="Payment" value={paymentLabel(order.status)} /><Detail label="Fulfilment" value={titleCase(order.status)} /></dl></Panel><Panel title="Order items" subtitle={`${order.lineCount} purchased line item${order.lineCount === 1 ? '' : 's'}`}><div className="divide-y divide-admin-line">{order.items.map((item) => <article key={item.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:items-center"><div className="size-14 overflow-hidden bg-admin-soft">{item.imageUrl ? <img src={item.imageUrl} alt="" className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center text-admin-muted"><LuPackage /></span>}</div><div className="min-w-0"><p className="font-semibold leading-5">{item.productName}</p><p className="mt-1 text-xs text-admin-muted">{item.sku} · Size {item.size} · Qty {item.quantity}</p><p className="mt-1 text-xs text-admin-muted">{formatMoney(Number(item.unitPrice), order.currency)} each · {item.returnableQuantity} returnable</p></div><p className="font-semibold tabular-nums sm:text-right">{formatMoney(Number(item.lineTotal), order.currency)}</p></article>)}</div></Panel><ReturnsPanel order={order} reload={refresh} /><Panel title="Shipping address" subtitle="Delivery information supplied at checkout"><address className="not-italic text-sm leading-7"><strong className="block font-semibold">{order.shippingName}</strong><span className="block text-admin-muted">{formatShippingAddress(order.shippingAddress)}</span><span className="block text-admin-muted">{order.shippingPhone}</span></address></Panel></div><div className="space-y-6"><Panel title="Price breakdown" subtitle="Captured order totals"><dl className="space-y-3"><PriceRow label="Subtotal" value={formatMoney(Number(order.subtotal), order.currency)} /><PriceRow label="Discount" value={`−${formatMoney(Number(order.discountTotal), order.currency)}`} /><PriceRow label="Shipping" value={formatMoney(Number(order.shippingTotal), order.currency)} /><PriceRow label="Tax" value={formatMoney(Number(order.taxTotal), order.currency)} /><div className="border-t border-admin-line pt-3"><PriceRow label="Total" value={formatMoney(Number(order.total), order.currency)} strong /></div></dl></Panel><RefundPanel order={order} reload={refresh} /><Panel title="Status timeline" subtitle="Only confirmed server states are shown"><StatusTimeline status={order.status} /></Panel><Panel title="Order action" subtitle="Forward-only transitions are audited">{next ? <OrderStatusForm order={order} reload={refresh} /> : <EmptyState title="No fulfilment action available" detail="This order cannot move forward from its current state." compact />}</Panel></div></div></div>
 }
 
 function CustomersPage({ customers, query }: { customers: AdminCustomer[]; query: string }) {
@@ -686,6 +690,116 @@ function InventoryForm({ product, close, reload }: { product: AdminProduct; clos
 
 function OrderStatusForm({ order, reload }: { order: AdminOrder; reload: () => Promise<void> }) { const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const status = nextStatus(order.status)!; const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setBusy(true); setError(''); const reason = String(new FormData(event.currentTarget).get('reason')); try { await setAdminOrderStatus(order.number, status, reason); await reload() } catch (requestError) { setError(requestError instanceof ApiError ? requestError.message : 'Order could not be updated.') } finally { setBusy(false) } }; return <form onSubmit={submit} className="space-y-3"><AdminField label={`Reason for marking ${status.toLowerCase()}`}><textarea name="reason" minLength={3} maxLength={500} required rows={3} placeholder="Fulfilment note or carrier reference" className="admin-control w-full resize-y p-3" /></AdminField><button disabled={busy} className="admin-button primary w-full justify-center">{busy ? 'Saving…' : `Mark ${status.toLowerCase()}`}</button>{error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}</form> }
 
+function ReturnsPanel({ order, reload }: { order: AdminOrderDetail; reload: () => Promise<void> }) {
+  const returns = order.returns ?? []
+  const returnableItems = order.items.filter((item) => item.returnableQuantity > 0)
+  const canOpenReturn = ['SHIPPED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'REFUNDED'].includes(order.status) && returnableItems.length > 0
+  const [showCreate, setShowCreate] = useState(false)
+
+  return <Panel title="Product returns" subtitle="Audited receiving and inventory decisions" action={canOpenReturn && !showCreate ? <button type="button" onClick={() => setShowCreate(true)} className="admin-button secondary"><LuPlus size={15} /> Open return</button> : undefined}>
+    <div className="space-y-5">
+      {showCreate && <CreateReturnForm order={order} close={() => setShowCreate(false)} reload={reload} />}
+      {!canOpenReturn && returns.length === 0 && <p className="text-sm leading-6 text-admin-muted">Returns become available after an order has shipped. This order currently has no returnable items.</p>}
+      {returns.length > 0 && <div className="space-y-4">
+        {returns.map((productReturn) => <ReturnRecord key={productReturn.id} productReturn={productReturn} reload={reload} />)}
+      </div>}
+    </div>
+  </Panel>
+}
+
+function CreateReturnForm({ order, close, reload }: { order: AdminOrderDetail; close: () => void; reload: () => Promise<void> }) {
+  const items = order.items.filter((item) => item.returnableQuantity > 0)
+  const [quantities, setQuantities] = useState<Record<string, number>>(() => Object.fromEntries(items.map((item) => [item.id, 0])))
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setError('')
+    const selected = items.flatMap((item) => quantities[item.id] > 0 ? [{ orderItemId: item.id, quantity: quantities[item.id] }] : [])
+    if (!selected.length) { setError('Choose at least one item and return quantity.'); return }
+    if (reason.trim().length < 3) { setError('Enter a clear return reason of at least 3 characters.'); return }
+    setBusy(true)
+    try {
+      await createAdminReturn(order.number, { items: selected, reason: reason.trim() })
+      close(); await reload()
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'The return could not be opened.')
+    } finally { setBusy(false) }
+  }
+  return <form onSubmit={submit} className="border border-admin-line bg-admin-soft p-4 sm:p-5">
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-display text-lg">Open a product return</p><p className="mt-1 text-xs leading-5 text-admin-muted">Use zero for items the customer is keeping.</p></div><button type="button" onClick={close} className="admin-text-link"><LuX /> Close</button></div>
+    <div className="mt-4 divide-y divide-admin-line border-y border-admin-line">{items.map((item) => <label key={item.id} className="grid gap-3 py-3 min-[480px]:grid-cols-[minmax(0,1fr)_96px] min-[480px]:items-center"><span className="min-w-0"><strong className="block text-sm leading-5">{item.productName}</strong><span className="mt-1 block text-xs text-admin-muted">{item.sku} · Size {item.size} · {item.returnableQuantity} available to return</span></span><span><span className="sr-only">Return quantity for {item.productName}</span><input type="number" min="0" max={item.returnableQuantity} step="1" value={quantities[item.id]} onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: Number(event.target.value) }))} className="admin-control h-10 w-full px-3 tabular-nums" /></span></label>)}</div>
+    <div className="mt-4"><AdminField label="Customer's reason for return"><textarea required minLength={3} maxLength={500} rows={3} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Wrong size, damaged item, or another clear reason" className="admin-control w-full resize-y p-3" /></AdminField></div>
+    {error && <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
+    <div className="mt-4 flex flex-col gap-2 min-[420px]:flex-row"><button disabled={busy} className="admin-button primary justify-center">{busy ? 'Opening…' : 'Open return'}</button><button type="button" disabled={busy} onClick={close} className="admin-button secondary justify-center">Cancel</button></div>
+  </form>
+}
+
+function ReturnRecord({ productReturn, reload }: { productReturn: AdminReturn; reload: () => Promise<void> }) {
+  return <article className="border border-admin-line p-4 sm:p-5">
+    <div className="flex min-w-0 flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="text-[9px] font-medium uppercase tracking-[0.16em] text-admin-muted">Return {productReturn.id.slice(0, 8).toUpperCase()}</p><p className="mt-2 text-xs text-admin-muted">Opened {formatDateTime(productReturn.createdAt)}</p></div><StatusBadge value={productReturn.status} /></div>
+    <p className="mt-4 break-words text-sm leading-6">{productReturn.reason}</p>
+    <div className="mt-4 divide-y divide-admin-line border-y border-admin-line">{productReturn.items.map((item) => <div key={item.id} className="grid gap-2 py-3 min-[480px]:grid-cols-[minmax(0,1fr)_auto] min-[480px]:items-center"><div className="min-w-0"><p className="text-sm font-semibold">{item.orderItem.productName}</p><p className="mt-1 text-xs text-admin-muted">{item.orderItem.sku} · Size {item.orderItem.size}</p></div><p className="text-xs font-medium tabular-nums text-admin-muted">Returned {item.quantity}{productReturn.status === 'COMPLETED' ? ` · Restocked ${item.restockedQuantity}` : ''}</p></div>)}</div>
+    {productReturn.resolutionNote && <p className="mt-4 border-l-2 border-admin-line pl-3 text-xs leading-5 text-admin-muted">Latest note: {productReturn.resolutionNote}</p>}
+    <ReturnAction productReturn={productReturn} reload={reload} />
+  </article>
+}
+
+function ReturnAction({ productReturn, reload }: { productReturn: AdminReturn; reload: () => Promise<void> }) {
+  if (productReturn.status === 'RECEIVED') return <CompleteReturnForm productReturn={productReturn} reload={reload} />
+  if (['REJECTED', 'COMPLETED'].includes(productReturn.status)) return null
+  return <ReturnStatusForm productReturn={productReturn} reload={reload} />
+}
+
+function ReturnStatusForm({ productReturn, reload }: { productReturn: AdminReturn; reload: () => Promise<void> }) {
+  const choices = productReturn.status === 'REQUESTED' ? ['APPROVED', 'REJECTED'] as const : ['RECEIVED'] as const
+  const [status, setStatus] = useState<(typeof choices)[number]>(choices[0])
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setBusy(true); setError('')
+    try {
+      await updateAdminReturnStatus(productReturn.id, { status, resolutionNote: note.trim() })
+      await reload()
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'The return status could not be updated.')
+    } finally { setBusy(false) }
+  }
+  return <form onSubmit={submit} className="mt-5 grid gap-3 border-t border-admin-line pt-5 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
+    {choices.length > 1 ? <AdminField label="Decision"><select value={status} onChange={(event) => setStatus(event.target.value as (typeof choices)[number])} className="admin-control h-11 w-full px-3">{choices.map((choice) => <option key={choice} value={choice}>{titleCase(choice)}</option>)}</select></AdminField> : <div><p className="text-xs font-medium text-admin-muted">Next stage</p><p className="mt-3 text-sm font-semibold">Mark parcel received</p></div>}
+    <AdminField label="Audit note"><input required minLength={3} maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} placeholder={status === 'REJECTED' ? 'Why the request was rejected' : status === 'RECEIVED' ? 'Warehouse or parcel reference' : 'Approval note'} className="admin-control h-11 w-full px-3" /></AdminField>
+    <button disabled={busy} className="admin-button secondary justify-center sm:col-span-2 sm:w-fit">{busy ? 'Saving…' : status === 'RECEIVED' ? 'Confirm parcel received' : `Mark ${status.toLowerCase()}`}</button>
+    {error && <p role="alert" className="text-sm text-red-700 sm:col-span-2 dark:text-red-300">{error}</p>}
+  </form>
+}
+
+function CompleteReturnForm({ productReturn, reload }: { productReturn: AdminReturn; reload: () => Promise<void> }) {
+  const [quantities, setQuantities] = useState<Record<string, number>>(() => Object.fromEntries(productReturn.items.map((item) => [item.id, item.quantity])))
+  const [note, setNote] = useState('')
+  const [confirmation, setConfirmation] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const total = Object.values(quantities).reduce((sum, quantity) => sum + quantity, 0)
+  const prepare = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setError(''); if (note.trim().length < 3) { setError('Enter an inspection note of at least 3 characters.'); return }; setConfirmation(true) }
+  const complete = async () => {
+    setBusy(true); setError('')
+    try {
+      await completeAdminReturn(productReturn.id, { items: productReturn.items.map((item) => ({ returnItemId: item.id, quantity: quantities[item.id] })), resolutionNote: note.trim() })
+      await reload()
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'The return could not be completed.')
+    } finally { setBusy(false) }
+  }
+  return <form onSubmit={prepare} className="mt-5 border-t border-admin-line pt-5">
+    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-admin-muted">Inventory inspection</p><p className="mt-2 text-xs leading-5 text-admin-muted">Enter only units that passed inspection and can be sold again. Use zero for damaged or non-resellable units.</p>
+    <div className="mt-3 divide-y divide-admin-line">{productReturn.items.map((item) => <label key={item.id} className="grid gap-2 py-3 min-[480px]:grid-cols-[minmax(0,1fr)_104px] min-[480px]:items-center"><span><strong className="block text-sm">{item.orderItem.productName}</strong><span className="mt-1 block text-xs text-admin-muted">Maximum {item.quantity} received</span></span><span><span className="sr-only">Restock quantity for {item.orderItem.productName}</span><input type="number" min="0" max={item.quantity} step="1" value={quantities[item.id]} onChange={(event) => { setConfirmation(false); setQuantities((current) => ({ ...current, [item.id]: Number(event.target.value) })) }} className="admin-control h-10 w-full px-3 tabular-nums" /></span></label>)}</div>
+    <div className="mt-3"><AdminField label="Inspection and completion note"><textarea required minLength={3} maxLength={500} rows={3} value={note} onChange={(event) => { setConfirmation(false); setNote(event.target.value) }} placeholder="Condition received and reason for any units not restocked" className="admin-control w-full resize-y p-3" /></AdminField></div>
+    {error && <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
+    {confirmation ? <div className="mt-4 border border-admin-line bg-admin-soft p-4"><p className="text-sm leading-6">Complete this return and add <strong>{total} unit{total === 1 ? '' : 's'}</strong> back to sellable inventory?</p><div className="mt-4 flex flex-col gap-2 min-[420px]:flex-row"><button type="button" disabled={busy} onClick={() => void complete()} className="admin-button primary justify-center">{busy ? 'Completing…' : 'Confirm and restock'}</button><button type="button" disabled={busy} onClick={() => setConfirmation(false)} className="admin-button secondary justify-center">Review quantities</button></div></div> : <button className="admin-button secondary mt-4 w-full justify-center min-[420px]:w-fit">Review completion</button>}
+  </form>
+}
+
 function RefundPanel({ order, reload }: { order: AdminOrderDetail; reload: () => Promise<void> }) {
   const refundableAmount = order.refundableAmount ?? '0.00'
   const refunds = order.refunds ?? []
@@ -772,7 +886,7 @@ function exportOrdersCsv(orders: AdminDashboard['recentOrders']) {
   anchor.click()
   URL.revokeObjectURL(url)
 }
-function StatusBadge({ value }: { value: string }) { const tone = ['ACTIVE', 'PAID', 'PUBLISHED', 'DELIVERED', 'PROCESSED', 'REFUNDED'].includes(value) ? 'success' : ['PROCESSING', 'PENDING', 'PENDING_PAYMENT', 'REQUESTING', 'PARTIALLY_REFUNDED'].includes(value) ? 'info' : ['PAYMENT_FAILED', 'FAILED', 'CANCELLED', 'DISABLED', 'NEEDS_ATTENTION'].includes(value) ? 'danger' : ['SHIPPED'].includes(value) ? 'accent' : 'neutral'; return <span className={`admin-status ${tone}`}>{titleCase(value)}</span> }
+function StatusBadge({ value }: { value: string }) { const tone = ['ACTIVE', 'PAID', 'PUBLISHED', 'DELIVERED', 'PROCESSED', 'REFUNDED', 'COMPLETED'].includes(value) ? 'success' : ['PROCESSING', 'PENDING', 'PENDING_PAYMENT', 'REQUESTING', 'REQUESTED', 'PARTIALLY_REFUNDED'].includes(value) ? 'info' : ['PAYMENT_FAILED', 'FAILED', 'CANCELLED', 'DISABLED', 'NEEDS_ATTENTION', 'REJECTED'].includes(value) ? 'danger' : ['SHIPPED', 'APPROVED', 'RECEIVED'].includes(value) ? 'accent' : 'neutral'; return <span className={`admin-status ${tone}`}>{titleCase(value)}</span> }
 function AdminField({ label, children }: { label: string; children: ReactNode }) { return <label><span className="mb-2 block text-xs font-medium text-admin-muted">{label}</span>{children}</label> }
 function UserAvatar({ name }: { name: string }) { const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'A'; return <span className="grid size-9 shrink-0 place-items-center border border-admin-ink text-[10px] font-medium tracking-[0.08em]">{initials}</span> }
 function ChevronIcon() { return <LuChevronDown className="text-admin-muted" size={15} /> }
