@@ -444,3 +444,19 @@ model AuditLog {
   @@index([resourceType, resourceId, createdAt])
   @@map("audit_logs")
 }
+
+model StoreSetting {
+  id              String   @id @default("primary") @db.VarChar(32)
+  storeName       String   @default("Lumi") @map("store_name") @db.VarChar(100)
+  tagline         String   @default("Clothes for real days, made with a little more thought.") @db.VarChar(200)
+  supportEmail    String   @default("hello@lumi.com") @map("support_email") @db.VarChar(320)
+  supportPhone    String   @default("+2348005864000") @map("support_phone") @db.VarChar(32)
+  addressLine     String   @default("18 Kingsway") @map("address_line") @db.VarChar(250)
+  city            String   @default("Lagos") @db.VarChar(100)
+  countryCode     String   @default("NG") @map("country_code") @db.Char(2)
+  defaultCurrency String   @default("NGN") @map("default_currency") @db.Char(3)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("store_settings")
+}

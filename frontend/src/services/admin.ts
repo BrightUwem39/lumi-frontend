@@ -143,6 +143,19 @@ export type AdminCouponInput = {
   reason: string
 }
 
+export type AdminStoreProfile = {
+  storeName: string
+  tagline: string
+  supportEmail: string
+  supportPhone: string
+  addressLine: string
+  city: string
+  countryCode: string
+  defaultCurrency: string
+}
+
+export type AdminSettings = { storeProfile: AdminStoreProfile }
+
 type Page<T> = {
   items: T[]
   page: number
@@ -216,6 +229,18 @@ export function setAdminCouponStatus(couponId: string, active: boolean, reason: 
     method: 'PATCH',
     headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ active, reason }),
+  })
+}
+
+export function fetchAdminSettings() {
+  return apiRequest<AdminSettings>('/admin/settings')
+}
+
+export function updateAdminStoreProfile(input: AdminStoreProfile & { reason: string }) {
+  return apiRequest<AdminSettings>('/admin/settings/store-profile', {
+    method: 'PATCH',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
   })
 }
 

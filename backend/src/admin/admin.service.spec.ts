@@ -403,6 +403,51 @@ describe('AdminService dashboard', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled()
   })
 
+  it('returns safe store-profile defaults before settings are first saved', async () => {
+    const prisma = { storeSetting: { findUnique: vi.fn().mockResolvedValue(null) } }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    await expect(service.getSettings()).resolves.toMatchObject({
+      storeProfile: {
+        storeName: 'Lumi', supportEmail: 'hello@lumi.com',
+        countryCode: 'NG', defaultCurrency: 'NGN',
+      },
+    })
+  })
+
+  it('saves an audited store-profile update', async () => {
+    const profile = {
+      storeName: 'Lumi', tagline: 'Considered clothing for everyday life.',
+      supportEmail: 'support@lumi.com', supportPhone: '+2348005864000',
+      addressLine: '18 Kingsway', city: 'Lagos', countryCode: 'NG',
+      defaultCurrency: 'NGN',
+    }
+    const transaction = {
+      storeSetting: { upsert: vi.fn().mockResolvedValue(profile) },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-settings' }) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.updateStoreProfile(
+      {
+        id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
+        role: UserRole.ADMINISTRATOR,
+      },
+      { ...profile, reason: 'Updated customer support address' },
+    )
+
+    expect(result).toEqual({ storeProfile: profile })
+    expect(transaction.storeSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'primary' }, update: profile,
+    }))
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'STORE_PROFILE_UPDATED', reason: 'Updated customer support address',
+      }),
+    })
+  })
+
   it('enforces forward-only fulfilment transitions', async () => {
     const transaction = {
       order: {

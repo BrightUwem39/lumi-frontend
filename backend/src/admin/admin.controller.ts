@@ -42,6 +42,7 @@ import {
   CreateAdminCouponDto,
   UpdateAdminCouponStatusDto,
 } from './dto/admin-coupon.dto.js'
+import { UpdateStoreProfileDto } from './dto/admin-settings.dto.js'
 
 @ApiTags('administration')
 @ApiCookieAuth('lumi_session')
@@ -155,6 +156,22 @@ export class AdminController {
     @Body() input: UpdateAdminCouponStatusDto,
   ) {
     return this.admin.updateCouponStatus(authentication.user, params.couponId, input)
+  }
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Returns administrator store settings' })
+  settings() {
+    return this.admin.getSettings()
+  }
+
+  @Patch('settings/store-profile')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Updates the audited store profile settings' })
+  storeProfile(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Body() input: UpdateStoreProfileDto,
+  ) {
+    return this.admin.updateStoreProfile(authentication.user, input)
   }
 
   @Get('orders')

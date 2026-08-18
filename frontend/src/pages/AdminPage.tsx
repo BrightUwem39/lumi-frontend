@@ -43,10 +43,12 @@ import {
   fetchAdminOrders,
   fetchAdminProducts,
   fetchAdminRevenueAnalytics,
+  fetchAdminSettings,
   setAdminInventory,
   setAdminCouponStatus,
   setAdminOrderStatus,
   updateAdminProduct,
+  updateAdminStoreProfile,
   type AdminCustomer,
   type AdminCoupon,
   type AdminDashboard,
@@ -55,6 +57,8 @@ import {
   type AdminProduct,
   type AdminProductInput,
   type AdminRevenueAnalytics,
+  type AdminSettings,
+  type AdminStoreProfile,
 } from '../services/admin'
 import { useAuthStore } from '../store/useAuthStore'
 
@@ -65,6 +69,7 @@ type AdminData = {
   orders: AdminOrder[]
   customers: AdminCustomer[]
   coupons: AdminCoupon[]
+  settings: AdminSettings
 }
 
 type NavigationItem = { label: string; to: string; icon: ReactNode }
@@ -107,15 +112,16 @@ export function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      const [dashboard, revenueAnalytics, products, orders, customers, coupons] = await Promise.all([
+      const [dashboard, revenueAnalytics, products, orders, customers, coupons, settings] = await Promise.all([
         fetchAdminDashboard(),
         fetchAdminRevenueAnalytics(analyticsDays),
         fetchAdminProducts(),
         fetchAdminOrders(),
         fetchAdminCustomers(),
         fetchAdminCoupons(),
+        fetchAdminSettings(),
       ])
-      setData({ dashboard, revenueAnalytics, products: products.items, orders: orders.items, customers: customers.items, coupons })
+      setData({ dashboard, revenueAnalytics, products: products.items, orders: orders.items, customers: customers.items, coupons, settings })
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : 'The Admin workspace could not be loaded.')
     } finally {
@@ -199,7 +205,7 @@ export function AdminPage() {
               <Route path="inventory" element={<InventoryPage products={data.products} query={globalSearch} reload={load} />} />
               <Route path="analytics" element={<AnalyticsPage data={data} analyticsDays={analyticsDays} setAnalyticsDays={setAnalyticsDays} />} />
               <Route path="discounts" element={<DiscountsPage coupons={data.coupons} reload={load} />} />
-              <Route path="settings" element={<SettingsPage />} />
+              <Route path="settings" element={<SettingsPage settings={data.settings} reload={load} />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           )}
@@ -520,9 +526,32 @@ function DiscountsPage({ coupons, reload }: { coupons: AdminCoupon[]; reload: ()
   return <div className="space-y-5"><PageHeader title="Discounts" description="Create and control audited percentage and fixed-amount campaign codes." actions={<button type="button" onClick={() => setCreating((value) => !value)} className="admin-button primary"><LuBadgePercent />{creating ? 'Close form' : 'Create discount'}</button>} />{error && <AdminError message={error} retry={reload} />}<div className="grid gap-4 sm:grid-cols-3"><StatCard label="Active codes" value={String(active)} detail="Available within current rules" icon={<LuBadgePercent />} /><StatCard label="Redemptions" value={redemptions.toLocaleString()} detail="Recorded coupon uses" icon={<LuCheck />} /><StatCard label="Scheduled" value={String(scheduled)} detail="Campaigns starting later" icon={<LuClock3 />} /></div>{creating && <Panel title="Create discount" subtitle="All changes are recorded in the administrator audit log"><form onSubmit={submit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><AdminField label="Discount code"><input name="code" required minLength={3} maxLength={64} pattern="[A-Za-z0-9][A-Za-z0-9_-]+" placeholder="LUMI10" className="admin-control h-11 w-full px-3 uppercase" /></AdminField><AdminField label="Discount type"><select value={type} onChange={(event) => setType(event.target.value as AdminCoupon['type'])} className="admin-control h-11 w-full px-3"><option value="PERCENTAGE">Percentage</option><option value="FIXED_AMOUNT">Fixed amount</option></select></AdminField><AdminField label={type === 'PERCENTAGE' ? 'Percentage value' : 'Amount (NGN)'}><input name="value" type="number" required min="0.01" max={type === 'PERCENTAGE' ? 100 : 1_000_000_000} step="0.01" className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Minimum subtotal (optional)"><input name="minimumSubtotal" type="number" min="0" step="0.01" className="admin-control h-11 w-full px-3" /></AdminField>{type === 'PERCENTAGE' && <AdminField label="Maximum discount (optional)"><input name="maximumDiscount" type="number" min="0.01" step="0.01" className="admin-control h-11 w-full px-3" /></AdminField>}<AdminField label="Usage limit (optional)"><input name="usageLimit" type="number" min="1" max="1000000" step="1" className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Starts at (optional)"><input name="startsAt" type="datetime-local" className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Expires at (optional)"><input name="expiresAt" type="datetime-local" className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Creation reason"><input name="reason" required minLength={3} maxLength={500} placeholder="Seasonal campaign" className="admin-control h-11 w-full px-3" /></AdminField><label className="flex min-h-11 items-center gap-3 text-sm"><input name="active" type="checkbox" defaultChecked className="size-4 accent-current" /> Activate immediately or at the start date</label><div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-3"><button disabled={busy} className="admin-button primary">{busy ? 'Creating…' : 'Create discount'}</button><button type="button" onClick={() => setCreating(false)} className="admin-button secondary">Cancel</button></div></form></Panel>}<Panel title="Campaign codes" subtitle={`${coupons.length} configured discount${coupons.length === 1 ? '' : 's'}`}>{coupons.length ? <div className="grid gap-3 md:grid-cols-2">{coupons.map((coupon) => { const state = couponState(coupon); return <article key={coupon.id} className="border border-admin-line p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-display text-xl tracking-wide">{coupon.code}</p><p className="mt-1 text-xs text-admin-muted">{couponValue(coupon)} discount</p></div><StatusBadge value={state} /></div><dl className="mt-5 grid grid-cols-2 gap-x-4 border-y border-admin-line py-3 text-xs"><Detail label="Usage" value={`${coupon.usageCount}${coupon.usageLimit ? ` / ${coupon.usageLimit}` : ''}`} /><Detail label="Minimum order" value={coupon.minimumSubtotal ? formatMoney(Number(coupon.minimumSubtotal), 'NGN') : 'None'} /><Detail label="Starts" value={coupon.startsAt ? formatDate(coupon.startsAt) : 'Immediately'} /><Detail label="Expires" value={coupon.expiresAt ? formatDate(coupon.expiresAt) : 'No expiry'} /></dl><button type="button" disabled={busy} onClick={() => void toggle(coupon)} className="admin-button secondary mt-4 w-full justify-center">{coupon.active ? 'Deactivate' : 'Activate'}</button></article> })}</div> : <EmptyState title="No discount codes yet" detail="Create the first campaign code when you are ready." compact />}</Panel></div>
 }
 
-function SettingsPage() {
-  const sections = [{ title: 'Store profile', detail: 'Brand identity, contact details, and storefront defaults.' }, { title: 'Shipping', detail: 'Delivery regions, thresholds, and future carrier integration.' }, { title: 'Tax', detail: 'Tax display and jurisdiction settings.' }, { title: 'Notifications', detail: 'Operational email preferences and low-stock alerts.' }, { title: 'Account security', detail: 'Administrator sessions, MFA, and recent re-authentication.' }]
-  return <div className="space-y-5"><PageHeader title="Settings" description="Configuration is grouped by operational responsibility." /><div className="grid gap-4 lg:grid-cols-2">{sections.map((section) => <Panel key={section.title} title={section.title} subtitle={section.detail}><div className="flex flex-col items-start gap-4 border-l border-admin-line pl-4 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between"><span className="text-sm leading-5 text-admin-muted">Backend settings contract pending</span><button type="button" disabled className="admin-button secondary w-full disabled:opacity-45 min-[480px]:w-auto">Configure</button></div></Panel>)}</div></div>
+function SettingsPage({ settings, reload }: { settings: AdminSettings; reload: () => Promise<void> }) {
+  const [profile, setProfile] = useState<AdminStoreProfile>(settings.storeProfile)
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
+  useEffect(() => setProfile(settings.storeProfile), [settings.storeProfile])
+  const setValue = (key: keyof AdminStoreProfile, value: string) => setProfile((current) => ({ ...current, [key]: value }))
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    setSaved(false)
+    try {
+      await updateAdminStoreProfile({ ...profile, reason })
+      await reload()
+      setReason('')
+      setSaved(true)
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'Store profile could not be saved.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  const planned = [{ title: 'Shipping', detail: 'Delivery regions, thresholds, and future carrier integration.' }, { title: 'Tax', detail: 'Tax display and jurisdiction settings.' }, { title: 'Notifications', detail: 'Operational email preferences and low-stock alerts.' }, { title: 'Account security', detail: 'Administrator sessions, MFA, and recent re-authentication.' }]
+  return <div className="space-y-5"><PageHeader title="Settings" description="Configuration is grouped by operational responsibility." /><Panel title="Store profile" subtitle="Brand identity, contact details, and storefront defaults"><form onSubmit={submit} className="grid gap-4 md:grid-cols-2"><AdminField label="Store name"><input required minLength={2} maxLength={100} value={profile.storeName} onChange={(event) => setValue('storeName', event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Default currency"><select value={profile.defaultCurrency} onChange={(event) => setValue('defaultCurrency', event.target.value)} className="admin-control h-11 w-full px-3"><option value="NGN">Nigerian naira (NGN)</option></select></AdminField><div className="md:col-span-2"><AdminField label="Store tagline"><input required minLength={10} maxLength={200} value={profile.tagline} onChange={(event) => setValue('tagline', event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField></div><AdminField label="Support email"><input type="email" required maxLength={320} value={profile.supportEmail} onChange={(event) => setValue('supportEmail', event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Support phone"><input type="tel" required minLength={5} maxLength={32} value={profile.supportPhone} onChange={(event) => setValue('supportPhone', event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Address"><input required minLength={2} maxLength={250} value={profile.addressLine} onChange={(event) => setValue('addressLine', event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="City"><input required minLength={2} maxLength={100} value={profile.city} onChange={(event) => setValue('city', event.target.value)} className="admin-control h-11 w-full px-3" /></AdminField><AdminField label="Country code"><input required minLength={2} maxLength={2} pattern="[A-Za-z]{2}" value={profile.countryCode} onChange={(event) => setValue('countryCode', event.target.value.toUpperCase())} className="admin-control h-11 w-full px-3 uppercase" /></AdminField><AdminField label="Reason for this change"><input required minLength={3} maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Updated customer support details" className="admin-control h-11 w-full px-3" /></AdminField><div className="flex flex-wrap items-center gap-3 md:col-span-2"><button disabled={busy} className="admin-button primary">{busy ? 'Saving…' : 'Save store profile'}</button>{saved && <p role="status" className="text-sm text-emerald-700 dark:text-emerald-300">Store profile saved.</p>}{error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}</div></form></Panel><div className="grid gap-4 lg:grid-cols-2">{planned.map((section) => <Panel key={section.title} title={section.title} subtitle={section.detail}><div className="border-l border-admin-line pl-4"><span className="text-sm leading-5 text-admin-muted">Scheduled as a separate settings workflow</span></div></Panel>)}</div></div>
 }
 
 function AdminBrand({ showAdminLabel = true }: { showAdminLabel?: boolean }) { return <Link to="/admin" aria-label="Lumi Admin home" className="flex h-[70px] items-center justify-between border-b border-admin-line px-5"><LumiLogo compact />{showAdminLabel && <span className="text-[8px] font-medium uppercase tracking-[0.18em] text-admin-muted">Admin</span>}</Link> }

@@ -22,6 +22,7 @@ import type {
   UpdateAdminProductDto,
 } from './dto/admin-product.dto.js'
 import type { CreateAdminCouponDto, UpdateAdminCouponStatusDto } from './dto/admin-coupon.dto.js'
+import type { UpdateStoreProfileDto } from './dto/admin-settings.dto.js'
 
 const fulfillmentStatuses = [
   OrderStatus.PAID,
@@ -60,6 +61,28 @@ const adminProductSelect = {
 } satisfies Prisma.ProductSelect
 
 type AdminProductRecord = Prisma.ProductGetPayload<{ select: typeof adminProductSelect }>
+
+const storeProfileSelect = {
+  storeName: true,
+  tagline: true,
+  supportEmail: true,
+  supportPhone: true,
+  addressLine: true,
+  city: true,
+  countryCode: true,
+  defaultCurrency: true,
+} satisfies Prisma.StoreSettingSelect
+
+const defaultStoreProfile = {
+  storeName: 'Lumi',
+  tagline: 'Clothes for real days, made with a little more thought.',
+  supportEmail: 'hello@lumi.com',
+  supportPhone: '+2348005864000',
+  addressLine: '18 Kingsway',
+  city: 'Lagos',
+  countryCode: 'NG',
+  defaultCurrency: 'NGN',
+}
 
 @Injectable()
 export class AdminService {
@@ -574,6 +597,39 @@ export class AdminService {
         },
       })
       return toAdminCoupon(coupon)
+    })
+  }
+
+  async getSettings() {
+    const storeProfile = await this.prisma.storeSetting.findUnique({
+      where: { id: 'primary' },
+      select: storeProfileSelect,
+    })
+    return { storeProfile: storeProfile ?? defaultStoreProfile }
+  }
+
+  async updateStoreProfile(actor: AuthenticatedUser, input: UpdateStoreProfileDto) {
+    return this.prisma.$transaction(async (transaction) => {
+      const { reason, ...profile } = input
+      const storeProfile = await transaction.storeSetting.upsert({
+        where: { id: 'primary' },
+        create: { id: 'primary', ...profile },
+        update: profile,
+        select: storeProfileSelect,
+      })
+      await transaction.auditLog.create({
+        data: {
+          actorUserId: actor.id,
+          actorRole: actor.role,
+          action: 'STORE_PROFILE_UPDATED',
+          resourceType: 'STORE_SETTINGS',
+          resourceId: 'primary',
+          result: 'SUCCESS',
+          reason,
+          metadata: { fields: Object.keys(profile) },
+        },
+      })
+      return { storeProfile }
     })
   }
 
