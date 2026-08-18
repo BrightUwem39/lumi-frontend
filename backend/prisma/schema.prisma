@@ -67,6 +67,15 @@ enum PaymentEventStatus {
   FAILED
 }
 
+enum RefundStatus {
+  REQUESTING
+  PENDING
+  PROCESSING
+  NEEDS_ATTENTION
+  PROCESSED
+  FAILED
+}
+
 enum CouponType {
   PERCENTAGE
   FIXED_AMOUNT
@@ -101,6 +110,7 @@ model User {
   orders              Order[]
   auditEventsAsActor  AuditLog[]               @relation("AuditActor")
   auditEventsAsTarget AuditLog[]               @relation("AuditTargetUser")
+  refundsInitiated    Refund[]                 @relation("RefundInitiator")
 
   @@index([status])
   @@map("users")
@@ -378,11 +388,39 @@ model Payment {
 
   order  Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
   events PaymentEvent[]
+  refunds Refund[]
 
   @@unique([orderId, provider])
   @@index([status, expiresAt])
   @@index([status, nextReconcileAt])
   @@map("payments")
+}
+
+model Refund {
+  id                      String       @id @default(uuid()) @db.Uuid
+  paymentId               String       @map("payment_id") @db.Uuid
+  providerRefundId        String?      @unique @map("provider_refund_id") @db.VarChar(100)
+  providerRefundReference String?      @unique @map("provider_refund_reference") @db.VarChar(200)
+  status                  RefundStatus @default(REQUESTING)
+  amount                  Decimal      @db.Decimal(12, 2)
+  currency                String       @db.Char(3)
+  reason                  String       @db.VarChar(500)
+  initiatedByUserId       String       @map("initiated_by_user_id") @db.Uuid
+  providerMetadata        Json?        @map("provider_metadata")
+  failureReason           String?      @map("failure_reason") @db.VarChar(500)
+  expectedAt              DateTime?    @map("expected_at")
+  processedAt             DateTime?    @map("processed_at")
+  failedAt                DateTime?    @map("failed_at")
+  createdAt               DateTime     @default(now()) @map("created_at")
+  updatedAt               DateTime     @updatedAt @map("updated_at")
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  initiatedBy User @relation("RefundInitiator", fields: [initiatedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId, status])
+  @@index([status, createdAt])
+  @@index([initiatedByUserId])
+  @@map("refunds")
 }
 
 model PaymentEvent {

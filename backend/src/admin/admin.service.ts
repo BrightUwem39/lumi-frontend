@@ -7,7 +7,7 @@ import {
   ProductStatus,
   UserRole,
   UserStatus,
-  type Prisma,
+  Prisma,
 } from '../generated/prisma/client.js'
 import type {
   AdminListQueryDto,
@@ -918,6 +918,29 @@ export class AdminService {
         cancelledAt: true,
         createdAt: true,
         updatedAt: true,
+        payments: {
+          where: { provider: 'PAYSTACK' },
+          take: 1,
+          select: {
+            amount: true,
+            currency: true,
+            refunds: {
+              orderBy: { createdAt: 'desc' },
+              select: {
+                id: true,
+                status: true,
+                amount: true,
+                currency: true,
+                reason: true,
+                expectedAt: true,
+                processedAt: true,
+                failedAt: true,
+                failureReason: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
         items: {
           orderBy: { id: 'asc' },
           select: {
@@ -937,14 +960,23 @@ export class AdminService {
     })
     if (!order) throw new NotFoundException('Order not found.')
 
+    const { payments, ...orderFields } = order
+    const refunds = payments[0]?.refunds ?? []
+    const committedRefund = refunds
+      .filter((refund) => refund.status !== 'FAILED')
+      .reduce((sum, refund) => sum.plus(refund.amount), new Prisma.Decimal(0))
     return {
-      ...order,
+      ...orderFields,
       subtotal: order.subtotal.toFixed(2),
       discountTotal: order.discountTotal.toFixed(2),
       shippingTotal: order.shippingTotal.toFixed(2),
       taxTotal: order.taxTotal.toFixed(2),
       total: order.total.toFixed(2),
       lineCount: order.items.length,
+      refundableAmount: payments[0]
+        ? Prisma.Decimal.max(payments[0].amount.minus(committedRefund), 0).toFixed(2)
+        : '0.00',
+      refunds: refunds.map((refund) => ({ ...refund, amount: refund.amount.toFixed(2) })),
       items: order.items.map((item) => ({
         ...item,
         unitPrice: item.unitPrice.toFixed(2),

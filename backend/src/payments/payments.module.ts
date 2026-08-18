@@ -5,10 +5,12 @@ import { PaystackClient } from './paystack.client.js'
 import { PaymentReconciliationWorker } from './payment-reconciliation.worker.js'
 import { PaymentsController } from './payments.controller.js'
 import { PaymentsService } from './payments.service.js'
+import { RefundsService } from './refunds.service.js'
 
 @Module({
   imports: [AuthModule, CartModule],
   controllers: [PaymentsController],
-  providers: [PaymentsService, PaystackClient, PaymentReconciliationWorker],
+  providers: [PaymentsService, RefundsService, PaystackClient, PaymentReconciliationWorker],
+  exports: [RefundsService],
 })
 export class PaymentsModule {}

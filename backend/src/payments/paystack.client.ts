@@ -24,9 +24,27 @@ type VerifyResponse = {
   }
 }
 
+type RefundResponse = {
+  status: boolean
+  data?: {
+    id?: number | string
+    amount?: number
+    currency?: string
+    status?: string
+    refund_reference?: string | null
+    expected_at?: string | null
+  }
+}
+
 export class PaystackInitializationException extends BadGatewayException {
   constructor(readonly definitive: boolean) {
     super('The payment provider could not initialize payment.')
+  }
+}
+
+export class PaystackRefundException extends BadGatewayException {
+  constructor(readonly definitive: boolean) {
+    super('The payment provider could not initiate the refund.')
   }
 }
 
@@ -115,6 +133,55 @@ export class PaystackClient {
       reference,
       amount: result.data.amount,
       currency: result.data.currency.toUpperCase(),
+    }
+  }
+
+  async createRefund(input: {
+    transaction: string
+    amount: number
+    currency: string
+    merchantNote: string
+  }) {
+    if (!this.isEnabled()) {
+      throw new ServiceUnavailableException('Online payments are not configured.')
+    }
+    const response = await fetch('https://api.paystack.co/refund', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.secret()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        transaction: input.transaction,
+        amount: input.amount,
+        currency: input.currency,
+        merchant_note: input.merchantNote,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    }).catch(() => {
+      throw new PaystackRefundException(false)
+    })
+    const result = await response.json().catch(() => null) as RefundResponse | null
+    const status = result?.data?.status?.toLowerCase()
+    if (
+      !response.ok || !result?.status || result.data?.id === undefined ||
+      result.data.amount !== input.amount ||
+      result.data.currency?.toUpperCase() !== input.currency.toUpperCase() ||
+      !status || !['pending', 'processing'].includes(status)
+    ) {
+      throw new PaystackRefundException(response.status >= 400 && response.status < 500)
+    }
+    const expectedAt = result.data.expected_at ? new Date(result.data.expected_at) : null
+    if (expectedAt && Number.isNaN(expectedAt.getTime())) {
+      throw new PaystackRefundException(false)
+    }
+    return {
+      providerRefundId: String(result.data.id),
+      providerRefundReference: result.data.refund_reference ?? null,
+      status,
+      amount: result.data.amount,
+      currency: result.data.currency.toUpperCase(),
+      expectedAt,
     }
   }
 }

@@ -21,6 +21,7 @@ import { CsrfGuard } from '../auth/guards/csrf.guard.js'
 import type { RequestAuthentication } from '../auth/auth.types.js'
 import { NoStoreInterceptor } from '../auth/no-store.interceptor.js'
 import { UserRole } from '../generated/prisma/client.js'
+import { RefundsService } from '../payments/refunds.service.js'
 import { AdminService } from './admin.service.js'
 import {
   AdminListQueryDto,
@@ -31,6 +32,7 @@ import {
   AdminRevenueQueryDto,
   AdminSecurityActionDto,
   AdminSessionParamsDto,
+  CreateAdminRefundDto,
   UpdateFulfillmentStatusDto,
   UpdateInventoryDto,
 } from './dto/admin.dto.js'
@@ -53,7 +55,10 @@ import { UpdateNotificationSettingsDto, UpdateShippingSettingsDto, UpdateStorePr
 @Roles(UserRole.ADMINISTRATOR)
 @UseInterceptors(NoStoreInterceptor)
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(
+    private readonly admin: AdminService,
+    private readonly refunds: RefundsService,
+  ) {}
 
   @Get('dashboard')
   @ApiOperation({ summary: 'Returns the administrator dashboard overview' })
@@ -243,6 +248,17 @@ export class AdminController {
   @ApiOperation({ summary: 'Returns complete administrator order detail' })
   order(@Param() params: AdminOrderParamsDto) {
     return this.admin.getOrder(params.orderNumber)
+  }
+
+  @Post('orders/:orderNumber/refunds')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Queues an audited full or partial Paystack refund' })
+  refundOrder(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Param() params: AdminOrderParamsDto,
+    @Body() input: CreateAdminRefundDto,
+  ) {
+    return this.refunds.initiate(authentication.user, params.orderNumber, input)
   }
 
   @Patch('orders/:orderNumber/status')

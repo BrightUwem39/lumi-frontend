@@ -16,6 +16,7 @@ import { hashToken } from '../auth/auth.crypto.js'
 import { BrevoEmailService } from '../auth/brevo-email.service.js'
 import { PrismaService } from '../database/prisma.service.js'
 import { PaystackClient, PaystackInitializationException } from './paystack.client.js'
+import { RefundsService } from './refunds.service.js'
 
 const RESERVATION_MINUTES = 30
 
@@ -26,6 +27,8 @@ type PaystackEvent = {
     amount?: unknown
     currency?: unknown
     status?: unknown
+    transaction_reference?: unknown
+    refund_reference?: unknown
   }
 }
 
@@ -39,6 +42,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly paystack: PaystackClient,
     private readonly email: BrevoEmailService,
+    private readonly refunds: RefundsService,
   ) {}
 
   availability() {
@@ -198,8 +202,15 @@ export class PaymentsService {
       throw new BadRequestException('Invalid webhook payload.')
     }
     const eventType = typeof payload.event === 'string' ? payload.event : 'unknown'
-    const reference = typeof payload.data?.reference === 'string' ? payload.data.reference : null
-    const eventId = `${eventType}:${reference ?? payloadHash}`
+    const reference = typeof payload.data?.reference === 'string'
+      ? payload.data.reference
+      : typeof payload.data?.transaction_reference === 'string'
+        ? payload.data.transaction_reference
+        : null
+    const refundReference = typeof payload.data?.refund_reference === 'string'
+      ? payload.data.refund_reference
+      : null
+    const eventId = `${eventType}:${eventType.startsWith('refund.') ? refundReference ?? payloadHash : reference ?? payloadHash}`
     const duplicate = await this.prisma.paymentEvent.findUnique({
       where: { provider_providerEventId: { provider: PaymentProvider.PAYSTACK, providerEventId: eventId } },
     })
@@ -209,6 +220,23 @@ export class PaymentsService {
       where: { providerReference: reference },
       include: { order: { include: { items: true } } },
     }) : null
+    if (isRefundEvent(eventType)) {
+      if (!payment) {
+        await this.recordEvent(eventId, eventType, payloadHash, undefined, PaymentEventStatus.IGNORED)
+        return { received: true }
+      }
+      await this.refunds.processWebhook({
+        eventId,
+        eventType,
+        payloadHash,
+        paymentId: payment.id,
+        amount: payload.data?.amount,
+        currency: payload.data?.currency,
+        providerRefundReference: payload.data?.refund_reference,
+        providerStatus: payload.data?.status,
+      })
+      return { received: true }
+    }
     if (eventType !== 'charge.success' || !payment) {
       await this.recordEvent(eventId, eventType, payloadHash, payment?.id, PaymentEventStatus.IGNORED)
       return { received: true }
@@ -517,4 +545,14 @@ function asMetadata(value: Prisma.JsonValue | null) {
 function paymentSession(reference: string, expiresAt: Date, authorizationUrl: unknown) {
   if (typeof authorizationUrl !== 'string') throw new BadRequestException('Payment session is unavailable.')
   return { provider: 'PAYSTACK', reference, authorizationUrl, expiresAt }
+}
+
+function isRefundEvent(eventType: string) {
+  return [
+    'refund.pending',
+    'refund.processing',
+    'refund.needs-attention',
+    'refund.processed',
+    'refund.failed',
+  ].includes(eventType)
 }

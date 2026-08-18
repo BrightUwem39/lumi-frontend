@@ -5,6 +5,7 @@ import { PaymentEventStatus, PaymentProvider, PaymentStatus, Prisma } from '../g
 import type { PrismaService } from '../database/prisma.service.js'
 import type { PaystackClient } from './paystack.client.js'
 import type { BrevoEmailService } from '../auth/brevo-email.service.js'
+import type { RefundsService } from './refunds.service.js'
 import { PaymentsService } from './payments.service.js'
 
 const secret = 'sk_test_payment-webhook-secret'
@@ -59,6 +60,33 @@ describe('PaymentsService webhook boundary', () => {
     })
   })
 
+  it('delegates a signed refund webhook to refund reconciliation', async () => {
+    const raw = Buffer.from(JSON.stringify({
+      event: 'refund.processed',
+      data: {
+        transaction_reference: 'LM-reference',
+        refund_reference: 'refund-reference',
+        amount: '15000',
+        currency: 'NGN',
+        status: 'processed',
+      },
+    }))
+    const signature = createHmac('sha512', secret).update(raw).digest('hex')
+    const payment = { id: 'payment-1', order: { items: [] } }
+    const prisma = {
+      paymentEvent: { findUnique: vi.fn().mockResolvedValue(null) },
+      payment: { findUnique: vi.fn().mockResolvedValue(payment) },
+    }
+    const processWebhook = vi.fn().mockResolvedValue(undefined)
+    const service = createService(prisma, true, {}, { processWebhook })
+
+    await expect(service.processWebhook(raw, signature)).resolves.toEqual({ received: true })
+    expect(processWebhook).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'refund.processed', paymentId: 'payment-1',
+      providerRefundReference: 'refund-reference',
+    }))
+  })
+
   it('keeps non-terminal verification results pending for a later retry', async () => {
     const payment = {
       id: 'payment-1',
@@ -97,7 +125,7 @@ describe('PaymentsService webhook boundary', () => {
   })
 })
 
-function createService(prisma: object, enabled: boolean, overrides: object = {}) {
+function createService(prisma: object, enabled: boolean, overrides: object = {}, refundOverrides: object = {}) {
   const paystack = {
     isEnabled: () => enabled,
     secret: () => secret,
@@ -107,5 +135,6 @@ function createService(prisma: object, enabled: boolean, overrides: object = {})
     prisma as PrismaService,
     paystack as PaystackClient,
     { sendOperationalOrderAlert: vi.fn() } as unknown as BrevoEmailService,
+    { processWebhook: vi.fn(), ...refundOverrides } as unknown as RefundsService,
   )
 }

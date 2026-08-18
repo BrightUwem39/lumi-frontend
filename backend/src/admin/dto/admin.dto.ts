@@ -2,6 +2,7 @@ import { Transform, Type } from 'class-transformer'
 import {
   IsIn,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -73,6 +74,20 @@ export class AdminSessionParamsDto {
 }
 
 export class AdminSecurityActionDto {
+  @Transform(trimOptional)
+  @IsString()
+  @Length(3, 500)
+  reason!: string
+}
+
+export class CreateAdminRefundDto {
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(1_000_000_000)
+  @IsOptional()
+  amount?: number
+
   @Transform(trimOptional)
   @IsString()
   @Length(3, 500)
