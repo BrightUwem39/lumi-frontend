@@ -34,17 +34,20 @@ import {
   fetchAdminDashboard,
   fetchAdminOrders,
   fetchAdminProducts,
+  fetchAdminRevenueAnalytics,
   setAdminInventory,
   setAdminOrderStatus,
   type AdminCustomer,
   type AdminDashboard,
   type AdminOrder,
   type AdminProduct,
+  type AdminRevenueAnalytics,
 } from '../services/admin'
 import { useAuthStore } from '../store/useAuthStore'
 
 type AdminData = {
   dashboard: AdminDashboard
+  revenueAnalytics: AdminRevenueAnalytics
   products: AdminProduct[]
   orders: AdminOrder[]
   customers: AdminCustomer[]
@@ -84,24 +87,26 @@ export function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [globalSearch, setGlobalSearch] = useState('')
+  const [analyticsDays, setAnalyticsDays] = useState<7 | 30 | 90>(30)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [dashboard, products, orders, customers] = await Promise.all([
+      const [dashboard, revenueAnalytics, products, orders, customers] = await Promise.all([
         fetchAdminDashboard(),
+        fetchAdminRevenueAnalytics(analyticsDays),
         fetchAdminProducts(),
         fetchAdminOrders(),
         fetchAdminCustomers(),
       ])
-      setData({ dashboard, products: products.items, orders: orders.items, customers: customers.items })
+      setData({ dashboard, revenueAnalytics, products: products.items, orders: orders.items, customers: customers.items })
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : 'The Admin workspace could not be loaded.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [analyticsDays])
 
   useEffect(() => {
     if (authStatus === 'authenticated' && user?.role === 'ADMINISTRATOR') void load()
@@ -169,7 +174,7 @@ export function AdminPage() {
           {error && <AdminError message={error} retry={load} />}
           {loading && !data ? <AdminPanelLoading /> : data && (
             <Routes>
-              <Route index element={<Overview data={data} reload={load} />} />
+              <Route index element={<Overview data={data} reload={load} analyticsDays={analyticsDays} setAnalyticsDays={setAnalyticsDays} />} />
               <Route path="products" element={<ProductsPage products={data.products} query={globalSearch} />} />
               <Route path="products/new" element={<ProductIntegrationPage mode="new" />} />
               <Route path="products/:productId" element={<ProductIntegrationPage mode="edit" />} />
@@ -177,7 +182,7 @@ export function AdminPage() {
               <Route path="orders/:orderNumber" element={<OrderDetailPage orders={data.orders} reload={load} />} />
               <Route path="customers" element={<CustomersPage customers={data.customers} query={globalSearch} />} />
               <Route path="inventory" element={<InventoryPage products={data.products} query={globalSearch} reload={load} />} />
-              <Route path="analytics" element={<AnalyticsPage data={data} />} />
+              <Route path="analytics" element={<AnalyticsPage data={data} analyticsDays={analyticsDays} setAnalyticsDays={setAnalyticsDays} />} />
               <Route path="discounts" element={<IntegrationPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
@@ -191,26 +196,28 @@ export function AdminPage() {
   )
 }
 
-function Overview({ data, reload }: { data: AdminData; reload: () => Promise<void> }) {
-  const { dashboard, products } = data
-  const averageOrderValue = dashboard.orders.total ? Number(dashboard.revenue.amount) / dashboard.orders.total : 0
+function Overview({ data, reload, analyticsDays, setAnalyticsDays }: { data: AdminData; reload: () => Promise<void>; analyticsDays: 7 | 30 | 90; setAnalyticsDays: (days: 7 | 30 | 90) => void }) {
+  const { dashboard, products, revenueAnalytics } = data
+  const periodRevenue = Number(revenueAnalytics.revenue.amount)
+  const averageOrderValue = revenueAnalytics.orders.total ? periodRevenue / revenueAnalytics.orders.total : 0
   const lowStock = products.filter((product) => product.available <= 10).sort((a, b) => a.available - b.available)
   const stockLeaders = [...products].sort((a, b) => b.available - a.available).slice(0, 4)
-  const chartOrders = dashboard.recentOrders.filter((order) => ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'].includes(order.status))
-  const maxValue = Math.max(...chartOrders.map((order) => Number(order.total)), 1)
+  const comparison = revenueAnalytics.revenue.changePercent === null
+    ? 'No previous-period baseline'
+    : `${revenueAnalytics.revenue.changePercent >= 0 ? '+' : ''}${revenueAnalytics.revenue.changePercent}% vs previous period`
   const stats = [
-    { label: 'Total revenue', value: formatMoney(Number(dashboard.revenue.amount), dashboard.revenue.currency), detail: 'Across paid active orders', icon: <LuCircleDollarSign /> },
-    { label: 'Orders', value: dashboard.orders.total.toLocaleString(), detail: `${dashboard.orders.awaitingFulfillment} awaiting fulfilment`, icon: <LuShoppingBag /> },
+    { label: `${analyticsDays}-day revenue`, value: formatMoney(periodRevenue, revenueAnalytics.revenue.currency), detail: comparison, icon: <LuCircleDollarSign /> },
+    { label: 'Paid orders', value: revenueAnalytics.orders.total.toLocaleString(), detail: `During the last ${analyticsDays} days`, icon: <LuShoppingBag /> },
     { label: 'Customers', value: dashboard.customers.total.toLocaleString(), detail: `${dashboard.customers.active} active accounts`, icon: <LuUsers /> },
-    { label: 'Average order value', value: formatMoney(averageOrderValue, dashboard.revenue.currency), detail: 'Revenue divided by all orders', icon: <LuTrendingUp /> },
+    { label: 'Average order value', value: formatMoney(averageOrderValue, revenueAnalytics.revenue.currency), detail: 'Revenue divided by paid orders', icon: <LuTrendingUp /> },
   ]
 
   return <div className="space-y-6">
-    <PageHeader title={`Good ${dayPeriod()}, Bright.`} description="Here is the latest operational picture for Lumi." actions={<><DateRangeControl /><button type="button" onClick={() => exportOrdersCsv(dashboard.recentOrders)} className="admin-button secondary"><LuDownload size={16} /> Export</button><button type="button" onClick={() => void reload()} className="admin-button secondary"><LuRefreshCw size={16} /> Refresh</button></>} />
+    <PageHeader title={`Good ${dayPeriod()}, Bright.`} description="Here is the latest operational picture for Lumi." actions={<><DateRangeControl value={analyticsDays} onChange={setAnalyticsDays} /><button type="button" onClick={() => exportOrdersCsv(dashboard.recentOrders)} className="admin-button secondary"><LuDownload size={16} /> Export</button><button type="button" onClick={() => void reload()} className="admin-button secondary"><LuRefreshCw size={16} /> Refresh</button></>} />
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map((stat) => <StatCard key={stat.label} {...stat} />)}</div>
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.75fr)]">
-      <Panel title="Revenue snapshot" subtitle="Latest paid orders returned by the live API" action={<span className="admin-pill">Live data</span>}>
-        {chartOrders.length ? <div className="pt-2"><div className="flex h-56 items-end gap-3 border-b border-admin-line px-1" role="img" aria-label="Bar chart of latest paid order values">{chartOrders.map((order) => <div key={order.number} className="group flex h-full min-w-0 flex-1 flex-col justify-end"><span className="mb-2 truncate text-center text-[10px] font-medium text-admin-muted">{formatCompactMoney(Number(order.total))}</span><div className="min-h-3 rounded-t-md bg-admin-accent/85 transition-colors group-hover:bg-admin-accent" style={{ height: `${Math.max(12, (Number(order.total) / maxValue) * 78)}%` }} title={`${order.number}: ${formatMoney(Number(order.total), order.currency)}`} /></div>)}</div><div className="mt-3 flex justify-between text-xs text-admin-muted"><span>Older</span><span>Latest paid orders</span><span>Recent</span></div></div> : <EmptyState title="No paid-order data yet" detail="Revenue bars appear after a sandbox payment succeeds." />}
+      <Panel title="Revenue performance" subtitle={`Daily paid revenue · last ${analyticsDays} days`} action={<span className="admin-pill">Live data</span>}>
+        <RevenueChart analytics={revenueAnalytics} />
       </Panel>
       <Panel title="Low stock" subtitle="Products with ten units or fewer" action={<Link to="/admin/inventory" className="admin-text-link">View inventory <LuArrowRight /></Link>}>
         {lowStock.length ? <div className="space-y-3">{lowStock.map((product) => <ProductLine key={product.id} product={product} detail={`${product.available} available`} warning />)}</div> : <EmptyState title="Stock levels look healthy" detail="No products are currently below the alert threshold." compact />}
@@ -268,10 +275,12 @@ function InventoryPage({ products, query, reload }: { products: AdminProduct[]; 
   return <div className="space-y-5"><PageHeader title="Inventory" description="Authoritative on-hand, reserved, and available product stock." /><Toolbar><FilterSelect label="Stock state" value={stock} setValue={setStock} options={['ALL', 'LOW', 'OUT', 'HEALTHY']} /><span className="ml-auto text-xs text-admin-muted">{visible.length} products</span></Toolbar><div className="space-y-3">{visible.map((product) => <article key={product.id} className="border border-admin-line bg-admin-surface p-4 sm:p-5"><div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_repeat(3,90px)_auto] sm:items-center"><ProductIdentity product={product} /><StockMetric label="On hand" value={product.inventory?.onHand ?? 0} /><StockMetric label="Reserved" value={product.inventory?.reserved ?? 0} /><StockMetric label="Available" value={product.available} warning={product.available <= 10} /><button type="button" onClick={() => setEditing(editing === product.id ? null : product.id)} className="admin-button secondary">Adjust stock</button></div>{editing === product.id && <InventoryForm product={product} close={() => setEditing(null)} reload={reload} />}</article>)}</div>{!visible.length && <EmptyState title="No matching inventory" detail="Change the stock-state filter or search phrase." />}</div>
 }
 
-function AnalyticsPage({ data }: { data: AdminData }) {
-  const revenue = Number(data.dashboard.revenue.amount)
-  const aov = data.dashboard.orders.total ? revenue / data.dashboard.orders.total : 0
-  return <div className="space-y-5"><PageHeader title="Analytics" description="A truthful operational snapshot from the endpoints currently available." actions={<DateRangeControl />} /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Revenue" value={formatMoney(revenue)} detail="Paid active orders" icon={<LuCircleDollarSign />} /><StatCard label="Orders" value={String(data.dashboard.orders.total)} detail="All recorded orders" icon={<LuShoppingBag />} /><StatCard label="Average order value" value={formatMoney(aov)} detail="Revenue ÷ orders" icon={<LuTrendingUp />} /><StatCard label="Units available" value={String(data.products.reduce((sum, product) => sum + product.available, 0))} detail="Across published catalog" icon={<LuBoxes />} /></div><Panel title="Advanced analytics integration" subtitle="Conversion, refunds, category mix, and 30-day comparison"><IntegrationNote text="These metrics need time-series, traffic, refund, and sales-aggregation endpoints. The interface is ready for that contract and does not invent production performance values." /></Panel></div>
+function AnalyticsPage({ data, analyticsDays, setAnalyticsDays }: { data: AdminData; analyticsDays: 7 | 30 | 90; setAnalyticsDays: (days: 7 | 30 | 90) => void }) {
+  const analytics = data.revenueAnalytics
+  const revenue = Number(analytics.revenue.amount)
+  const aov = analytics.orders.total ? revenue / analytics.orders.total : 0
+  const comparison = analytics.revenue.changePercent === null ? 'No previous baseline' : `${analytics.revenue.changePercent >= 0 ? '+' : ''}${analytics.revenue.changePercent}% vs prior period`
+  return <div className="space-y-5"><PageHeader title="Analytics" description="Verified revenue performance from completed Paystack-backed orders." actions={<DateRangeControl value={analyticsDays} onChange={setAnalyticsDays} />} /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Revenue" value={formatMoney(revenue, analytics.revenue.currency)} detail={comparison} icon={<LuCircleDollarSign />} /><StatCard label="Paid orders" value={String(analytics.orders.total)} detail={`Last ${analyticsDays} days`} icon={<LuShoppingBag />} /><StatCard label="Average order value" value={formatMoney(aov, analytics.revenue.currency)} detail="Revenue ÷ paid orders" icon={<LuTrendingUp />} /><StatCard label="Units available" value={String(data.products.reduce((sum, product) => sum + product.available, 0))} detail="Across published catalog" icon={<LuBoxes />} /></div><Panel title="Revenue performance" subtitle={`Daily paid revenue · last ${analyticsDays} days`}><RevenueChart analytics={analytics} /></Panel><Panel title="Next analytics integrations" subtitle="Conversion, refunds, traffic, and category mix"><IntegrationNote text="Revenue time-series and period comparison are now live. Conversion, traffic, refunds, and category performance remain queued for later verified endpoints." /></Panel></div>
 }
 
 function ProductIntegrationPage({ mode }: { mode: 'new' | 'edit' }) {
@@ -320,7 +329,25 @@ function Detail({ label, value }: { label: string; value: string }) { return <di
 function MobileRecord({ title, status, meta, detail, action }: { title: ReactNode; status: ReactNode; meta: string; detail: string; action: ReactNode }) { return <article className="border border-admin-line bg-admin-surface p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1">{typeof title === 'string' ? <h3 className="font-display text-lg">{title}</h3> : title}<p className="mt-2 text-[10px] uppercase tracking-[0.06em] text-admin-muted">{meta}</p><p className="mt-2 text-sm font-medium">{detail}</p></div>{status}</div><div className="mt-5 border-t border-admin-line pt-4">{action}</div></article> }
 function EmptyState({ title, detail, compact = false, action }: { title: string; detail: string; compact?: boolean; action?: ReactNode }) { return <div className={`grid place-items-center text-center ${compact ? 'py-6' : 'min-h-56 p-8'}`}><div><span className="mx-auto grid size-10 place-items-center border border-admin-line text-admin-muted"><LuBoxes /></span><h3 className="mt-4 font-display text-lg">{title}</h3><p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-admin-muted">{detail}</p>{action && <div className="mt-5">{action}</div>}</div></div> }
 function IntegrationNote({ text }: { text: string }) { return <div className="flex gap-3 border-l-2 border-admin-ink bg-admin-soft p-4"><LuCircleAlert className="mt-0.5 shrink-0 text-admin-muted" size={18} /><p className="text-sm leading-6 text-admin-muted">{text}</p></div> }
-function DateRangeControl() { return <label title="Date-range analytics endpoint pending"><span className="sr-only">Dashboard date range</span><select defaultValue="30" className="admin-control h-10 px-3 text-sm" disabled><option value="30">Current snapshot</option></select></label> }
+function RevenueChart({ analytics }: { analytics: AdminRevenueAnalytics }) {
+  const values = analytics.series.map((point) => Number(point.amount))
+  const highestValue = Math.max(...values, 0)
+  const scaleMax = Math.max(highestValue, 1)
+  const hasRevenue = values.some((value) => value > 0)
+  const middle = analytics.series[Math.floor(analytics.series.length / 2)]
+  return <div>
+    <div className="mb-5 flex items-end justify-between gap-4"><div><p className="text-[9px] uppercase tracking-[0.16em] text-admin-muted">Period total</p><p className="mt-1 font-display text-2xl">{formatMoney(Number(analytics.revenue.amount), analytics.revenue.currency)}</p></div><p className="text-right text-[10px] uppercase tracking-[0.1em] text-admin-muted">Highest day<br /><strong className="font-medium text-admin-ink">{formatCompactMoney(highestValue)}</strong></p></div>
+    <div className="flex h-56 items-end gap-px border-b border-admin-line" role="img" aria-label={`Daily revenue chart for the last ${analytics.range.days} days`}>
+      {analytics.series.map((point) => {
+        const amount = Number(point.amount)
+        return <div key={point.date} className="group flex h-full min-w-0 flex-1 items-end" title={`${formatShortDate(point.date)} · ${formatMoney(amount, analytics.revenue.currency)} · ${point.orderCount} paid order${point.orderCount === 1 ? '' : 's'}`}><div className={`w-full transition-opacity group-hover:opacity-65 ${amount > 0 ? 'bg-admin-accent' : 'bg-admin-line'}`} style={{ height: `${amount > 0 ? Math.max(4, (amount / scaleMax) * 100) : 1}%` }} /></div>
+      })}
+    </div>
+    <div className="mt-3 grid grid-cols-3 text-[9px] uppercase tracking-[0.1em] text-admin-muted"><span>{formatShortDate(analytics.series[0]?.date)}</span><span className="text-center">{formatShortDate(middle?.date)}</span><span className="text-right">{formatShortDate(analytics.series.at(-1)?.date)}</span></div>
+    {!hasRevenue && <p className="mt-5 border-l border-admin-line pl-3 text-xs leading-5 text-admin-muted">No paid NGN revenue was recorded in this period. The graph will update automatically after a confirmed payment.</p>}
+  </div>
+}
+function DateRangeControl({ value, onChange }: { value: 7 | 30 | 90; onChange: (days: 7 | 30 | 90) => void }) { return <label><span className="sr-only">Dashboard date range</span><select value={value} onChange={(event) => onChange(Number(event.target.value) as 7 | 30 | 90)} className="admin-control h-11 px-3 text-sm"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label> }
 
 function exportOrdersCsv(orders: AdminDashboard['recentOrders']) {
   const escapeCell = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`
@@ -350,5 +377,6 @@ function nextStatus(status: string) { return ({ PAID: 'PROCESSING', PROCESSING: 
 function paymentLabel(status: string) { return ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'].includes(status) ? 'PAID' : status === 'PAYMENT_FAILED' ? 'FAILED' : 'PENDING' }
 function titleCase(value: string) { return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()) }
 function formatDate(value: string) { return new Intl.DateTimeFormat('en-NG', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value)) }
+function formatShortDate(value?: string) { return value ? new Intl.DateTimeFormat('en-NG', { day: '2-digit', month: 'short', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00.000Z`)) : '—' }
 function formatCompactMoney(value: number) { return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', notation: 'compact', maximumFractionDigits: 1 }).format(value) }
 function dayPeriod() { const hour = new Date().getHours(); return hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening' }

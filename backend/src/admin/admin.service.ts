@@ -57,7 +57,7 @@ export class AdminService {
       this.prisma.order.count(),
       this.prisma.order.count({ where: { status: { in: [...fulfillmentStatuses] } } }),
       this.prisma.order.aggregate({
-        where: { status: { in: [...revenueStatuses] } },
+        where: { status: { in: [...revenueStatuses] }, currency: 'NGN' },
         _sum: { total: true },
       }),
       this.prisma.order.findMany({
@@ -103,6 +103,81 @@ export class AdminService {
         ...order,
         total: order.total.toFixed(2),
       })),
+    }
+  }
+
+  async revenueAnalytics(actor: AuthenticatedUser, days: number, userAgent?: string) {
+    const endExclusive = startOfUtcDay(new Date())
+    endExclusive.setUTCDate(endExclusive.getUTCDate() + 1)
+    const start = new Date(endExclusive)
+    start.setUTCDate(start.getUTCDate() - days)
+    const previousStart = new Date(start)
+    previousStart.setUTCDate(previousStart.getUTCDate() - days)
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        status: { in: [...revenueStatuses] },
+        currency: 'NGN',
+        paidAt: { gte: previousStart, lt: endExclusive },
+      },
+      select: { total: true, paidAt: true },
+      orderBy: { paidAt: 'asc' },
+    })
+
+    const currentOrders = orders.filter((order) => order.paidAt && order.paidAt >= start)
+    const previousOrders = orders.filter((order) => order.paidAt && order.paidAt < start)
+    const currentAmount = sumOrderTotals(currentOrders)
+    const previousAmount = sumOrderTotals(previousOrders)
+    const dailyTotals = new Map<string, { amount: number; orderCount: number }>()
+
+    for (const order of currentOrders) {
+      const date = order.paidAt!.toISOString().slice(0, 10)
+      const current = dailyTotals.get(date) ?? { amount: 0, orderCount: 0 }
+      current.amount += Number(order.total)
+      current.orderCount += 1
+      dailyTotals.set(date, current)
+    }
+
+    const series = Array.from({ length: days }, (_, index) => {
+      const date = new Date(start)
+      date.setUTCDate(date.getUTCDate() + index)
+      const key = date.toISOString().slice(0, 10)
+      const total = dailyTotals.get(key) ?? { amount: 0, orderCount: 0 }
+      return { date: key, amount: total.amount.toFixed(2), orderCount: total.orderCount }
+    })
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId: actor.id,
+        actorRole: actor.role,
+        action: 'ADMIN_REVENUE_ANALYTICS_VIEW',
+        resourceType: 'ADMIN_ANALYTICS',
+        result: 'SUCCESS',
+        metadata: { days },
+        userAgent: userAgent?.slice(0, 500),
+      },
+    })
+
+    return {
+      range: {
+        days,
+        from: start.toISOString(),
+        to: endExclusive.toISOString(),
+        timezone: 'UTC',
+      },
+      revenue: {
+        amount: currentAmount.toFixed(2),
+        previousAmount: previousAmount.toFixed(2),
+        changePercent: previousAmount > 0
+          ? Number((((currentAmount - previousAmount) / previousAmount) * 100).toFixed(1))
+          : null,
+        currency: 'NGN',
+      },
+      orders: {
+        total: currentOrders.length,
+        previousTotal: previousOrders.length,
+      },
+      series,
     }
   }
 
@@ -332,4 +407,12 @@ function paginated<T>(items: T[], query: AdminListQueryDto, total: number) {
     total,
     totalPages: Math.ceil(total / query.limit),
   }
+}
+
+function startOfUtcDay(value: Date) {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()))
+}
+
+function sumOrderTotals(orders: Array<{ total: { toString(): string } }>) {
+  return orders.reduce((sum, order) => sum + Number(order.total), 0)
 }

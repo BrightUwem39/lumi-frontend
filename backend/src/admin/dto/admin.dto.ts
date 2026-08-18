@@ -48,6 +48,14 @@ export class AdminOrderQueryDto extends AdminListQueryDto {
   status?: OrderStatus
 }
 
+export class AdminRevenueQueryDto {
+  @Type(() => Number)
+  @IsInt()
+  @IsIn([7, 30, 90])
+  @IsOptional()
+  days = 30
+}
+
 export class AdminProductParamsDto {
   @IsUUID()
   productId!: string

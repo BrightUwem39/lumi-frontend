@@ -66,6 +66,55 @@ describe('AdminService dashboard', () => {
     })
   })
 
+  it('returns a complete revenue series independent of the recent-order list', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z'))
+    try {
+      const findMany = vi.fn().mockResolvedValue([
+        { total: 75000, paidAt: new Date('2026-08-11T08:00:00.000Z') },
+        { total: 50000, paidAt: new Date('2026-08-12T10:00:00.000Z') },
+        { total: 100000, paidAt: new Date('2026-08-18T11:00:00.000Z') },
+      ])
+      const auditCreate = vi.fn().mockResolvedValue({ id: 'audit-analytics' })
+      const prisma = {
+        order: { findMany },
+        auditLog: { create: auditCreate },
+      }
+      const service = new AdminService(prisma as unknown as PrismaService)
+
+      const result = await service.revenueAnalytics(
+        {
+          id: 'admin-1', email: 'admin@example.com', firstName: 'Lumi', lastName: 'Admin',
+          role: UserRole.ADMINISTRATOR,
+        },
+        7,
+        'Admin Browser',
+      )
+
+      expect(result.series).toHaveLength(7)
+      expect(result.series[0]).toEqual({ date: '2026-08-12', amount: '50000.00', orderCount: 1 })
+      expect(result.series[6]).toEqual({ date: '2026-08-18', amount: '100000.00', orderCount: 1 })
+      expect(result.revenue).toEqual({
+        amount: '150000.00',
+        previousAmount: '75000.00',
+        changePercent: 100,
+        currency: 'NGN',
+      })
+      expect(result.orders).toEqual({ total: 2, previousTotal: 1 })
+      expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ currency: 'NGN', paidAt: expect.any(Object) }),
+      }))
+      expect(auditCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: 'ADMIN_REVENUE_ANALYTICS_VIEW',
+          metadata: { days: 7 },
+        }),
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('filters the product collection at query time and exposes authoritative stock', async () => {
     const prisma = {
       product: {

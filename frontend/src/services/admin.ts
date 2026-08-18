@@ -18,6 +18,18 @@ export type AdminRecentOrder = {
   createdAt: string
 }
 
+export type AdminRevenueAnalytics = {
+  range: { days: 7 | 30 | 90; from: string; to: string; timezone: string }
+  revenue: {
+    amount: string
+    previousAmount: string
+    changePercent: number | null
+    currency: string
+  }
+  orders: { total: number; previousTotal: number }
+  series: Array<{ date: string; amount: string; orderCount: number }>
+}
+
 export type AdminProduct = {
   id: string
   slug: string
@@ -60,6 +72,10 @@ type Page<T> = {
 
 export function fetchAdminDashboard() {
   return apiRequest<AdminDashboard>('/admin/dashboard')
+}
+
+export function fetchAdminRevenueAnalytics(days: 7 | 30 | 90 = 30) {
+  return apiRequest<AdminRevenueAnalytics>(`/admin/analytics/revenue?days=${days}`)
 }
 
 export function fetchAdminProducts() {

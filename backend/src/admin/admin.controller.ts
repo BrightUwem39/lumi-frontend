@@ -26,6 +26,7 @@ import {
   AdminOrderQueryDto,
   AdminProductParamsDto,
   AdminProductQueryDto,
+  AdminRevenueQueryDto,
   UpdateFulfillmentStatusDto,
   UpdateInventoryDto,
 } from './dto/admin.dto.js'
@@ -52,6 +53,20 @@ export class AdminController {
   @ApiOperation({ summary: 'Lists products with administrator inventory data' })
   products(@Query() query: AdminProductQueryDto) {
     return this.admin.listProducts(query)
+  }
+
+  @Get('analytics/revenue')
+  @ApiOperation({ summary: 'Returns daily administrator revenue analytics' })
+  revenueAnalytics(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Query() query: AdminRevenueQueryDto,
+    @Req() request: FastifyRequest,
+  ) {
+    return this.admin.revenueAnalytics(
+      authentication.user,
+      query.days,
+      request.headers['user-agent'],
+    )
   }
 
   @Patch('products/:productId/inventory')
