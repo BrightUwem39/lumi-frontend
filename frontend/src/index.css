@@ -31,9 +31,9 @@
   --color-admin-line: #d8d5cd;
   --color-admin-accent: #171713;
   --color-admin-accent-contrast: #f8f7f3;
-  --radius-admin: 12px;
-  --shadow-admin-sm: 0 1px 2px rgb(16 24 40 / 0.04);
-  --shadow-admin: 0 16px 36px rgb(16 24 40 / 0.1);
+  --radius-admin: 0px;
+  --shadow-admin-sm: none;
+  --shadow-admin: none;
 }
 
 /* Dark mode swaps the same semantic tokens, so component markup stays simple. */
@@ -57,8 +57,8 @@
   --color-admin-accent-contrast: #121210;
 }
 
-/* The administrator workspace has a restrained SaaS vocabulary distinct from
-   the editorial storefront while continuing to use the shared font and theme. */
+/* The administrator workspace uses the same editorial vocabulary as the
+   storefront: square geometry, fine rules, compact labels, and monochrome actions. */
 @layer components {
   .admin-icon-button {
     display: inline-grid;
@@ -66,25 +66,28 @@
     height: 40px;
     flex: 0 0 auto;
     place-items: center;
-    border: 1px solid var(--color-admin-line);
-    border-radius: 10px;
-    background: var(--color-admin-surface);
-    color: var(--color-admin-muted);
-    transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-admin-ink);
+    transition: opacity 160ms ease;
   }
 
-  .admin-icon-button:hover {
-    border-color: color-mix(in srgb, var(--color-admin-muted) 55%, transparent);
-    color: var(--color-admin-ink);
-    background: var(--color-admin-soft);
+  .admin-icon-button:hover:not(:disabled) {
+    opacity: 0.55;
+  }
+
+  .admin-icon-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
   }
 
   .admin-control {
     border: 1px solid var(--color-admin-line);
-    border-radius: 9px;
+    border-radius: 0;
     background: var(--color-admin-surface);
     color: var(--color-admin-ink);
-    box-shadow: 0 1px 2px rgb(16 24 40 / 0.03);
+    box-shadow: none;
   }
 
   .admin-control::placeholder {
@@ -94,24 +97,26 @@
   .admin-control:focus,
   .admin-control:focus-visible {
     border-color: var(--color-admin-accent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-admin-accent) 14%, transparent);
+    box-shadow: inset 0 -1px 0 var(--color-admin-accent);
   }
 
   .admin-button {
     display: inline-flex;
-    min-height: 40px;
+    min-height: 44px;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border-radius: 9px;
-    padding: 0 14px;
-    font-size: 13px;
-    font-weight: 600;
-    transition: transform 160ms ease, border-color 160ms ease, opacity 160ms ease, background-color 160ms ease;
+    border-radius: 0;
+    padding: 0 18px;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transition: opacity 160ms ease, color 160ms ease, background-color 160ms ease;
   }
 
   .admin-button:hover:not(:disabled) {
-    transform: translateY(-1px);
+    opacity: 0.72;
   }
 
   .admin-button.primary {
@@ -121,8 +126,8 @@
   }
 
   .admin-button.secondary {
-    border: 1px solid var(--color-admin-line);
-    background: var(--color-admin-surface);
+    border: 1px solid var(--color-admin-ink);
+    background: transparent;
     color: var(--color-admin-ink);
   }
 
@@ -130,11 +135,13 @@
     display: inline-flex;
     min-height: 26px;
     align-items: center;
-    border-radius: 999px;
+    border-radius: 0;
     background: var(--color-admin-soft);
-    padding: 0 10px;
-    font-size: 11px;
-    font-weight: 600;
+    padding: 0 9px;
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--color-admin-muted);
   }
 
@@ -142,8 +149,10 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--color-admin-accent);
   }
 
@@ -154,11 +163,13 @@
     align-items: center;
     gap: 8px;
     border: 1px solid var(--color-admin-line);
-    border-radius: 999px;
+    border-radius: 0;
     background: var(--color-admin-surface);
     padding: 0 13px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     color: var(--color-admin-muted);
   }
 
@@ -167,7 +178,7 @@
     min-width: 20px;
     height: 20px;
     place-items: center;
-    border-radius: 999px;
+    border-radius: 0;
     background: var(--color-admin-soft);
     font-size: 10px;
   }
@@ -179,7 +190,7 @@
   }
 
   .admin-chip.active span {
-    background: rgb(255 255 255 / 0.18);
+    background: color-mix(in srgb, var(--color-admin-accent-contrast) 18%, transparent);
   }
 
   .admin-table {
@@ -191,12 +202,13 @@
 
   .admin-table th {
     border-bottom: 1px solid var(--color-admin-line);
-    background: var(--color-admin-soft);
+    background: transparent;
     padding: 11px 16px;
     color: var(--color-admin-muted);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
@@ -218,10 +230,12 @@
     display: inline-flex;
     min-height: 24px;
     align-items: center;
-    border-radius: 999px;
+    border-radius: 0;
     padding: 0 9px;
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
