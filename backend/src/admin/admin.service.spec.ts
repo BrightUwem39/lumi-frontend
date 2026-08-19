@@ -67,6 +67,39 @@ describe('AdminService dashboard', () => {
     })
   })
 
+  it('combines unresolved operational work into live notifications', async () => {
+    const prisma = {
+      storeSetting: { findUnique: vi.fn().mockResolvedValue({ lowStockThreshold: 10 }) },
+      productReturn: { findMany: vi.fn().mockResolvedValue([{
+        id: 'return-1', reason: 'Wrong size', createdAt: new Date('2026-08-20T10:00:00Z'),
+        order: { number: 'LM-RETURN', shippingName: 'Return Customer' }, _count: { items: 1 },
+      }]) },
+      refund: { findMany: vi.fn().mockResolvedValue([{
+        id: 'refund-1', amount: new Prisma.Decimal(25000), currency: 'NGN', reason: 'Damaged item',
+        createdAt: new Date('2026-08-20T11:00:00Z'),
+        payment: { order: { number: 'LM-REFUND', shippingName: 'Refund Customer' } },
+      }]) },
+      auditLog: { findMany: vi.fn().mockResolvedValue([{
+        id: 'audit-1', action: 'ORDER_EMAIL_FAILED', reason: 'Delivery failed',
+        resourceType: 'ORDER', resourceId: 'order-12345678', createdAt: new Date('2026-08-20T09:00:00Z'),
+      }]) },
+      product: { findMany: vi.fn().mockResolvedValue([{
+        id: 'product-1', name: 'Lumi Tee', sku: 'TEE-1',
+        inventory: { onHand: 8, reserved: 2, updatedAt: new Date('2026-08-20T08:00:00Z') },
+      }]) },
+    }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.notifications()
+
+    expect(result.total).toBe(4)
+    expect(result.counts).toEqual({ returns: 1, refunds: 1, emailFailures: 1, lowStock: 1 })
+    expect(result.items[0]).toEqual(expect.objectContaining({ type: 'REFUND_ATTENTION', href: '/admin/orders/LM-REFUND' }))
+    expect(result.items.map((item) => item.type)).toEqual(expect.arrayContaining([
+      'RETURN_REQUEST', 'REFUND_ATTENTION', 'EMAIL_FAILURE', 'LOW_STOCK',
+    ]))
+  })
+
   it('returns a complete revenue series independent of the recent-order list', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z'))

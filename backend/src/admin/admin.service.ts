@@ -6,6 +6,8 @@ import {
   CouponType,
   OrderStatus,
   ProductStatus,
+  RefundStatus,
+  ReturnStatus,
   UserRole,
   UserStatus,
   Prisma,
@@ -203,6 +205,101 @@ export class AdminService {
         ...order,
         total: order.total.toFixed(2),
       })),
+    }
+  }
+
+  async notifications() {
+    const [settings, requestedReturns, attentionRefunds, emailFailures, products] = await Promise.all([
+      this.prisma.storeSetting.findUnique({
+        where: { id: 'primary' },
+        select: { lowStockThreshold: true },
+      }),
+      this.prisma.productReturn.findMany({
+        where: { status: ReturnStatus.REQUESTED },
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+        select: {
+          id: true, reason: true, createdAt: true,
+          order: { select: { number: true, shippingName: true } },
+          _count: { select: { items: true } },
+        },
+      }),
+      this.prisma.refund.findMany({
+        where: { status: RefundStatus.NEEDS_ATTENTION },
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+        select: {
+          id: true, amount: true, currency: true, reason: true, createdAt: true,
+          payment: { select: { order: { select: { number: true, shippingName: true } } } },
+        },
+      }),
+      this.prisma.auditLog.findMany({
+        where: { action: { in: ['ORDER_EMAIL_FAILED', 'RETURN_EMAIL_FAILED', 'REFUND_EMAIL_FAILED'] } },
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+        select: { id: true, action: true, reason: true, resourceType: true, resourceId: true, createdAt: true },
+      }),
+      this.prisma.product.findMany({
+        where: { status: ProductStatus.PUBLISHED },
+        select: {
+          id: true, name: true, sku: true,
+          inventory: { select: { onHand: true, reserved: true, updatedAt: true } },
+        },
+      }),
+    ])
+    const threshold = settings?.lowStockThreshold ?? defaultNotificationSettings.lowStockThreshold
+    const lowStock = products.flatMap((product) => {
+      const available = Math.max(0, (product.inventory?.onHand ?? 0) - (product.inventory?.reserved ?? 0))
+      return available <= threshold ? [{
+        id: `stock:${product.id}`,
+        type: 'LOW_STOCK' as const,
+        severity: available === 0 ? 'CRITICAL' as const : 'WARNING' as const,
+        title: available === 0 ? `${product.name} is out of stock` : `${product.name} is running low`,
+        detail: `${product.sku} · ${available} available · alert threshold ${threshold}`,
+        href: '/admin/inventory',
+        createdAt: product.inventory?.updatedAt ?? new Date(0),
+      }] : []
+    })
+    const items = [
+      ...requestedReturns.map((productReturn) => ({
+        id: `return:${productReturn.id}`,
+        type: 'RETURN_REQUEST' as const,
+        severity: 'ACTION' as const,
+        title: `Return requested by ${productReturn.order.shippingName}`,
+        detail: `${productReturn.order.number} · ${productReturn._count.items} item${productReturn._count.items === 1 ? '' : 's'} · ${productReturn.reason}`,
+        href: `/admin/orders/${productReturn.order.number}`,
+        createdAt: productReturn.createdAt,
+      })),
+      ...attentionRefunds.map((refund) => ({
+        id: `refund:${refund.id}`,
+        type: 'REFUND_ATTENTION' as const,
+        severity: 'CRITICAL' as const,
+        title: `Refund needs attention for ${refund.payment.order.shippingName}`,
+        detail: `${refund.payment.order.number} · ${refund.currency} ${refund.amount.toFixed(2)} · ${refund.reason}`,
+        href: `/admin/orders/${refund.payment.order.number}`,
+        createdAt: refund.createdAt,
+      })),
+      ...emailFailures.map((failure) => ({
+        id: `email:${failure.id}`,
+        type: 'EMAIL_FAILURE' as const,
+        severity: 'WARNING' as const,
+        title: failure.action === 'RETURN_EMAIL_FAILED' ? 'Return email failed' : failure.action === 'REFUND_EMAIL_FAILED' ? 'Refund email failed' : 'Order email failed',
+        detail: `${failure.resourceType}${failure.resourceId ? ` ${failure.resourceId.slice(0, 8).toUpperCase()}` : ''} · ${failure.reason ?? 'Delivery failed'}`,
+        href: '/admin/settings',
+        createdAt: failure.createdAt,
+      })),
+      ...lowStock,
+    ].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+
+    return {
+      total: items.length,
+      counts: {
+        returns: requestedReturns.length,
+        refunds: attentionRefunds.length,
+        emailFailures: emailFailures.length,
+        lowStock: lowStock.length,
+      },
+      items,
     }
   }
 

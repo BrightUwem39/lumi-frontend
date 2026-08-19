@@ -8,6 +8,20 @@ export type AdminDashboard = {
   recentOrders: AdminRecentOrder[]
 }
 
+export type AdminNotifications = {
+  total: number
+  counts: { returns: number; refunds: number; emailFailures: number; lowStock: number }
+  items: Array<{
+    id: string
+    type: 'RETURN_REQUEST' | 'REFUND_ATTENTION' | 'EMAIL_FAILURE' | 'LOW_STOCK'
+    severity: 'ACTION' | 'WARNING' | 'CRITICAL'
+    title: string
+    detail: string
+    href: string
+    createdAt: string
+  }>
+}
+
 export type AdminRecentOrder = {
   number: string
   email: string
@@ -254,6 +268,10 @@ type Page<T> = {
 
 export function fetchAdminDashboard() {
   return apiRequest<AdminDashboard>('/admin/dashboard')
+}
+
+export function fetchAdminNotifications() {
+  return apiRequest<AdminNotifications>('/admin/notifications')
 }
 
 export function fetchAdminRevenueAnalytics(days: 7 | 30 | 90 = 30) {

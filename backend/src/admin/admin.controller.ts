@@ -77,6 +77,12 @@ export class AdminController {
     return this.admin.dashboard(authentication.user, request.headers['user-agent'])
   }
 
+  @Get('notifications')
+  @ApiOperation({ summary: 'Returns live operational alerts for the administrator notification centre' })
+  notifications() {
+    return this.admin.notifications()
+  }
+
   @Get('products')
   @ApiOperation({ summary: 'Lists products with administrator inventory data' })
   products(@Query() query: AdminProductQueryDto) {

@@ -42,6 +42,7 @@ import {
   fetchAdminCustomers,
   fetchAdminCoupons,
   fetchAdminDashboard,
+  fetchAdminNotifications,
   fetchAdminOrder,
   fetchAdminOrders,
   fetchAdminProducts,
@@ -62,6 +63,7 @@ import {
   type AdminCustomer,
   type AdminCoupon,
   type AdminDashboard,
+  type AdminNotifications,
   type AdminOrder,
   type AdminOrderDetail,
   type AdminProduct,
@@ -86,6 +88,7 @@ type AdminData = {
   coupons: AdminCoupon[]
   settings: AdminSettings
   security: AdminSecurity
+  notifications: AdminNotifications
 }
 
 type NavigationItem = { label: string; to: string; icon: ReactNode }
@@ -98,6 +101,7 @@ const primaryNavigation: NavigationItem[] = [
   { label: 'Inventory', to: '/admin/inventory', icon: <LuBoxes /> },
   { label: 'Analytics', to: '/admin/analytics', icon: <LuChartNoAxesCombined /> },
   { label: 'Discounts', to: '/admin/discounts', icon: <LuBadgePercent /> },
+  { label: 'Notifications', to: '/admin/notifications', icon: <LuBell /> },
 ]
 
 const pageContext: Record<string, { eyebrow: string; title: string }> = {
@@ -109,6 +113,7 @@ const pageContext: Record<string, { eyebrow: string; title: string }> = {
   '/admin/inventory': { eyebrow: 'Stock control', title: 'Inventory' },
   '/admin/analytics': { eyebrow: 'Business intelligence', title: 'Analytics' },
   '/admin/discounts': { eyebrow: 'Promotions', title: 'Discounts' },
+  '/admin/notifications': { eyebrow: 'Operational alerts', title: 'Notifications' },
   '/admin/settings': { eyebrow: 'Workspace', title: 'Settings' },
 }
 
@@ -128,7 +133,7 @@ export function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      const [dashboard, revenueAnalytics, products, orders, customers, coupons, settings, security] = await Promise.all([
+      const [dashboard, revenueAnalytics, products, orders, customers, coupons, settings, security, notifications] = await Promise.all([
         fetchAdminDashboard(),
         fetchAdminRevenueAnalytics(analyticsDays),
         fetchAdminProducts(),
@@ -137,8 +142,9 @@ export function AdminPage() {
         fetchAdminCoupons(),
         fetchAdminSettings(),
         fetchAdminSecurity(),
+        fetchAdminNotifications(),
       ])
-      setData({ dashboard, revenueAnalytics, products: products.items, orders: orders.items, customers: customers.items, coupons, settings, security })
+      setData({ dashboard, revenueAnalytics, products: products.items, orders: orders.items, customers: customers.items, coupons, settings, security, notifications })
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : 'The Admin workspace could not be loaded.')
     } finally {
@@ -169,6 +175,7 @@ export function AdminPage() {
         : pageContext['/admin']
   )
   const searchEnabled = ['/admin/products', '/admin/orders', '/admin/customers', '/admin/inventory'].includes(location.pathname)
+  const notificationTotal = data?.notifications.total ?? 0
 
   return (
     <main className="admin-theme min-h-screen bg-admin-bg text-admin-ink">
@@ -201,7 +208,7 @@ export function AdminPage() {
               <LuSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-admin-muted" size={17} />
               <input value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} placeholder={`Search ${context.title.toLowerCase()}…`} className="admin-control h-10 w-full pl-10 pr-4" />
             </label>}
-            <button type="button" className="admin-icon-button hidden sm:grid" aria-label="Notifications" title="Notifications integration pending" disabled><LuBell size={18} /></button>
+            <Link to="/admin/notifications" className="admin-icon-button relative hidden sm:grid" aria-label={`${notificationTotal} operational notifications`}><LuBell size={18} />{notificationTotal > 0 && <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-admin-accent px-1 text-[8px] font-semibold text-admin-accent-contrast">{notificationTotal > 99 ? '99+' : notificationTotal}</span>}</Link>
             <Link to="/" className="admin-icon-button hidden sm:grid" aria-label="View storefront"><LuStore size={18} /></Link>
             <button type="button" onClick={() => void logout()} className="admin-icon-button ml-auto md:ml-0" aria-label="Sign out"><LuLogOut size={18} /></button>
           </div>
@@ -222,6 +229,7 @@ export function AdminPage() {
               <Route path="inventory" element={<InventoryPage products={data.products} query={globalSearch} reload={load} />} />
               <Route path="analytics" element={<AnalyticsPage data={data} analyticsDays={analyticsDays} setAnalyticsDays={setAnalyticsDays} />} />
               <Route path="discounts" element={<DiscountsPage coupons={data.coupons} reload={load} />} />
+              <Route path="notifications" element={<NotificationsPage notifications={data.notifications} reload={load} />} />
               <Route path="settings" element={<SettingsPage settings={data.settings} security={data.security} reload={load} />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
@@ -265,6 +273,30 @@ function Overview({ data, reload, analyticsDays, setAnalyticsDays }: { data: Adm
       <RecentOrdersTable orders={dashboard.recentOrders} />
       <Panel title="Product availability" subtitle="Highest available quantities" action={<Link to="/admin/products" className="admin-text-link">All products <LuArrowRight /></Link>}><div className="space-y-3">{stockLeaders.map((product) => <ProductLine key={product.id} product={product} detail={`${product.available} units available`} />)}</div></Panel>
     </div>
+  </div>
+}
+
+function NotificationsPage({ notifications, reload }: { notifications: AdminNotifications; reload: () => Promise<void> }) {
+  const [filter, setFilter] = useState('ALL')
+  const filters = [
+    { value: 'ALL', label: 'All', count: notifications.total },
+    { value: 'RETURN_REQUEST', label: 'Returns', count: notifications.counts.returns },
+    { value: 'REFUND_ATTENTION', label: 'Refunds', count: notifications.counts.refunds },
+    { value: 'EMAIL_FAILURE', label: 'Email failures', count: notifications.counts.emailFailures },
+    { value: 'LOW_STOCK', label: 'Low stock', count: notifications.counts.lowStock },
+  ]
+  const visible = filter === 'ALL' ? notifications.items : notifications.items.filter((item) => item.type === filter)
+  const countCards = [
+    { label: 'Return requests', value: notifications.counts.returns, icon: <LuRefreshCw /> },
+    { label: 'Refund attention', value: notifications.counts.refunds, icon: <LuCircleDollarSign /> },
+    { label: 'Email failures', value: notifications.counts.emailFailures, icon: <LuBell /> },
+    { label: 'Low stock', value: notifications.counts.lowStock, icon: <LuBoxes /> },
+  ]
+  return <div className="space-y-6">
+    <PageHeader title="Notification centre" description="Live unresolved operational work from returns, refunds, email delivery, and inventory." actions={<button type="button" onClick={() => void reload()} className="admin-button secondary"><LuRefreshCw size={16} /> Refresh</button>} />
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">{countCards.map((card) => <article key={card.label} className="min-w-0 border border-admin-line bg-admin-surface p-4 sm:p-5"><span className="grid size-8 place-items-center border border-admin-line text-admin-muted">{card.icon}</span><p className="mt-4 text-2xl font-semibold tabular-nums">{card.value}</p><p className="mt-1 text-xs leading-5 text-admin-muted">{card.label}</p></article>)}</div>
+    <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{filters.map((item) => <button key={item.value} type="button" onClick={() => setFilter(item.value)} className={`admin-chip shrink-0 ${filter === item.value ? 'active' : ''}`}>{item.label} <span>{item.count}</span></button>)}</div>
+    {visible.length ? <div className="grid gap-3 lg:grid-cols-2">{visible.map((item) => <article key={item.id} className="flex min-w-0 flex-col border border-admin-line bg-admin-surface p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-[9px] font-medium uppercase tracking-[0.16em] text-admin-muted">{notificationTypeLabel(item.type)}</p><h2 className="mt-2 break-words font-display text-lg leading-6">{item.title}</h2></div><StatusBadge value={item.severity} /></div><p className="mt-4 break-words text-xs leading-5 text-admin-muted">{item.detail}</p><div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-admin-line pt-4"><time className="text-xs text-admin-muted" dateTime={item.createdAt}>{formatDateTime(item.createdAt)}</time><Link to={item.href} className="admin-text-link">Resolve <LuArrowRight /></Link></div></article>)}</div> : <EmptyState title="No alerts in this view" detail="This category has no unresolved operational work right now." />}
   </div>
 }
 
@@ -886,7 +918,7 @@ function exportOrdersCsv(orders: AdminDashboard['recentOrders']) {
   anchor.click()
   URL.revokeObjectURL(url)
 }
-function StatusBadge({ value }: { value: string }) { const tone = ['ACTIVE', 'PAID', 'PUBLISHED', 'DELIVERED', 'PROCESSED', 'REFUNDED', 'COMPLETED'].includes(value) ? 'success' : ['PROCESSING', 'PENDING', 'PENDING_PAYMENT', 'REQUESTING', 'REQUESTED', 'PARTIALLY_REFUNDED'].includes(value) ? 'info' : ['PAYMENT_FAILED', 'FAILED', 'CANCELLED', 'DISABLED', 'NEEDS_ATTENTION', 'REJECTED'].includes(value) ? 'danger' : ['SHIPPED', 'APPROVED', 'RECEIVED'].includes(value) ? 'accent' : 'neutral'; return <span className={`admin-status ${tone}`}>{titleCase(value)}</span> }
+function StatusBadge({ value }: { value: string }) { const tone = ['ACTIVE', 'PAID', 'PUBLISHED', 'DELIVERED', 'PROCESSED', 'REFUNDED', 'COMPLETED'].includes(value) ? 'success' : ['PROCESSING', 'PENDING', 'PENDING_PAYMENT', 'REQUESTING', 'REQUESTED', 'PARTIALLY_REFUNDED', 'WARNING'].includes(value) ? 'info' : ['PAYMENT_FAILED', 'FAILED', 'CANCELLED', 'DISABLED', 'NEEDS_ATTENTION', 'REJECTED', 'CRITICAL'].includes(value) ? 'danger' : ['SHIPPED', 'APPROVED', 'RECEIVED', 'ACTION'].includes(value) ? 'accent' : 'neutral'; return <span className={`admin-status ${tone}`}>{titleCase(value)}</span> }
 function AdminField({ label, children }: { label: string; children: ReactNode }) { return <label><span className="mb-2 block text-xs font-medium text-admin-muted">{label}</span>{children}</label> }
 function UserAvatar({ name }: { name: string }) { const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'A'; return <span className="grid size-9 shrink-0 place-items-center border border-admin-ink text-[10px] font-medium tracking-[0.08em]">{initials}</span> }
 function ChevronIcon() { return <LuChevronDown className="text-admin-muted" size={15} /> }
@@ -924,6 +956,7 @@ function slugify(value: string) {
 function navigationClass(active: boolean) { return `flex min-h-12 items-center gap-3 border-b border-admin-line px-1 text-[10px] font-medium uppercase tracking-[0.12em] transition-colors ${active ? 'text-admin-ink' : 'text-admin-muted hover:text-admin-ink'} ${active ? 'before:h-4 before:w-px before:bg-admin-ink' : ''}` }
 function nextStatus(status: string) { return ({ PAID: 'PROCESSING', PROCESSING: 'SHIPPED', SHIPPED: 'DELIVERED' } as Record<string, string>)[status] }
 function paymentLabel(status: string) { if (status === 'REFUNDED') return 'REFUNDED'; if (status === 'PARTIALLY_REFUNDED') return 'PARTIALLY_REFUNDED'; return ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'].includes(status) ? 'PAID' : status === 'PAYMENT_FAILED' ? 'FAILED' : 'PENDING' }
+function notificationTypeLabel(type: AdminNotifications['items'][number]['type']) { return type === 'RETURN_REQUEST' ? 'Return request' : type === 'REFUND_ATTENTION' ? 'Refund attention' : type === 'EMAIL_FAILURE' ? 'Email delivery' : 'Inventory alert' }
 function titleCase(value: string) { return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()) }
 function formatDate(value: string) { return new Intl.DateTimeFormat('en-NG', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value)) }
 function formatDateTime(value: string) { return new Intl.DateTimeFormat('en-NG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value)) }
