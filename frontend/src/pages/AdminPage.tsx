@@ -38,6 +38,7 @@ import {
   createAdminRefund,
   createAdminReturn,
   completeAdminReturn,
+  dismissAdminNotification,
   deleteAdminProduct,
   fetchAdminCustomers,
   fetchAdminCoupons,
@@ -55,6 +56,7 @@ import {
   updateAdminReturnStatus,
   revokeAdminSession,
   revokeOtherAdminSessions,
+  retryAdminNotificationEmail,
   updateAdminProduct,
   updateAdminStoreProfile,
   updateAdminShippingSettings,
@@ -278,6 +280,9 @@ function Overview({ data, reload, analyticsDays, setAnalyticsDays }: { data: Adm
 
 function NotificationsPage({ notifications, reload }: { notifications: AdminNotifications; reload: () => Promise<void> }) {
   const [filter, setFilter] = useState('ALL')
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
   const filters = [
     { value: 'ALL', label: 'All', count: notifications.total },
     { value: 'RETURN_REQUEST', label: 'Returns', count: notifications.counts.returns },
@@ -292,11 +297,32 @@ function NotificationsPage({ notifications, reload }: { notifications: AdminNoti
     { label: 'Email failures', value: notifications.counts.emailFailures, icon: <LuBell /> },
     { label: 'Low stock', value: notifications.counts.lowStock, icon: <LuBoxes /> },
   ]
+  const dismiss = async (notificationKey: string) => {
+    setBusy(notificationKey); setError(''); setMessage('')
+    try {
+      await dismissAdminNotification(notificationKey)
+      await reload()
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'The alert could not be dismissed.')
+    } finally { setBusy('') }
+  }
+  const retryEmail = async (notificationKey: string) => {
+    setBusy(notificationKey); setError(''); setMessage('')
+    try {
+      await retryAdminNotificationEmail(notificationKey)
+      setMessage('The customer email was sent successfully.')
+      await reload()
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'The customer email could not be resent.')
+    } finally { setBusy('') }
+  }
   return <div className="space-y-6">
     <PageHeader title="Notification centre" description="Live unresolved operational work from returns, refunds, email delivery, and inventory." actions={<button type="button" onClick={() => void reload()} className="admin-button secondary"><LuRefreshCw size={16} /> Refresh</button>} />
+    {message && <p role="status" className="border-l-2 border-emerald-600 bg-emerald-50 p-4 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">{message}</p>}
+    {error && <p role="alert" className="border-l-2 border-red-600 bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">{error}</p>}
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">{countCards.map((card) => <article key={card.label} className="min-w-0 border border-admin-line bg-admin-surface p-4 sm:p-5"><span className="grid size-8 place-items-center border border-admin-line text-admin-muted">{card.icon}</span><p className="mt-4 text-2xl font-semibold tabular-nums">{card.value}</p><p className="mt-1 text-xs leading-5 text-admin-muted">{card.label}</p></article>)}</div>
     <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{filters.map((item) => <button key={item.value} type="button" onClick={() => setFilter(item.value)} className={`admin-chip shrink-0 ${filter === item.value ? 'active' : ''}`}>{item.label} <span>{item.count}</span></button>)}</div>
-    {visible.length ? <div className="grid gap-3 lg:grid-cols-2">{visible.map((item) => <article key={item.id} className="flex min-w-0 flex-col border border-admin-line bg-admin-surface p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-[9px] font-medium uppercase tracking-[0.16em] text-admin-muted">{notificationTypeLabel(item.type)}</p><h2 className="mt-2 break-words font-display text-lg leading-6">{item.title}</h2></div><StatusBadge value={item.severity} /></div><p className="mt-4 break-words text-xs leading-5 text-admin-muted">{item.detail}</p><div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-admin-line pt-4"><time className="text-xs text-admin-muted" dateTime={item.createdAt}>{formatDateTime(item.createdAt)}</time><Link to={item.href} className="admin-text-link">Resolve <LuArrowRight /></Link></div></article>)}</div> : <EmptyState title="No alerts in this view" detail="This category has no unresolved operational work right now." />}
+    {visible.length ? <div className="grid gap-3 lg:grid-cols-2">{visible.map((item) => <article key={item.id} className="flex min-w-0 flex-col border border-admin-line bg-admin-surface p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-[9px] font-medium uppercase tracking-[0.16em] text-admin-muted">{notificationTypeLabel(item.type)}</p><h2 className="mt-2 break-words font-display text-lg leading-6">{item.title}</h2></div><StatusBadge value={item.severity} /></div><p className="mt-4 break-words text-xs leading-5 text-admin-muted">{item.detail}</p><div className="mt-auto border-t border-admin-line pt-4"><time className="text-xs text-admin-muted" dateTime={item.createdAt}>{formatDateTime(item.createdAt)}</time><div className="mt-3 flex flex-col gap-2 min-[420px]:flex-row min-[420px]:flex-wrap">{item.type === 'EMAIL_FAILURE' && <button type="button" disabled={busy === item.id} onClick={() => void retryEmail(item.id)} className="admin-button primary justify-center">{busy === item.id ? 'Sending…' : 'Retry email'}</button>}<Link to={item.href} className="admin-button secondary justify-center">Open workflow <LuArrowRight /></Link><button type="button" disabled={busy === item.id} onClick={() => void dismiss(item.id)} className="admin-button secondary justify-center">{busy === item.id ? 'Saving…' : 'Dismiss'}</button></div></div></article>)}</div> : <EmptyState title="No alerts in this view" detail="This category has no unresolved operational work right now." />}
   </div>
 }
 

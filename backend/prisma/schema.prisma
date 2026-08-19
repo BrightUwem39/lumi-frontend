@@ -120,6 +120,7 @@ model User {
   auditEventsAsTarget AuditLog[]               @relation("AuditTargetUser")
   refundsInitiated    Refund[]                 @relation("RefundInitiator")
   returnsCreated      ProductReturn[]          @relation("ReturnCreator")
+  notificationDismissals AdminNotificationState[] @relation("NotificationDismissedBy")
 
   @@index([status])
   @@map("users")
@@ -531,6 +532,18 @@ model AuditLog {
   @@index([targetUserId, createdAt])
   @@index([resourceType, resourceId, createdAt])
   @@map("audit_logs")
+}
+
+model AdminNotificationState {
+  notificationKey  String   @id @map("notification_key") @db.VarChar(160)
+  dismissedAt      DateTime @default(now()) @map("dismissed_at")
+  dismissedByUserId String  @map("dismissed_by_user_id") @db.Uuid
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  dismissedBy User @relation("NotificationDismissedBy", fields: [dismissedByUserId], references: [id], onDelete: Cascade)
+
+  @@index([dismissedByUserId, dismissedAt])
+  @@map("admin_notification_states")
 }
 
 model StoreSetting {

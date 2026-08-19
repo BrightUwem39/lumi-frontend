@@ -1,6 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import type { AuthenticatedUser } from '../auth/auth.types.js'
-import { BrevoEmailService } from '../auth/brevo-email.service.js'
+import {
+  BrevoEmailService,
+  type OrderStatusEmail,
+  type RefundStatusEmail,
+  type ReturnStatusEmail,
+} from '../auth/brevo-email.service.js'
 import { PrismaService } from '../database/prisma.service.js'
 import {
   CouponType,
@@ -209,7 +214,7 @@ export class AdminService {
   }
 
   async notifications() {
-    const [settings, requestedReturns, attentionRefunds, emailFailures, products] = await Promise.all([
+    const [settings, requestedReturns, attentionRefunds, emailFailures, products, dismissedStates] = await Promise.all([
       this.prisma.storeSetting.findUnique({
         where: { id: 'primary' },
         select: { lowStockThreshold: true },
@@ -246,12 +251,13 @@ export class AdminService {
           inventory: { select: { onHand: true, reserved: true, updatedAt: true } },
         },
       }),
+      this.prisma.adminNotificationState.findMany({ select: { notificationKey: true } }),
     ])
     const threshold = settings?.lowStockThreshold ?? defaultNotificationSettings.lowStockThreshold
     const lowStock = products.flatMap((product) => {
       const available = Math.max(0, (product.inventory?.onHand ?? 0) - (product.inventory?.reserved ?? 0))
       return available <= threshold ? [{
-        id: `stock:${product.id}`,
+        id: `stock:${product.id}:${(product.inventory?.updatedAt ?? new Date(0)).getTime()}`,
         type: 'LOW_STOCK' as const,
         severity: available === 0 ? 'CRITICAL' as const : 'WARNING' as const,
         title: available === 0 ? `${product.name} is out of stock` : `${product.name} is running low`,
@@ -260,6 +266,7 @@ export class AdminService {
         createdAt: product.inventory?.updatedAt ?? new Date(0),
       }] : []
     })
+    const dismissed = new Set(dismissedStates.map((state) => state.notificationKey))
     const items = [
       ...requestedReturns.map((productReturn) => ({
         id: `return:${productReturn.id}`,
@@ -289,18 +296,139 @@ export class AdminService {
         createdAt: failure.createdAt,
       })),
       ...lowStock,
-    ].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+    ].filter((item) => !dismissed.has(item.id))
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
 
     return {
       total: items.length,
       counts: {
-        returns: requestedReturns.length,
-        refunds: attentionRefunds.length,
-        emailFailures: emailFailures.length,
-        lowStock: lowStock.length,
+        returns: items.filter((item) => item.type === 'RETURN_REQUEST').length,
+        refunds: items.filter((item) => item.type === 'REFUND_ATTENTION').length,
+        emailFailures: items.filter((item) => item.type === 'EMAIL_FAILURE').length,
+        lowStock: items.filter((item) => item.type === 'LOW_STOCK').length,
       },
       items,
     }
+  }
+
+  async dismissNotification(actor: AuthenticatedUser, notificationKey: string) {
+    await this.prisma.$transaction([
+      this.prisma.adminNotificationState.upsert({
+        where: { notificationKey },
+        create: { notificationKey, dismissedByUserId: actor.id },
+        update: { dismissedAt: new Date(), dismissedByUserId: actor.id },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          actorUserId: actor.id, actorRole: actor.role,
+          action: 'ADMIN_NOTIFICATION_DISMISSED', resourceType: 'ADMIN_NOTIFICATION',
+          resourceId: notificationKey, result: 'SUCCESS',
+        },
+      }),
+    ])
+    return { notificationKey, dismissed: true }
+  }
+
+  async retryNotificationEmail(actor: AuthenticatedUser, notificationKey: string) {
+    if (!notificationKey.startsWith('email:')) throw new BadRequestException('Only failed email alerts can be retried.')
+    if (!this.email?.isEnabled()) throw new ServiceUnavailableException('Email delivery is not enabled.')
+    const auditId = notificationKey.slice('email:'.length)
+    const failure = await this.prisma.auditLog.findUnique({
+      where: { id: auditId },
+      select: { id: true, action: true, resourceId: true, metadata: true },
+    })
+    if (!failure || !['ORDER_EMAIL_FAILED', 'RETURN_EMAIL_FAILED', 'REFUND_EMAIL_FAILED'].includes(failure.action) || !failure.resourceId) {
+      throw new NotFoundException('Failed email notification not found.')
+    }
+
+    try {
+      if (failure.action === 'ORDER_EMAIL_FAILED') await this.retryOrderEmail(failure.resourceId, failure.metadata)
+      else if (failure.action === 'RETURN_EMAIL_FAILED') await this.retryReturnEmail(failure.resourceId)
+      else await this.retryRefundEmail(failure.resourceId)
+    } catch (error) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorUserId: actor.id, actorRole: actor.role,
+          action: 'ADMIN_NOTIFICATION_EMAIL_RETRY_FAILED', resourceType: failure.action.replace('_EMAIL_FAILED', ''),
+          resourceId: failure.resourceId, result: 'FAILED', reason: 'The customer email retry could not be delivered.',
+        },
+      }).catch(() => undefined)
+      throw error
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.adminNotificationState.upsert({
+        where: { notificationKey },
+        create: { notificationKey, dismissedByUserId: actor.id },
+        update: { dismissedAt: new Date(), dismissedByUserId: actor.id },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          actorUserId: actor.id, actorRole: actor.role,
+          action: 'ADMIN_NOTIFICATION_EMAIL_RETRIED', resourceType: failure.action.replace('_EMAIL_FAILED', ''),
+          resourceId: failure.resourceId, result: 'SUCCESS', metadata: { sourceAuditId: failure.id },
+        },
+      }),
+    ])
+    return { notificationKey, retried: true }
+  }
+
+  private async retryOrderEmail(orderId: string, metadata: Prisma.JsonValue) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        number: true, email: true, shippingName: true, total: true, currency: true, status: true,
+        items: { select: { productName: true, size: true, quantity: true } },
+      },
+    })
+    if (!order) throw new NotFoundException('Order not found.')
+    const recordedStatus = jsonString(metadata, 'status')
+    const status = (['PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED'].includes(order.status) ? order.status : recordedStatus) as OrderStatusEmail['status'] | null
+    if (!status || !['PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED'].includes(status)) {
+      throw new BadRequestException('The original order email state cannot be reconstructed.')
+    }
+    await this.email!.sendOrderStatus(order.email, {
+      orderNumber: order.number, status, customerName: order.shippingName || 'there',
+      total: order.total.toFixed(2), currency: order.currency,
+      items: order.items.map((item) => ({ name: item.productName, size: item.size, quantity: item.quantity })),
+    })
+  }
+
+  private async retryReturnEmail(returnId: string) {
+    const productReturn = await this.prisma.productReturn.findUnique({
+      where: { id: returnId },
+      select: {
+        id: true, status: true, reason: true, resolutionNote: true,
+        order: { select: { number: true, email: true, shippingName: true } },
+        items: { select: { quantity: true, orderItem: { select: { productName: true, sku: true, size: true } } } },
+      },
+    })
+    if (!productReturn) throw new NotFoundException('Return not found.')
+    await this.email!.sendReturnStatus(productReturn.order.email, {
+      orderNumber: productReturn.order.number, returnId: productReturn.id,
+      status: productReturn.status as ReturnStatusEmail['status'],
+      customerName: productReturn.order.shippingName || 'there', reason: productReturn.reason,
+      resolutionNote: productReturn.resolutionNote,
+      items: productReturn.items.map((item) => ({
+        name: item.orderItem.productName, sku: item.orderItem.sku, size: item.orderItem.size, quantity: item.quantity,
+      })),
+    })
+  }
+
+  private async retryRefundEmail(refundId: string) {
+    const refund = await this.prisma.refund.findUnique({
+      where: { id: refundId },
+      select: {
+        status: true, amount: true, currency: true, reason: true,
+        payment: { select: { order: { select: { number: true, email: true, shippingName: true } } } },
+      },
+    })
+    if (!refund || refund.status === RefundStatus.REQUESTING) throw new NotFoundException('Refund update not found.')
+    await this.email!.sendRefundStatus(refund.payment.order.email, {
+      orderNumber: refund.payment.order.number, status: refund.status as RefundStatusEmail['status'],
+      customerName: refund.payment.order.shippingName || 'there', amount: refund.amount.toFixed(2),
+      currency: refund.currency, reason: refund.reason,
+    })
   }
 
   async revenueAnalytics(actor: AuthenticatedUser, days: number, userAgent?: string) {
@@ -1319,4 +1447,10 @@ function validateProductValues(
   if (status === ProductStatus.PUBLISHED && imageCount === 0) {
     throw new BadRequestException('Published products must have at least one image.')
   }
+}
+
+function jsonString(value: Prisma.JsonValue, key: string) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const candidate = (value as Record<string, Prisma.JsonValue>)[key]
+  return typeof candidate === 'string' ? candidate : null
 }

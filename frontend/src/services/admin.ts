@@ -274,6 +274,22 @@ export function fetchAdminNotifications() {
   return apiRequest<AdminNotifications>('/admin/notifications')
 }
 
+export function dismissAdminNotification(notificationKey: string) {
+  return apiRequest<{ notificationKey: string; dismissed: true }>('/admin/notifications/dismiss', {
+    method: 'POST',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notificationKey }),
+  })
+}
+
+export function retryAdminNotificationEmail(notificationKey: string) {
+  return apiRequest<{ notificationKey: string; retried: true }>('/admin/notifications/email-retry', {
+    method: 'POST',
+    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notificationKey }),
+  })
+}
+
 export function fetchAdminRevenueAnalytics(days: 7 | 30 | 90 = 30) {
   return apiRequest<AdminRevenueAnalytics>(`/admin/analytics/revenue?days=${days}`)
 }

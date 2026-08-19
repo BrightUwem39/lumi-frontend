@@ -87,6 +87,7 @@ describe('AdminService dashboard', () => {
         id: 'product-1', name: 'Lumi Tee', sku: 'TEE-1',
         inventory: { onHand: 8, reserved: 2, updatedAt: new Date('2026-08-20T08:00:00Z') },
       }]) },
+      adminNotificationState: { findMany: vi.fn().mockResolvedValue([]) },
     }
     const service = new AdminService(prisma as unknown as PrismaService)
 
@@ -98,6 +99,56 @@ describe('AdminService dashboard', () => {
     expect(result.items.map((item) => item.type)).toEqual(expect.arrayContaining([
       'RETURN_REQUEST', 'REFUND_ATTENTION', 'EMAIL_FAILURE', 'LOW_STOCK',
     ]))
+  })
+
+  it('persists and audits a notification dismissal', async () => {
+    const upsert = vi.fn().mockResolvedValue({})
+    const auditCreate = vi.fn().mockResolvedValue({})
+    const prisma = {
+      adminNotificationState: { upsert },
+      auditLog: { create: auditCreate },
+      $transaction: vi.fn().mockResolvedValue([]),
+    }
+    const service = new AdminService(prisma as unknown as PrismaService)
+    const actor = { id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null, role: UserRole.ADMINISTRATOR }
+
+    await expect(service.dismissNotification(actor, 'return:return-1')).resolves.toEqual({
+      notificationKey: 'return:return-1', dismissed: true,
+    })
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: { notificationKey: 'return:return-1' },
+      create: expect.objectContaining({ dismissedByUserId: actor.id }),
+    }))
+    expect(auditCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ action: 'ADMIN_NOTIFICATION_DISMISSED' }) })
+  })
+
+  it('reconstructs a failed order email and dismisses it only after a successful retry', async () => {
+    const notificationKey = 'email:11111111-1111-4111-8111-111111111111'
+    const sendOrderStatus = vi.fn().mockResolvedValue(undefined)
+    const prisma = {
+      auditLog: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: notificationKey.slice(6), action: 'ORDER_EMAIL_FAILED', resourceId: 'order-1',
+          metadata: { status: 'SHIPPED' },
+        }),
+        create: vi.fn().mockResolvedValue({}),
+      },
+      order: { findUnique: vi.fn().mockResolvedValue({
+        number: 'LM-2026-ABCDEF123456', email: 'customer@example.com', shippingName: 'Customer',
+        total: new Prisma.Decimal(125000), currency: 'NGN', status: OrderStatus.SHIPPED,
+        items: [{ productName: 'Lumi Tee', size: 'M', quantity: 1 }],
+      }) },
+      adminNotificationState: { upsert: vi.fn().mockResolvedValue({}) },
+      $transaction: vi.fn().mockResolvedValue([]),
+    }
+    const service = new AdminService(prisma as unknown as PrismaService, {
+      isEnabled: () => true, sendOrderStatus,
+    } as unknown as BrevoEmailService)
+    const actor = { id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null, role: UserRole.ADMINISTRATOR }
+
+    await expect(service.retryNotificationEmail(actor, notificationKey)).resolves.toEqual({ notificationKey, retried: true })
+    expect(sendOrderStatus).toHaveBeenCalledWith('customer@example.com', expect.objectContaining({ status: 'SHIPPED' }))
+    expect(prisma.adminNotificationState.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { notificationKey } }))
   })
 
   it('returns a complete revenue series independent of the recent-order list', async () => {

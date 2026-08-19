@@ -54,6 +54,7 @@ import {
   UpdateAdminCouponStatusDto,
 } from './dto/admin-coupon.dto.js'
 import { UpdateNotificationSettingsDto, UpdateShippingSettingsDto, UpdateStoreProfileDto, UpdateTaxSettingsDto } from './dto/admin-settings.dto.js'
+import { AdminNotificationActionDto } from './dto/admin-notification.dto.js'
 
 @ApiTags('administration')
 @ApiCookieAuth('lumi_session')
@@ -81,6 +82,26 @@ export class AdminController {
   @ApiOperation({ summary: 'Returns live operational alerts for the administrator notification centre' })
   notifications() {
     return this.admin.notifications()
+  }
+
+  @Post('notifications/dismiss')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Dismisses an operational notification with an audit trail' })
+  dismissNotification(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Body() input: AdminNotificationActionDto,
+  ) {
+    return this.admin.dismissNotification(authentication.user, input.notificationKey)
+  }
+
+  @Post('notifications/email-retry')
+  @UseGuards(CsrfGuard)
+  @ApiOperation({ summary: 'Reconstructs and retries a failed customer email notification' })
+  retryNotificationEmail(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Body() input: AdminNotificationActionDto,
+  ) {
+    return this.admin.retryNotificationEmail(authentication.user, input.notificationKey)
   }
 
   @Get('products')
