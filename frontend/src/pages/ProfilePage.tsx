@@ -30,7 +30,14 @@ import {
 } from '../services/auth'
 import { useAuthStore } from '../store/useAuthStore'
 import { formatMoney } from '../lib/currency'
-import { cancelOrder, fetchOrders, type OrderSummary } from '../services/orders'
+import {
+  cancelOrder,
+  fetchOrderReturns,
+  fetchOrders,
+  requestOrderReturn,
+  type CustomerReturnOrder,
+  type OrderSummary,
+} from '../services/orders'
 
 type ProfileTab = 'profile' | 'orders' | 'addresses' | 'wishlist' | 'settings'
 
@@ -562,6 +569,7 @@ function OrderHistory() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const [returnOrder, setReturnOrder] = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -605,10 +613,8 @@ function OrderHistory() {
       ) : (
       <div className="mt-7 divide-y divide-line border-y border-line">
         {orders.map((order) => (
-          <article
-            key={order.number}
-            className="grid gap-4 py-5 min-[480px]:grid-cols-[1fr_auto] min-[480px]:items-center sm:grid-cols-[1.1fr_1fr_0.7fr_auto]"
-          >
+          <div key={order.number}>
+          <article className="grid gap-4 py-5 min-[480px]:grid-cols-[1fr_auto] min-[480px]:items-center sm:grid-cols-[1.1fr_1fr_0.7fr_auto]">
             <div>
               <p className="text-[8px] uppercase tracking-[0.16em] text-ink/45">
                 Order
@@ -641,14 +647,77 @@ function OrderHistory() {
             <div className="flex gap-2">
               <Link to={`/order-confirmation/${order.number}`} className="flex min-h-10 items-center gap-2 border border-line px-3 text-[8px] uppercase tracking-[0.13em] hover:border-ink">View <FiChevronRight size={13} /></Link>
               {order.status === 'DRAFT' && <button type="button" disabled={cancelling === order.number} onClick={() => void cancelDraft(order.number)} className="min-h-10 border border-line px-3 text-[8px] uppercase tracking-[0.13em] disabled:opacity-50">{cancelling === order.number ? 'Cancelling…' : 'Cancel'}</button>}
+              {['SHIPPED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'REFUNDED'].includes(order.status) && <button type="button" onClick={() => setReturnOrder((current) => current === order.number ? null : order.number)} className="min-h-10 border border-line px-3 text-[8px] uppercase tracking-[0.13em] hover:border-ink">{returnOrder === order.number ? 'Close returns' : 'Returns'}</button>}
             </div>
           </article>
+          {returnOrder === order.number && <CustomerReturns orderNumber={order.number} />}
+          </div>
         ))}
       </div>
       )}
       {error && orders.length > 0 && <p role="alert" className="mt-4 text-xs text-red-700">{error}</p>}
     </AccountSection>
   )
+}
+
+function CustomerReturns({ orderNumber }: { orderNumber: string }) {
+  const [order, setOrder] = useState<CustomerReturnOrder | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const load = () => {
+    setLoading(true); setError('')
+    void fetchOrderReturns(orderNumber)
+      .then(setOrder)
+      .catch((caught) => setError(caught instanceof ApiError ? caught.message : 'Return information is unavailable.'))
+      .finally(() => setLoading(false))
+  }
+  useEffect(load, [orderNumber])
+  if (loading && !order) return <div className="border-t border-line bg-ink/[0.025] px-4 py-6 text-xs text-ink/50 sm:px-6">Loading returns…</div>
+  if (!order) return <div className="border-t border-line bg-ink/[0.025] px-4 py-6 sm:px-6"><p role="alert" className="text-xs text-red-700">{error}</p><button type="button" onClick={load} className="mt-4 border-b border-ink text-[8px] uppercase tracking-[0.14em]">Try again</button></div>
+  const canRequest = order.returnEligible && order.items.some((item) => item.returnableQuantity > 0)
+  return <section className="border-t border-line bg-ink/[0.025] px-4 py-6 sm:px-6" aria-label={`Returns for order ${orderNumber}`}>
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-[8px] font-medium uppercase tracking-[0.16em] text-ink/45">Returns</p><h4 className="mt-2 font-display text-xl">Return an item</h4><p className="mt-2 max-w-xl text-xs leading-5 text-ink/55">Send a request for items from this order. No refund or inventory change happens until Lumi reviews and receives the return.</p></div>{canRequest && !showForm && <button type="button" onClick={() => setShowForm(true)} className="min-h-10 bg-ink px-4 text-[8px] uppercase tracking-[0.14em] text-canvas">Start a return</button>}</div>
+    {error && <p role="alert" className="mt-4 text-xs text-red-700">{error}</p>}
+    {showForm && <CustomerReturnForm order={order} close={() => setShowForm(false)} saved={load} />}
+    {!canRequest && order.returns.length === 0 && <p className="mt-5 border-y border-line py-5 text-xs leading-5 text-ink/50">There are no items currently available to return.</p>}
+    {order.returns.length > 0 && <div className="mt-6 space-y-3">{order.returns.map((productReturn) => <article key={productReturn.id} className="border border-line bg-canvas p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[8px] uppercase tracking-[0.15em] text-ink/45">Return {productReturn.id.slice(0, 8).toUpperCase()}</p><p className="mt-2 text-xs text-ink/50">Requested {new Date(productReturn.createdAt).toLocaleDateString()}</p></div><CustomerReturnStatus status={productReturn.status} /></div><p className="mt-4 text-sm leading-6">{productReturn.reason}</p><div className="mt-4 divide-y divide-line border-y border-line">{productReturn.items.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-xs"><span>{item.orderItem.productName} · Size {item.orderItem.size}</span><span className="text-ink/50">Qty {item.quantity}</span></div>)}</div>{productReturn.resolutionNote && <p className="mt-4 border-l-2 border-line pl-3 text-xs leading-5 text-ink/55">{productReturn.resolutionNote}</p>}<p className="mt-4 text-xs leading-5 text-ink/50">{customerReturnMessage(productReturn.status)}</p></article>)}</div>}
+  </section>
+}
+
+function CustomerReturnForm({ order, close, saved }: { order: CustomerReturnOrder; close: () => void; saved: () => void }) {
+  const items = order.items.filter((item) => item.returnableQuantity > 0)
+  const [quantities, setQuantities] = useState<Record<string, number>>(() => Object.fromEntries(items.map((item) => [item.id, 0])))
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setError('')
+    const selected = items.flatMap((item) => quantities[item.id] > 0 ? [{ orderItemId: item.id, quantity: quantities[item.id] }] : [])
+    if (!selected.length) { setError('Choose at least one item and quantity.'); return }
+    if (reason.trim().length < 3) { setError('Please explain why you are returning the item.'); return }
+    setBusy(true)
+    try {
+      await requestOrderReturn(order.number, { items: selected, reason: reason.trim() })
+      close(); saved()
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'Your return request could not be sent.')
+    } finally { setBusy(false) }
+  }
+  return <form onSubmit={submit} className="mt-6 border-y border-line py-5"><div className="divide-y divide-line border-y border-line">{items.map((item) => <label key={item.id} className="grid gap-3 py-4 min-[480px]:grid-cols-[56px_minmax(0,1fr)_92px] min-[480px]:items-center"><div className="size-14 overflow-hidden bg-ink/5">{item.imageUrl ? <img src={item.imageUrl} alt="" className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center"><FiPackage /></span>}</div><span><strong className="block text-sm font-medium">{item.productName}</strong><span className="mt-1 block text-xs text-ink/50">{item.sku} · Size {item.size} · Up to {item.returnableQuantity}</span></span><span><span className="sr-only">Return quantity for {item.productName}</span><input type="number" min="0" max={item.returnableQuantity} step="1" value={quantities[item.id]} onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: Number(event.target.value) }))} className="h-10 w-full border border-line bg-canvas px-3 text-sm outline-none focus:border-ink" /></span></label>)}</div><label className="mt-5 block"><span className="text-[8px] font-medium uppercase tracking-[0.14em] text-ink/50">Reason for return</span><textarea required minLength={3} maxLength={500} rows={3} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Tell us what was wrong or why the item was not suitable" className="mt-2 w-full resize-y border border-line bg-canvas p-3 text-sm outline-none focus:border-ink" /></label>{error && <p role="alert" className="mt-3 text-xs text-red-700">{error}</p>}<div className="mt-4 flex flex-col gap-2 min-[420px]:flex-row"><button disabled={busy} className="min-h-11 bg-ink px-5 text-[8px] uppercase tracking-[0.14em] text-canvas disabled:opacity-50">{busy ? 'Sending…' : 'Send return request'}</button><button type="button" disabled={busy} onClick={close} className="min-h-11 border border-line px-5 text-[8px] uppercase tracking-[0.14em]">Cancel</button></div></form>
+}
+
+function CustomerReturnStatus({ status }: { status: string }) {
+  const strong = ['APPROVED', 'RECEIVED', 'COMPLETED'].includes(status)
+  return <span className={`border px-2.5 py-1 text-[8px] uppercase tracking-[0.12em] ${strong ? 'border-ink bg-ink text-canvas' : status === 'REJECTED' ? 'border-red-300 text-red-700' : 'border-line'}`}>{status.toLowerCase().replaceAll('_', ' ')}</span>
+}
+
+function customerReturnMessage(status: string) {
+  if (status === 'REQUESTED') return 'Lumi is reviewing your request. You will see the decision here.'
+  if (status === 'APPROVED') return 'Your return was approved. Follow the return instructions provided by Lumi.'
+  if (status === 'REJECTED') return 'This request was not approved. See the note above for the reason.'
+  if (status === 'RECEIVED') return 'Your parcel has arrived and is being inspected.'
+  return 'The return has been inspected and completed.'
 }
 
 function SavedAddresses() {

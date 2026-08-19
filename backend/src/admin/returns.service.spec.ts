@@ -12,7 +12,7 @@ const actor = {
 describe('ReturnsService', () => {
   it('does not let active returns exceed the purchased quantity', async () => {
     const transaction = {
-      order: { findUnique: vi.fn().mockResolvedValue({
+      order: { findFirst: vi.fn().mockResolvedValue({
         id: 'order-1', number: 'LM-2026-ABCDEF123456', status: OrderStatus.DELIVERED,
         items: [{ id: 'order-item-1', quantity: 2 }],
       }) },
@@ -30,6 +30,22 @@ describe('ReturnsService', () => {
       reason: 'Customer requested a return',
     })).rejects.toBeInstanceOf(BadRequestException)
     expect(transaction.productReturn.create).not.toHaveBeenCalled()
+  })
+
+  it('requires customer ownership when a customer opens a return', async () => {
+    const transaction = {
+      order: { findFirst: vi.fn().mockResolvedValue(null) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const service = new ReturnsService(prisma as unknown as PrismaService)
+
+    await expect(service.createForCustomer(actor, 'LM-2026-ABCDEF123456', {
+      items: [{ orderItemId: 'order-item-1', quantity: 1 }],
+      reason: 'The item does not fit',
+    })).rejects.toBeDefined()
+    expect(transaction.order.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: { number: 'LM-2026-ABCDEF123456', userId: actor.id },
+    }))
   })
 
   it('enforces the forward-only return status lifecycle', async () => {

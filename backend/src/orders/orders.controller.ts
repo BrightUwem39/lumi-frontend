@@ -1,12 +1,14 @@
-import { Controller, Get, Param, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import type { AuthenticatedRequest } from '../auth/guards/session.guard.js'
 import { OptionalSessionGuard } from '../auth/guards/optional-session.guard.js'
 import { SessionGuard } from '../auth/guards/session.guard.js'
+import { CsrfGuard } from '../auth/guards/csrf.guard.js'
 import { NoStoreInterceptor } from '../auth/no-store.interceptor.js'
 import { CartCsrfGuard } from '../cart/cart-csrf.guard.js'
 import { CartCookies } from '../cart/cart.cookies.js'
 import { OrderNumberParamsDto } from './dto/order-params.dto.js'
+import { CreateCustomerReturnDto } from './dto/create-customer-return.dto.js'
 import { OrdersService } from './orders.service.js'
 
 @ApiTags('orders')
@@ -20,6 +22,24 @@ export class OrdersController {
   @ApiOperation({ summary: "Lists the authenticated customer's orders" })
   list(@Req() request: AuthenticatedRequest) {
     return this.orders.list(request.authentication!.user.id)
+  }
+
+  @Get(':orderNumber/returns')
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: "Returns an authenticated customer's returnable items and return history" })
+  returns(@Req() request: AuthenticatedRequest, @Param() params: OrderNumberParamsDto) {
+    return this.orders.getReturns(params.orderNumber, request.authentication!.user.id)
+  }
+
+  @Post(':orderNumber/returns')
+  @UseGuards(SessionGuard, CsrfGuard)
+  @ApiOperation({ summary: 'Opens an owner-authorized customer return request' })
+  requestReturn(
+    @Req() request: AuthenticatedRequest,
+    @Param() params: OrderNumberParamsDto,
+    @Body() input: CreateCustomerReturnDto,
+  ) {
+    return this.orders.requestReturn(request.authentication!.user, params.orderNumber, input)
   }
 
   @Get(':orderNumber')

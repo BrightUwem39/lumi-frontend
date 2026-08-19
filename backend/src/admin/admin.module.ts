@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common'
 import { AuthModule } from '../auth/auth.module.js'
 import { PaymentsModule } from '../payments/payments.module.js'
+import { ReturnsModule } from '../returns/returns.module.js'
 import { AdminController } from './admin.controller.js'
 import { AdminService } from './admin.service.js'
-import { ReturnsService } from './returns.service.js'
 
 @Module({
-  imports: [AuthModule, PaymentsModule],
+  imports: [AuthModule, PaymentsModule, ReturnsModule],
   controllers: [AdminController],
-  providers: [AdminService, ReturnsService],
+  providers: [AdminService],
 })
 export class AdminModule {}

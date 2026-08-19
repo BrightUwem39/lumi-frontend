@@ -20,12 +20,20 @@ export class ReturnsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(actor: AuthenticatedUser, orderNumber: string, input: CreateAdminReturnDto) {
+    return this.createOwned(actor, orderNumber, input)
+  }
+
+  async createForCustomer(actor: AuthenticatedUser, orderNumber: string, input: CreateAdminReturnDto) {
+    return this.createOwned(actor, orderNumber, input, actor.id)
+  }
+
+  private async createOwned(actor: AuthenticatedUser, orderNumber: string, input: CreateAdminReturnDto, ownerUserId?: string) {
     if (new Set(input.items.map((item) => item.orderItemId)).size !== input.items.length) {
       throw new BadRequestException('Each order item can appear only once in a return.')
     }
     const returnId = await this.prisma.$transaction(async (transaction) => {
-      const order = await transaction.order.findUnique({
-        where: { number: orderNumber },
+      const order = await transaction.order.findFirst({
+        where: { number: orderNumber, ...(ownerUserId ? { userId: ownerUserId } : {}) },
         select: {
           id: true,
           number: true,
