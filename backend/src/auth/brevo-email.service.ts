@@ -17,6 +17,16 @@ export type OperationalOrderAlert = {
   lowStock: Array<{ name: string; sku: string; available: number }>
 }
 
+export type ReturnStatusEmail = {
+  orderNumber: string
+  returnId: string
+  status: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'RECEIVED' | 'COMPLETED'
+  customerName: string
+  reason: string
+  resolutionNote: string | null
+  items: Array<{ name: string; sku: string; size: string; quantity: number }>
+}
+
 @Injectable()
 export class BrevoEmailService {
   constructor(private readonly config: ConfigService) {}
@@ -116,6 +126,47 @@ export class BrevoEmailService {
     })
   }
 
+  async sendReturnStatus(recipient: string, alert: ReturnStatusEmail) {
+    if (!this.isEnabled()) return
+
+    const profileUrl = `${this.config.getOrThrow<string>('PUBLIC_APP_URL')}/profile`
+    const reference = alert.returnId.slice(0, 8).toUpperCase()
+    const statusLabel = alert.status.toLowerCase().replaceAll('_', ' ')
+    const statusMessage = returnStatusMessage(alert.status)
+    const itemLines = alert.items.map(
+      (item) => `${item.name} (${item.sku}, size ${item.size}) × ${item.quantity}`,
+    )
+    await this.send({
+      recipient,
+      subject: `Return ${reference} ${statusLabel} · Lumi`,
+      text: [
+        `Hello ${alert.customerName},`,
+        '',
+        statusMessage,
+        `Order: ${alert.orderNumber}`,
+        `Return: ${reference}`,
+        '',
+        'Items:',
+        ...itemLines,
+        '',
+        `Reason: ${alert.reason}`,
+        ...(alert.resolutionNote ? [`Lumi note: ${alert.resolutionNote}`] : []),
+        '',
+        `View your order history: ${profileUrl}`,
+      ].join('\n'),
+      html: `
+        <h1>Return ${escapeHtml(reference)} ${escapeHtml(statusLabel)}</h1>
+        <p>Hello ${escapeHtml(alert.customerName)},</p>
+        <p>${escapeHtml(statusMessage)}</p>
+        <p><strong>Order:</strong> ${escapeHtml(alert.orderNumber)}<br><strong>Return:</strong> ${escapeHtml(reference)}</p>
+        <ul>${alert.items.map((item) => `<li>${escapeHtml(item.name)} (${escapeHtml(item.sku)}, size ${escapeHtml(item.size)}) &times; ${item.quantity}</li>`).join('')}</ul>
+        <p><strong>Reason:</strong> ${escapeHtml(alert.reason)}</p>
+        ${alert.resolutionNote ? `<p><strong>Lumi note:</strong> ${escapeHtml(alert.resolutionNote)}</p>` : ''}
+        <p><a href="${profileUrl}">View your Lumi order history</a></p>
+      `,
+    })
+  }
+
   private async send(email: TransactionalEmail) {
     let response: Response
     try {
@@ -152,4 +203,12 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
   })[character]!)
+}
+
+function returnStatusMessage(status: ReturnStatusEmail['status']) {
+  if (status === 'REQUESTED') return 'We received your return request and will review it shortly.'
+  if (status === 'APPROVED') return 'Your return request has been approved.'
+  if (status === 'REJECTED') return 'Your return request was not approved.'
+  if (status === 'RECEIVED') return 'Your returned parcel has arrived and is being inspected.'
+  return 'Your return has been inspected and completed.'
 }

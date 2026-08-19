@@ -65,6 +65,30 @@ describe('BrevoEmailService', () => {
     expect(body.htmlContent).not.toContain('<Bright>')
   })
 
+  it('sends an escaped customer return-status notification', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(null, { status: 201 }))
+    vi.stubGlobal('fetch', request)
+    const service = new BrevoEmailService(new ConfigService(settings))
+
+    await service.sendReturnStatus('customer@example.com', {
+      orderNumber: 'LM-123',
+      returnId: 'abcdef12-0000-0000-0000-000000000000',
+      status: 'APPROVED',
+      customerName: '<Bright>',
+      reason: 'Wrong <size>',
+      resolutionNote: 'Send to Lumi & Co',
+      items: [{ name: 'Lumi <Tee>', sku: 'TEE&1', size: 'L', quantity: 1 }],
+    })
+
+    const [, options] = request.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(String(options.body)) as { subject: string; htmlContent: string; textContent: string }
+    expect(body.subject).toContain('ABCDEF12 approved')
+    expect(body.htmlContent).toContain('&lt;Bright&gt;')
+    expect(body.htmlContent).toContain('Lumi &lt;Tee&gt;')
+    expect(body.htmlContent).not.toContain('<Bright>')
+    expect(body.textContent).toContain('Your return request has been approved.')
+  })
+
   it('returns a generic service error when Brevo rejects delivery', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
     const service = new BrevoEmailService(new ConfigService(settings))

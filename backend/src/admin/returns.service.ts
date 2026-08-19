@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import type { AuthenticatedUser } from '../auth/auth.types.js'
+import { BrevoEmailService, type ReturnStatusEmail } from '../auth/brevo-email.service.js'
 import { PrismaService } from '../database/prisma.service.js'
 import { OrderStatus, Prisma, ReturnStatus } from '../generated/prisma/client.js'
 import type {
@@ -17,7 +18,7 @@ const returnEligibleStatuses: OrderStatus[] = [
 
 @Injectable()
 export class ReturnsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly email: BrevoEmailService) {}
 
   async create(actor: AuthenticatedUser, orderNumber: string, input: CreateAdminReturnDto) {
     return this.createOwned(actor, orderNumber, input)
@@ -88,7 +89,9 @@ export class ReturnsService {
       })
       return productReturn.id
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })
-    return this.get(returnId)
+    const productReturn = await this.get(returnId)
+    await this.notifyCustomer(productReturn)
+    return productReturn
   }
 
   async updateStatus(
@@ -132,7 +135,9 @@ export class ReturnsService {
         },
       })
     })
-    return this.get(returnId)
+    const productReturn = await this.get(returnId)
+    await this.notifyCustomer(productReturn)
+    return productReturn
   }
 
   async complete(actor: AuthenticatedUser, returnId: string, input: CompleteAdminReturnDto) {
@@ -208,13 +213,16 @@ export class ReturnsService {
         },
       })
     })
-    return this.get(returnId)
+    const productReturn = await this.get(returnId)
+    await this.notifyCustomer(productReturn)
+    return productReturn
   }
 
   get(returnId: string) {
     return this.prisma.productReturn.findUnique({
       where: { id: returnId },
       include: {
+        order: { select: { number: true, email: true, shippingName: true } },
         items: {
           orderBy: { id: 'asc' },
           include: {
@@ -228,5 +236,45 @@ export class ReturnsService {
       if (!productReturn) throw new NotFoundException('Return not found.')
       return productReturn
     })
+  }
+
+  private async notifyCustomer(productReturn: {
+    id: string
+    status: ReturnStatus
+    reason: string
+    resolutionNote: string | null
+    order: { number: string; email: string; shippingName: string }
+    items: Array<{
+      quantity: number
+      orderItem: { productName: string; sku: string; size: string }
+    }>
+  }) {
+    try {
+      await this.email.sendReturnStatus(productReturn.order.email, {
+        orderNumber: productReturn.order.number,
+        returnId: productReturn.id,
+        status: productReturn.status as ReturnStatusEmail['status'],
+        customerName: productReturn.order.shippingName || 'there',
+        reason: productReturn.reason,
+        resolutionNote: productReturn.resolutionNote,
+        items: productReturn.items.map((item) => ({
+          name: item.orderItem.productName,
+          sku: item.orderItem.sku,
+          size: item.orderItem.size,
+          quantity: item.quantity,
+        })),
+      })
+    } catch {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'RETURN_EMAIL_FAILED',
+          resourceType: 'PRODUCT_RETURN',
+          resourceId: productReturn.id,
+          result: 'FAILED',
+          reason: 'Customer return-status email could not be delivered.',
+          metadata: { status: productReturn.status, orderNumber: productReturn.order.number },
+        },
+      }).catch(() => undefined)
+    }
   }
 }

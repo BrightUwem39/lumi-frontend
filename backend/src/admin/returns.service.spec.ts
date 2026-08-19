@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
 import type { PrismaService } from '../database/prisma.service.js'
+import type { BrevoEmailService } from '../auth/brevo-email.service.js'
 import { OrderStatus, ReturnStatus, UserRole } from '../generated/prisma/client.js'
 import { ReturnsService } from './returns.service.js'
 
@@ -8,6 +9,10 @@ const actor = {
   id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null,
   role: UserRole.ADMINISTRATOR,
 }
+
+const emailService = (sendReturnStatus = vi.fn().mockResolvedValue(undefined)) => ({
+  sendReturnStatus,
+}) as unknown as BrevoEmailService
 
 describe('ReturnsService', () => {
   it('does not let active returns exceed the purchased quantity', async () => {
@@ -23,7 +28,7 @@ describe('ReturnsService', () => {
       auditLog: { create: vi.fn() },
     }
     const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
-    const service = new ReturnsService(prisma as unknown as PrismaService)
+    const service = new ReturnsService(prisma as unknown as PrismaService, emailService())
 
     await expect(service.create(actor, 'LM-2026-ABCDEF123456', {
       items: [{ orderItemId: 'order-item-1', quantity: 2 }],
@@ -37,7 +42,7 @@ describe('ReturnsService', () => {
       order: { findFirst: vi.fn().mockResolvedValue(null) },
     }
     const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
-    const service = new ReturnsService(prisma as unknown as PrismaService)
+    const service = new ReturnsService(prisma as unknown as PrismaService, emailService())
 
     await expect(service.createForCustomer(actor, 'LM-2026-ABCDEF123456', {
       items: [{ orderItemId: 'order-item-1', quantity: 1 }],
@@ -57,7 +62,7 @@ describe('ReturnsService', () => {
       auditLog: { create: vi.fn() },
     }
     const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
-    const service = new ReturnsService(prisma as unknown as PrismaService)
+    const service = new ReturnsService(prisma as unknown as PrismaService, emailService())
 
     await expect(service.updateStatus(actor, 'return-1', {
       status: ReturnStatus.RECEIVED,
@@ -82,12 +87,15 @@ describe('ReturnsService', () => {
       $executeRaw: vi.fn().mockResolvedValue(1),
       auditLog: { create: vi.fn().mockResolvedValue({}) },
     }
-    const completedReturn = { id: 'return-1', status: ReturnStatus.COMPLETED, items: [] }
+    const completedReturn = {
+      id: 'return-1', status: ReturnStatus.COMPLETED, reason: 'Wrong size', resolutionNote: 'Inspected', items: [],
+      order: { number: 'LM-2026-ABCDEF123456', email: 'customer@example.com', shippingName: 'Customer' },
+    }
     const prisma = {
       $transaction: vi.fn((operation) => operation(transaction)),
       productReturn: { findUnique: vi.fn().mockResolvedValue(completedReturn) },
     }
-    const service = new ReturnsService(prisma as unknown as PrismaService)
+    const service = new ReturnsService(prisma as unknown as PrismaService, emailService())
 
     await expect(service.complete(actor, 'return-1', {
       items: [
@@ -103,6 +111,32 @@ describe('ReturnsService', () => {
       data: expect.objectContaining({
         action: 'RETURN_COMPLETED', metadata: { totalRestocked: 1 },
       }),
+    })
+  })
+
+  it('keeps a committed status change when notification delivery fails', async () => {
+    const transaction = {
+      productReturn: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    }
+    const productReturn = {
+      id: 'return-1', status: ReturnStatus.APPROVED, reason: 'Wrong size', resolutionNote: 'Approved', items: [],
+      order: { number: 'LM-2026-ABCDEF123456', email: 'customer@example.com', shippingName: 'Customer' },
+    }
+    const prisma = {
+      $transaction: vi.fn((operation) => operation(transaction)),
+      productReturn: { findUnique: vi.fn().mockResolvedValue(productReturn) },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    }
+    const rejectedDelivery = vi.fn().mockRejectedValue(new Error('Brevo unavailable'))
+    const service = new ReturnsService(prisma as unknown as PrismaService, emailService(rejectedDelivery))
+
+    await expect(service.updateStatus(actor, 'return-1', {
+      status: ReturnStatus.APPROVED,
+      resolutionNote: 'Approved',
+    })).resolves.toEqual(productReturn)
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'RETURN_EMAIL_FAILED', result: 'FAILED' }),
     })
   })
 })
