@@ -27,6 +27,25 @@ export type ReturnStatusEmail = {
   items: Array<{ name: string; sku: string; size: string; quantity: number }>
 }
 
+export type OrderStatusEmail = {
+  orderNumber: string
+  status: 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+  customerName: string
+  total: string
+  currency: string
+  note?: string | null
+  items?: Array<{ name: string; size: string; quantity: number }>
+}
+
+export type RefundStatusEmail = {
+  orderNumber: string
+  status: 'PENDING' | 'PROCESSING' | 'NEEDS_ATTENTION' | 'PROCESSED' | 'FAILED'
+  customerName: string
+  amount: string
+  currency: string
+  reason: string
+}
+
 @Injectable()
 export class BrevoEmailService {
   constructor(private readonly config: ConfigService) {}
@@ -167,6 +186,61 @@ export class BrevoEmailService {
     })
   }
 
+  async sendOrderStatus(recipient: string, alert: OrderStatusEmail) {
+    if (!this.isEnabled()) return
+
+    const profileUrl = `${this.config.getOrThrow<string>('PUBLIC_APP_URL')}/profile`
+    const copy = orderStatusCopy(alert.status)
+    const itemLines = alert.items?.map((item) => `${item.name} (size ${item.size}) × ${item.quantity}`) ?? []
+    await this.send({
+      recipient,
+      subject: `${copy.subject} ${alert.orderNumber} · Lumi`,
+      text: [
+        `Hello ${alert.customerName},`, '', copy.message,
+        `Order: ${alert.orderNumber}`,
+        `Total: ${alert.currency} ${alert.total}`,
+        ...(itemLines.length ? ['', 'Items:', ...itemLines] : []),
+        ...(alert.note ? ['', `Lumi note: ${alert.note}`] : []),
+        '', `View your order history: ${profileUrl}`,
+      ].join('\n'),
+      html: `
+        <h1>${escapeHtml(copy.subject)}</h1>
+        <p>Hello ${escapeHtml(alert.customerName)},</p>
+        <p>${escapeHtml(copy.message)}</p>
+        <p><strong>Order:</strong> ${escapeHtml(alert.orderNumber)}<br><strong>Total:</strong> ${escapeHtml(alert.currency)} ${escapeHtml(alert.total)}</p>
+        ${alert.items?.length ? `<ul>${alert.items.map((item) => `<li>${escapeHtml(item.name)} (size ${escapeHtml(item.size)}) &times; ${item.quantity}</li>`).join('')}</ul>` : ''}
+        ${alert.note ? `<p><strong>Lumi note:</strong> ${escapeHtml(alert.note)}</p>` : ''}
+        <p><a href="${profileUrl}">View your Lumi order history</a></p>
+      `,
+    })
+  }
+
+  async sendRefundStatus(recipient: string, alert: RefundStatusEmail) {
+    if (!this.isEnabled()) return
+
+    const profileUrl = `${this.config.getOrThrow<string>('PUBLIC_APP_URL')}/profile`
+    const copy = refundStatusCopy(alert.status)
+    await this.send({
+      recipient,
+      subject: `${copy.subject} ${alert.orderNumber} · Lumi`,
+      text: [
+        `Hello ${alert.customerName},`, '', copy.message,
+        `Order: ${alert.orderNumber}`,
+        `Refund: ${alert.currency} ${alert.amount}`,
+        `Reason: ${alert.reason}`,
+        '', `View your order history: ${profileUrl}`,
+      ].join('\n'),
+      html: `
+        <h1>${escapeHtml(copy.subject)}</h1>
+        <p>Hello ${escapeHtml(alert.customerName)},</p>
+        <p>${escapeHtml(copy.message)}</p>
+        <p><strong>Order:</strong> ${escapeHtml(alert.orderNumber)}<br><strong>Refund:</strong> ${escapeHtml(alert.currency)} ${escapeHtml(alert.amount)}</p>
+        <p><strong>Reason:</strong> ${escapeHtml(alert.reason)}</p>
+        <p><a href="${profileUrl}">View your Lumi order history</a></p>
+      `,
+    })
+  }
+
   private async send(email: TransactionalEmail) {
     let response: Response
     try {
@@ -211,4 +285,19 @@ function returnStatusMessage(status: ReturnStatusEmail['status']) {
   if (status === 'REJECTED') return 'Your return request was not approved.'
   if (status === 'RECEIVED') return 'Your returned parcel has arrived and is being inspected.'
   return 'Your return has been inspected and completed.'
+}
+
+function orderStatusCopy(status: OrderStatusEmail['status']) {
+  if (status === 'PAID') return { subject: 'Order confirmed', message: 'Your payment was confirmed and Lumi is preparing your order.' }
+  if (status === 'SHIPPED') return { subject: 'Order shipped', message: 'Your Lumi order has left us and is on its way.' }
+  if (status === 'DELIVERED') return { subject: 'Order delivered', message: 'Your Lumi order has been marked as delivered.' }
+  return { subject: 'Order cancelled', message: 'Your unpaid Lumi order draft has been cancelled.' }
+}
+
+function refundStatusCopy(status: RefundStatusEmail['status']) {
+  if (status === 'PENDING') return { subject: 'Refund pending', message: 'Paystack has received your refund and it is waiting to be processed.' }
+  if (status === 'PROCESSING') return { subject: 'Refund processing', message: 'Paystack is currently processing your refund.' }
+  if (status === 'NEEDS_ATTENTION') return { subject: 'Refund update needed', message: 'Your refund needs additional attention from Lumi. We are reviewing it.' }
+  if (status === 'PROCESSED') return { subject: 'Refund completed', message: 'Paystack has confirmed that your refund was processed.' }
+  return { subject: 'Refund unsuccessful', message: 'Paystack could not complete your refund. Lumi will review the failed request.' }
 }

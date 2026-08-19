@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
 import type { PrismaService } from '../database/prisma.service.js'
+import type { BrevoEmailService } from '../auth/brevo-email.service.js'
 import {
   OrderStatus,
   PaymentStatus,
@@ -83,7 +84,7 @@ describe('RefundsService', () => {
   it('marks payment and order refunded only after a processed webhook', async () => {
     const refund = {
       id: 'refund-1', paymentId: 'payment-1', status: RefundStatus.PENDING,
-      amount: new Prisma.Decimal(100000), currency: 'NGN', createdAt: new Date(),
+      amount: new Prisma.Decimal(100000), currency: 'NGN', reason: 'Customer return', createdAt: new Date(),
     }
     const transaction = {
       paymentEvent: { create: vi.fn().mockResolvedValue({}) },
@@ -99,10 +100,21 @@ describe('RefundsService', () => {
       auditLog: { create: vi.fn().mockResolvedValue({}) },
     }
     const prisma = {
-      refund: { findFirst: vi.fn().mockResolvedValue(refund) },
+      refund: {
+        findFirst: vi.fn().mockResolvedValue(refund),
+        findUnique: vi.fn().mockResolvedValue({
+          ...refund, status: RefundStatus.PROCESSED,
+          payment: { order: { id: 'order-1', number: 'LM-2026-ABCDEF123456', email: 'customer@example.com', shippingName: 'Customer' } },
+        }),
+      },
       $transaction: vi.fn((operation) => operation(transaction)),
     }
-    const service = new RefundsService(prisma as unknown as PrismaService, {} as PaystackClient)
+    const sendRefundStatus = vi.fn().mockResolvedValue(undefined)
+    const service = new RefundsService(
+      prisma as unknown as PrismaService,
+      {} as PaystackClient,
+      { sendRefundStatus } as unknown as BrevoEmailService,
+    )
 
     await service.processWebhook({
       eventId: 'refund.processed:hash', eventType: 'refund.processed', payloadHash: 'a'.repeat(64),
@@ -115,6 +127,9 @@ describe('RefundsService', () => {
     }))
     expect(transaction.order.update).toHaveBeenCalledWith(expect.objectContaining({
       data: { status: OrderStatus.REFUNDED },
+    }))
+    expect(sendRefundStatus).toHaveBeenCalledWith('customer@example.com', expect.objectContaining({
+      status: RefundStatus.PROCESSED, amount: '100000.00',
     }))
   })
 })

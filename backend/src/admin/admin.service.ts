@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import type { AuthenticatedUser } from '../auth/auth.types.js'
+import { BrevoEmailService } from '../auth/brevo-email.service.js'
 import { PrismaService } from '../database/prisma.service.js'
 import {
   CouponType,
@@ -130,7 +131,7 @@ const defaultNotificationSettings = {
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly email?: BrevoEmailService) {}
 
   async dashboard(actor: AuthenticatedUser, userAgent?: string) {
     const [
@@ -1024,10 +1025,13 @@ export class AdminService {
     orderNumber: string,
     input: UpdateFulfillmentStatusDto,
   ) {
-    return this.prisma.$transaction(async (transaction) => {
+    const changed = await this.prisma.$transaction(async (transaction) => {
       const order = await transaction.order.findUnique({
         where: { number: orderNumber },
-        select: { id: true, number: true, status: true, updatedAt: true },
+        select: {
+          id: true, number: true, status: true, updatedAt: true,
+          email: true, shippingName: true, total: true, currency: true,
+        },
       })
       if (!order) throw new NotFoundException('Order not found.')
       const expectedStatus = previousFulfillmentStatus[input.status]
@@ -1056,8 +1060,29 @@ export class AdminService {
           metadata: { orderNumber: order.number, from: order.status, to: input.status },
         },
       })
-      return { number: order.number, status: input.status }
+      return { ...order, status: input.status }
     })
+    if (input.status === OrderStatus.SHIPPED || input.status === OrderStatus.DELIVERED) {
+      try {
+        await this.email?.sendOrderStatus(changed.email, {
+          orderNumber: changed.number,
+          status: input.status,
+          customerName: changed.shippingName || 'there',
+          total: changed.total.toFixed(2),
+          currency: changed.currency,
+          note: input.reason,
+        })
+      } catch {
+        await this.prisma.auditLog.create({
+          data: {
+            action: 'ORDER_EMAIL_FAILED', resourceType: 'ORDER', resourceId: changed.id,
+            result: 'FAILED', reason: 'Fulfilment-status email could not be delivered.',
+            metadata: { orderNumber: changed.number, status: input.status },
+          },
+        }).catch(() => undefined)
+      }
+    }
+    return { number: changed.number, status: changed.status }
   }
 }
 

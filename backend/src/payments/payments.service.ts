@@ -384,6 +384,29 @@ export class PaymentsService {
 
   private async sendSettlementNotification(payment: PaymentWithOrder) {
     try {
+      await this.email.sendOrderStatus(payment.order.email, {
+        orderNumber: payment.order.number,
+        status: 'PAID',
+        customerName: payment.order.shippingName || 'there',
+        total: payment.order.total.toFixed(2),
+        currency: payment.order.currency,
+        items: payment.order.items.map((item) => ({
+          name: item.productName,
+          size: item.size,
+          quantity: item.quantity,
+        })),
+      })
+    } catch {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'ORDER_EMAIL_FAILED', resourceType: 'ORDER', resourceId: payment.orderId,
+          result: 'FAILED', reason: 'Payment-confirmation email could not be delivered.',
+          metadata: { orderNumber: payment.order.number, status: OrderStatus.PAID },
+        },
+      }).catch(() => undefined)
+    }
+
+    try {
       const settings = await this.prisma.storeSetting.findUnique({
         where: { id: 'primary' },
         select: {

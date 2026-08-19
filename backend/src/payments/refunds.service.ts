@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import type { AuthenticatedUser } from '../auth/auth.types.js'
+import { BrevoEmailService, type RefundStatusEmail } from '../auth/brevo-email.service.js'
 import { PrismaService } from '../database/prisma.service.js'
 import {
   OrderStatus,
@@ -32,6 +33,7 @@ export class RefundsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paystack: PaystackClient,
+    private readonly email?: BrevoEmailService,
   ) {}
 
   async initiate(actor: AuthenticatedUser, orderNumber: string, input: { amount?: number; reason: string }) {
@@ -190,7 +192,7 @@ export class RefundsService {
       return
     }
 
-    await this.prisma.$transaction(async (transaction) => {
+    const changed = await this.prisma.$transaction(async (transaction) => {
       await transaction.paymentEvent.create({
         data: paymentEventData(input, PaymentEventStatus.PROCESSED, refund.paymentId),
       })
@@ -203,7 +205,7 @@ export class RefundsService {
           ...(nextStatus === RefundStatus.FAILED ? { failedAt: new Date(), failureReason: 'Paystack could not process the refund.' } : {}),
         },
       })
-      if (updated.count !== 1) return
+      if (updated.count !== 1) return false
       if (nextStatus === RefundStatus.PROCESSED) {
         const payment = await transaction.payment.findUniqueOrThrow({
           where: { id: refund.paymentId },
@@ -232,7 +234,42 @@ export class RefundsService {
           metadata: { eventType: input.eventType },
         },
       })
+      return true
     })
+    if (changed) await this.sendRefundNotification(refund.id)
+  }
+
+  private async sendRefundNotification(refundId: string) {
+    if (!this.email) return
+    try {
+      const refund = await this.prisma.refund.findUnique({
+        where: { id: refundId },
+        select: {
+          id: true, status: true, amount: true, currency: true, reason: true,
+          payment: {
+            select: {
+              order: { select: { number: true, email: true, shippingName: true } },
+            },
+          },
+        },
+      })
+      if (!refund || refund.status === RefundStatus.REQUESTING) return
+      await this.email.sendRefundStatus(refund.payment.order.email, {
+        orderNumber: refund.payment.order.number,
+        status: refund.status as RefundStatusEmail['status'],
+        customerName: refund.payment.order.shippingName || 'there',
+        amount: refund.amount.toFixed(2),
+        currency: refund.currency,
+        reason: refund.reason,
+      })
+    } catch {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'REFUND_EMAIL_FAILED', resourceType: 'REFUND', resourceId: refundId,
+          result: 'FAILED', reason: 'Customer refund-status email could not be delivered.',
+        },
+      }).catch(() => undefined)
+    }
   }
 
   private recordEvent(

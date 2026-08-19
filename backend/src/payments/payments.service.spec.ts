@@ -134,7 +134,7 @@ function createService(prisma: object, enabled: boolean, overrides: object = {},
   return new PaymentsService(
     prisma as PrismaService,
     paystack as PaystackClient,
-    { sendOperationalOrderAlert: vi.fn() } as unknown as BrevoEmailService,
+    { sendOperationalOrderAlert: vi.fn(), sendOrderStatus: vi.fn() } as unknown as BrevoEmailService,
     { processWebhook: vi.fn(), ...refundOverrides } as unknown as RefundsService,
   )
 }

@@ -4,6 +4,7 @@ import { hashToken } from '../auth/auth.crypto.js'
 import { toOrderResponse } from '../checkout/checkout.service.js'
 import { PrismaService } from '../database/prisma.service.js'
 import type { AuthenticatedUser } from '../auth/auth.types.js'
+import { BrevoEmailService } from '../auth/brevo-email.service.js'
 import { ReturnsService } from '../admin/returns.service.js'
 import type { CreateCustomerReturnDto } from './dto/create-customer-return.dto.js'
 
@@ -16,7 +17,11 @@ const returnEligibleStatuses: OrderStatus[] = [
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService, private readonly returns: ReturnsService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly returns: ReturnsService,
+    private readonly email?: BrevoEmailService,
+  ) {}
 
   async list(userId: string) {
     const orders = await this.prisma.order.findMany({
@@ -114,6 +119,28 @@ export class OrdersService {
     })
     const updated = await this.findOwned(orderNumber, userId, guestToken)
     if (!updated) throw new NotFoundException('Order not found')
+    try {
+      await this.email?.sendOrderStatus(updated.email, {
+        orderNumber: updated.number,
+        status: 'CANCELLED',
+        customerName: updated.shippingName || 'there',
+        total: updated.total.toFixed(2),
+        currency: updated.currency,
+        items: updated.items.map((item) => ({
+          name: item.productName,
+          size: item.size,
+          quantity: item.quantity,
+        })),
+      })
+    } catch {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'ORDER_EMAIL_FAILED', resourceType: 'ORDER', resourceId: updated.id,
+          result: 'FAILED', reason: 'Cancellation email could not be delivered.',
+          metadata: { orderNumber: updated.number, status: OrderStatus.CANCELLED },
+        },
+      }).catch(() => undefined)
+    }
     return toOrderResponse(updated)
   }
 

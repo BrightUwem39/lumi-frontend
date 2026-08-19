@@ -89,6 +89,31 @@ describe('BrevoEmailService', () => {
     expect(body.textContent).toContain('Your return request has been approved.')
   })
 
+  it('renders customer order and refund updates through the transactional sender', async () => {
+    const request = vi.fn().mockResolvedValue(new Response(null, { status: 201 }))
+    vi.stubGlobal('fetch', request)
+    const service = new BrevoEmailService(new ConfigService(settings))
+
+    await service.sendOrderStatus('customer@example.com', {
+      orderNumber: 'LM-123', status: 'SHIPPED', customerName: '<Bright>',
+      total: '125000.00', currency: 'NGN', note: 'Carrier & tracking',
+      items: [{ name: 'Lumi <Tee>', size: 'L', quantity: 1 }],
+    })
+    await service.sendRefundStatus('customer@example.com', {
+      orderNumber: 'LM-123', status: 'PROCESSED', customerName: '<Bright>',
+      amount: '25000.00', currency: 'NGN', reason: 'Wrong <size>',
+    })
+
+    const orderRequest = request.mock.calls.at(0) as unknown as [string, RequestInit]
+    const refundRequest = request.mock.calls.at(1) as unknown as [string, RequestInit]
+    const orderBody = JSON.parse(String(orderRequest[1].body)) as { subject: string; htmlContent: string }
+    const refundBody = JSON.parse(String(refundRequest[1].body)) as { subject: string; htmlContent: string }
+    expect(orderBody.subject).toContain('Order shipped LM-123')
+    expect(orderBody.htmlContent).toContain('Lumi &lt;Tee&gt;')
+    expect(refundBody.subject).toContain('Refund completed LM-123')
+    expect(refundBody.htmlContent).toContain('Wrong &lt;size&gt;')
+  })
+
   it('returns a generic service error when Brevo rejects delivery', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
     const service = new BrevoEmailService(new ConfigService(settings))

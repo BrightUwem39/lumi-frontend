@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
 import type { PrismaService } from '../database/prisma.service.js'
+import type { BrevoEmailService } from '../auth/brevo-email.service.js'
 import { CouponType, OrderStatus, Prisma, ProductStatus, UserRole } from '../generated/prisma/client.js'
 import { AdminService } from './admin.service.js'
 
@@ -680,5 +681,34 @@ describe('AdminService dashboard', () => {
       { status: OrderStatus.SHIPPED, reason: 'Handed to carrier' },
     )).rejects.toBeInstanceOf(BadRequestException)
     expect(transaction.order.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('emails the customer after a shipping transition commits', async () => {
+    const transaction = {
+      order: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'order-1', number: 'LM-2026-ABCDEF123456', status: OrderStatus.PROCESSING,
+          updatedAt: new Date(), email: 'customer@example.com', shippingName: 'Customer',
+          total: new Prisma.Decimal(125000), currency: 'NGN',
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    }
+    const prisma = { $transaction: vi.fn((operation) => operation(transaction)) }
+    const sendOrderStatus = vi.fn().mockResolvedValue(undefined)
+    const service = new AdminService(
+      prisma as unknown as PrismaService,
+      { sendOrderStatus } as unknown as BrevoEmailService,
+    )
+
+    await expect(service.updateFulfillmentStatus(
+      { id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null, role: UserRole.ADMINISTRATOR },
+      'LM-2026-ABCDEF123456',
+      { status: OrderStatus.SHIPPED, reason: 'Handed to carrier' },
+    )).resolves.toEqual({ number: 'LM-2026-ABCDEF123456', status: OrderStatus.SHIPPED })
+    expect(sendOrderStatus).toHaveBeenCalledWith('customer@example.com', expect.objectContaining({
+      status: OrderStatus.SHIPPED, note: 'Handed to carrier',
+    }))
   })
 })
