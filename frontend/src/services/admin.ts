@@ -22,6 +22,20 @@ export type AdminNotifications = {
   }>
 }
 
+export type AdminAuditCategory = 'SECURITY' | 'ORDERS' | 'REFUNDS' | 'RETURNS' | 'INVENTORY' | 'NOTIFICATIONS'
+
+export type AdminAuditEvent = {
+  id: string
+  action: string
+  result: string
+  reason: string | null
+  resourceType: string
+  resourceId: string | null
+  actorRole: string | null
+  actorUser: { email: string; firstName: string | null; lastName: string | null } | null
+  createdAt: string
+}
+
 export type AdminRecentOrder = {
   number: string
   email: string
@@ -288,6 +302,22 @@ export function retryAdminNotificationEmail(notificationKey: string) {
     headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ notificationKey }),
   })
+}
+
+export function fetchAdminAuditLog(input: {
+  page?: number
+  limit?: number
+  category?: AdminAuditCategory
+  result?: string
+  search?: string
+}) {
+  const query = new URLSearchParams()
+  query.set('page', String(input.page ?? 1))
+  query.set('limit', String(input.limit ?? 20))
+  if (input.category) query.set('category', input.category)
+  if (input.result) query.set('result', input.result)
+  if (input.search) query.set('search', input.search)
+  return apiRequest<Page<AdminAuditEvent>>(`/admin/audit-log?${query.toString()}`)
 }
 
 export function fetchAdminRevenueAnalytics(days: 7 | 30 | 90 = 30) {

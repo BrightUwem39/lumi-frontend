@@ -43,6 +43,7 @@ import {
   fetchAdminCustomers,
   fetchAdminCoupons,
   fetchAdminDashboard,
+  fetchAdminAuditLog,
   fetchAdminNotifications,
   fetchAdminOrder,
   fetchAdminOrders,
@@ -63,6 +64,8 @@ import {
   updateAdminTaxSettings,
   updateAdminNotificationSettings,
   type AdminCustomer,
+  type AdminAuditCategory,
+  type AdminAuditEvent,
   type AdminCoupon,
   type AdminDashboard,
   type AdminNotifications,
@@ -104,6 +107,7 @@ const primaryNavigation: NavigationItem[] = [
   { label: 'Analytics', to: '/admin/analytics', icon: <LuChartNoAxesCombined /> },
   { label: 'Discounts', to: '/admin/discounts', icon: <LuBadgePercent /> },
   { label: 'Notifications', to: '/admin/notifications', icon: <LuBell /> },
+  { label: 'Audit log', to: '/admin/audit-log', icon: <LuClock3 /> },
 ]
 
 const pageContext: Record<string, { eyebrow: string; title: string }> = {
@@ -116,6 +120,7 @@ const pageContext: Record<string, { eyebrow: string; title: string }> = {
   '/admin/analytics': { eyebrow: 'Business intelligence', title: 'Analytics' },
   '/admin/discounts': { eyebrow: 'Promotions', title: 'Discounts' },
   '/admin/notifications': { eyebrow: 'Operational alerts', title: 'Notifications' },
+  '/admin/audit-log': { eyebrow: 'Accountability', title: 'Audit log' },
   '/admin/settings': { eyebrow: 'Workspace', title: 'Settings' },
 }
 
@@ -232,6 +237,7 @@ export function AdminPage() {
               <Route path="analytics" element={<AnalyticsPage data={data} analyticsDays={analyticsDays} setAnalyticsDays={setAnalyticsDays} />} />
               <Route path="discounts" element={<DiscountsPage coupons={data.coupons} reload={load} />} />
               <Route path="notifications" element={<NotificationsPage notifications={data.notifications} reload={load} />} />
+              <Route path="audit-log" element={<AuditLogPage />} />
               <Route path="settings" element={<SettingsPage settings={data.settings} security={data.security} reload={load} />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
@@ -324,6 +330,50 @@ function NotificationsPage({ notifications, reload }: { notifications: AdminNoti
     <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{filters.map((item) => <button key={item.value} type="button" onClick={() => setFilter(item.value)} className={`admin-chip shrink-0 ${filter === item.value ? 'active' : ''}`}>{item.label} <span>{item.count}</span></button>)}</div>
     {visible.length ? <div className="grid gap-3 lg:grid-cols-2">{visible.map((item) => <article key={item.id} className="flex min-w-0 flex-col border border-admin-line bg-admin-surface p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-[9px] font-medium uppercase tracking-[0.16em] text-admin-muted">{notificationTypeLabel(item.type)}</p><h2 className="mt-2 break-words font-display text-lg leading-6">{item.title}</h2></div><StatusBadge value={item.severity} /></div><p className="mt-4 break-words text-xs leading-5 text-admin-muted">{item.detail}</p><div className="mt-auto border-t border-admin-line pt-4"><time className="text-xs text-admin-muted" dateTime={item.createdAt}>{formatDateTime(item.createdAt)}</time><div className="mt-3 flex flex-col gap-2 min-[420px]:flex-row min-[420px]:flex-wrap">{item.type === 'EMAIL_FAILURE' && <button type="button" disabled={busy === item.id} onClick={() => void retryEmail(item.id)} className="admin-button primary justify-center">{busy === item.id ? 'Sending…' : 'Retry email'}</button>}<Link to={item.href} className="admin-button secondary justify-center">Open workflow <LuArrowRight /></Link><button type="button" disabled={busy === item.id} onClick={() => void dismiss(item.id)} className="admin-button secondary justify-center">{busy === item.id ? 'Saving…' : 'Dismiss'}</button></div></div></article>)}</div> : <EmptyState title="No alerts in this view" detail="This category has no unresolved operational work right now." />}
   </div>
+}
+
+function AuditLogPage() {
+  const [events, setEvents] = useState<AdminAuditEvent[]>([])
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [category, setCategory] = useState<'ALL' | AdminAuditCategory>('ALL')
+  const [result, setResult] = useState('ALL')
+  const [searchDraft, setSearchDraft] = useState('')
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const load = useCallback(async () => {
+    setLoading(true); setError('')
+    try {
+      const response = await fetchAdminAuditLog({
+        page, limit: 20,
+        ...(category !== 'ALL' ? { category } : {}),
+        ...(result !== 'ALL' ? { result } : {}),
+        ...(search ? { search } : {}),
+      })
+      setEvents(response.items); setTotal(response.total); setTotalPages(response.totalPages)
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'The audit log could not be loaded.')
+    } finally { setLoading(false) }
+  }, [page, category, result, search])
+  useEffect(() => { void load() }, [load])
+  const applySearch = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setPage(1); setSearch(searchDraft.trim()) }
+  const categories: Array<'ALL' | AdminAuditCategory> = ['ALL', 'SECURITY', 'ORDERS', 'REFUNDS', 'RETURNS', 'INVENTORY', 'NOTIFICATIONS']
+  const results = ['ALL', 'SUCCESS', 'FAILED', 'PENDING_PROVIDER', 'PROCESSED', 'UNKNOWN']
+  return <div className="space-y-6">
+    <PageHeader title="Audit log" description="An immutable record of sensitive administrator and commerce actions." actions={<button type="button" onClick={() => void load()} className="admin-button secondary"><LuRefreshCw size={16} /> Refresh</button>} />
+    <form onSubmit={applySearch} className="grid gap-2 border-y border-admin-line py-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_180px_auto]"><label className="relative sm:col-span-2 xl:col-span-1"><span className="sr-only">Search audit log</span><LuSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-admin-muted" size={16} /><input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} minLength={2} maxLength={100} placeholder="Action, reason, resource, or actor…" className="admin-control h-11 w-full pl-10 pr-3" /></label><label><span className="sr-only">Audit category</span><select value={category} onChange={(event) => { setCategory(event.target.value as typeof category); setPage(1) }} className="admin-control h-11 w-full px-3">{categories.map((value) => <option key={value} value={value}>{value === 'ALL' ? 'All categories' : titleCase(value)}</option>)}</select></label><label><span className="sr-only">Audit result</span><select value={result} onChange={(event) => { setResult(event.target.value); setPage(1) }} className="admin-control h-11 w-full px-3">{results.map((value) => <option key={value} value={value}>{value === 'ALL' ? 'All results' : titleCase(value)}</option>)}</select></label><button className="admin-button primary min-h-11 justify-center">Search</button></form>
+    <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-admin-muted">{total.toLocaleString()} recorded event{total === 1 ? '' : 's'}</p>{search && <button type="button" onClick={() => { setSearchDraft(''); setSearch(''); setPage(1) }} className="admin-text-link"><LuX /> Clear search</button>}</div>
+    {error && <AdminError message={error} retry={load} />}
+    {loading && events.length === 0 ? <AdminPanelLoading /> : events.length ? <><div className="hidden overflow-x-auto border border-admin-line bg-admin-surface xl:block"><table className="admin-table min-w-[1080px]"><thead><tr><th>Action</th><th>Result</th><th>Actor</th><th>Resource</th><th>Reason</th><th>Time</th></tr></thead><tbody>{events.map((event) => <tr key={event.id}><td><strong className="font-semibold">{titleCase(event.action)}</strong></td><td><StatusBadge value={event.result} /></td><td><AuditActor event={event} /></td><td><span className="block text-xs font-medium">{titleCase(event.resourceType)}</span><span className="mt-1 block max-w-40 truncate text-xs text-admin-muted" title={event.resourceId ?? undefined}>{event.resourceId ?? '—'}</span></td><td><span className="block max-w-xs break-words text-xs leading-5 text-admin-muted">{event.reason ?? 'No reason recorded'}</span></td><td className="whitespace-nowrap text-xs">{formatDateTime(event.createdAt)}</td></tr>)}</tbody></table></div><div className="grid gap-3 xl:hidden">{events.map((event) => <article key={event.id} className="min-w-0 border border-admin-line bg-admin-surface p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-[9px] uppercase tracking-[0.16em] text-admin-muted">{titleCase(event.resourceType)}</p><h2 className="mt-2 break-words font-display text-lg leading-6">{titleCase(event.action)}</h2></div><StatusBadge value={event.result} /></div><p className="mt-4 break-words text-xs leading-5 text-admin-muted">{event.reason ?? 'No reason recorded'}</p><dl className="mt-4 grid gap-3 border-t border-admin-line pt-4 sm:grid-cols-3"><div><dt className="text-[9px] uppercase tracking-[0.12em] text-admin-muted">Actor</dt><dd className="mt-1 text-xs"><AuditActor event={event} /></dd></div><div><dt className="text-[9px] uppercase tracking-[0.12em] text-admin-muted">Resource</dt><dd className="mt-1 break-all text-xs">{event.resourceId ?? '—'}</dd></div><div><dt className="text-[9px] uppercase tracking-[0.12em] text-admin-muted">Time</dt><dd className="mt-1 text-xs">{formatDateTime(event.createdAt)}</dd></div></dl></article>)}</div><div className="flex flex-col items-center justify-between gap-3 border-t border-admin-line pt-4 min-[480px]:flex-row"><p className="text-xs text-admin-muted">Page {page} of {Math.max(totalPages, 1)}</p><div className="grid w-full grid-cols-2 gap-2 min-[480px]:w-auto"><button type="button" disabled={page <= 1 || loading} onClick={() => setPage((current) => current - 1)} className="admin-button secondary justify-center">Previous</button><button type="button" disabled={page >= totalPages || loading} onClick={() => setPage((current) => current + 1)} className="admin-button secondary justify-center">Next</button></div></div></> : <EmptyState title="No audit events found" detail="Change the filters or search phrase to inspect another part of the audit trail." />}
+  </div>
+}
+
+function AuditActor({ event }: { event: AdminAuditEvent }) {
+  if (!event.actorUser) return <span className="text-xs text-admin-muted">System</span>
+  const name = [event.actorUser.firstName, event.actorUser.lastName].filter(Boolean).join(' ')
+  return <span className="block min-w-0"><strong className="block truncate text-xs font-medium">{name || event.actorUser.email}</strong>{name && <span className="mt-1 block truncate text-xs text-admin-muted">{event.actorUser.email}</span>}</span>
 }
 
 function ProductsPage({ products, query }: { products: AdminProduct[]; query: string }) {
@@ -944,7 +994,7 @@ function exportOrdersCsv(orders: AdminDashboard['recentOrders']) {
   anchor.click()
   URL.revokeObjectURL(url)
 }
-function StatusBadge({ value }: { value: string }) { const tone = ['ACTIVE', 'PAID', 'PUBLISHED', 'DELIVERED', 'PROCESSED', 'REFUNDED', 'COMPLETED'].includes(value) ? 'success' : ['PROCESSING', 'PENDING', 'PENDING_PAYMENT', 'REQUESTING', 'REQUESTED', 'PARTIALLY_REFUNDED', 'WARNING'].includes(value) ? 'info' : ['PAYMENT_FAILED', 'FAILED', 'CANCELLED', 'DISABLED', 'NEEDS_ATTENTION', 'REJECTED', 'CRITICAL'].includes(value) ? 'danger' : ['SHIPPED', 'APPROVED', 'RECEIVED', 'ACTION'].includes(value) ? 'accent' : 'neutral'; return <span className={`admin-status ${tone}`}>{titleCase(value)}</span> }
+function StatusBadge({ value }: { value: string }) { const tone = ['ACTIVE', 'SUCCESS', 'PAID', 'PUBLISHED', 'DELIVERED', 'PROCESSED', 'REFUNDED', 'COMPLETED'].includes(value) ? 'success' : ['PROCESSING', 'PENDING', 'PENDING_PAYMENT', 'PENDING_PROVIDER', 'REQUESTING', 'REQUESTED', 'PARTIALLY_REFUNDED', 'WARNING'].includes(value) ? 'info' : ['PAYMENT_FAILED', 'FAILED', 'UNKNOWN', 'CANCELLED', 'DISABLED', 'NEEDS_ATTENTION', 'REJECTED', 'CRITICAL'].includes(value) ? 'danger' : ['SHIPPED', 'APPROVED', 'RECEIVED', 'ACTION'].includes(value) ? 'accent' : 'neutral'; return <span className={`admin-status ${tone}`}>{titleCase(value)}</span> }
 function AdminField({ label, children }: { label: string; children: ReactNode }) { return <label><span className="mb-2 block text-xs font-medium text-admin-muted">{label}</span>{children}</label> }
 function UserAvatar({ name }: { name: string }) { const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'A'; return <span className="grid size-9 shrink-0 place-items-center border border-admin-ink text-[10px] font-medium tracking-[0.08em]">{initials}</span> }
 function ChevronIcon() { return <LuChevronDown className="text-admin-muted" size={15} /> }

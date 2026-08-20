@@ -32,6 +32,7 @@ import {
 } from './dto/admin-return.dto.js'
 import {
   AdminListQueryDto,
+  AdminAuditQueryDto,
   AdminOrderParamsDto,
   AdminOrderQueryDto,
   AdminProductParamsDto,
@@ -82,6 +83,12 @@ export class AdminController {
   @ApiOperation({ summary: 'Returns live operational alerts for the administrator notification centre' })
   notifications() {
     return this.admin.notifications()
+  }
+
+  @Get('audit-log')
+  @ApiOperation({ summary: 'Returns a paginated read-only administrator audit trail' })
+  auditLog(@Query() query: AdminAuditQueryDto) {
+    return this.admin.auditLog(query)
   }
 
   @Post('notifications/dismiss')

@@ -19,6 +19,7 @@ import {
 } from '../generated/prisma/client.js'
 import type {
   AdminListQueryDto,
+  AdminAuditQueryDto,
   AdminOrderQueryDto,
   AdminProductQueryDto,
   UpdateFulfillmentStatusDto,
@@ -327,6 +328,38 @@ export class AdminService {
       }),
     ])
     return { notificationKey, dismissed: true }
+  }
+
+  async auditLog(query: AdminAuditQueryDto) {
+    const filters: Prisma.AuditLogWhereInput[] = []
+    if (query.category) filters.push(auditCategoryWhere(query.category))
+    if (query.result) filters.push({ result: { equals: query.result, mode: 'insensitive' } })
+    if (query.search) {
+      filters.push({
+        OR: [
+          { action: { contains: query.search, mode: 'insensitive' } },
+          { reason: { contains: query.search, mode: 'insensitive' } },
+          { resourceId: { contains: query.search, mode: 'insensitive' } },
+          { actorUser: { is: { email: { contains: query.search, mode: 'insensitive' } } } },
+        ],
+      })
+    }
+    const where: Prisma.AuditLogWhereInput = filters.length ? { AND: filters } : {}
+    const [total, items] = await Promise.all([
+      this.prisma.auditLog.count({ where }),
+      this.prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        select: {
+          id: true, action: true, result: true, reason: true,
+          resourceType: true, resourceId: true, actorRole: true, createdAt: true,
+          actorUser: { select: { email: true, firstName: true, lastName: true } },
+        },
+      }),
+    ])
+    return paginated(items, query, total)
   }
 
   async retryNotificationEmail(actor: AuthenticatedUser, notificationKey: string) {
@@ -1453,4 +1486,13 @@ function jsonString(value: Prisma.JsonValue, key: string) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const candidate = (value as Record<string, Prisma.JsonValue>)[key]
   return typeof candidate === 'string' ? candidate : null
+}
+
+function auditCategoryWhere(category: AdminAuditQueryDto['category']): Prisma.AuditLogWhereInput {
+  if (category === 'SECURITY') return { resourceType: 'ADMIN_SECURITY' }
+  if (category === 'ORDERS') return { resourceType: 'ORDER' }
+  if (category === 'REFUNDS') return { resourceType: 'REFUND' }
+  if (category === 'RETURNS') return { resourceType: 'PRODUCT_RETURN' }
+  if (category === 'INVENTORY') return { action: 'INVENTORY_SET' }
+  return { OR: [{ resourceType: 'ADMIN_NOTIFICATION' }, { action: 'NOTIFICATION_SETTINGS_UPDATED' }] }
 }

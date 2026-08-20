@@ -57,6 +57,20 @@ export class AdminRevenueQueryDto {
   days = 30
 }
 
+const auditCategories = ['SECURITY', 'ORDERS', 'REFUNDS', 'RETURNS', 'INVENTORY', 'NOTIFICATIONS'] as const
+
+export class AdminAuditQueryDto extends AdminListQueryDto {
+  @IsIn(auditCategories)
+  @IsOptional()
+  category?: (typeof auditCategories)[number]
+
+  @Transform(trimOptional)
+  @IsString()
+  @Length(2, 30)
+  @IsOptional()
+  result?: string
+}
+
 export class AdminProductParamsDto {
   @IsUUID()
   productId!: string

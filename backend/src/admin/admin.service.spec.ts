@@ -151,6 +151,24 @@ describe('AdminService dashboard', () => {
     expect(prisma.adminNotificationState.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { notificationKey } }))
   })
 
+  it('returns a paginated read-only audit trail with category and search filters', async () => {
+    const findMany = vi.fn().mockResolvedValue([{
+      id: 'audit-1', action: 'REFUND_REQUESTED', result: 'PENDING_PROVIDER', reason: 'Customer request',
+      resourceType: 'REFUND', resourceId: 'refund-1', actorRole: UserRole.ADMINISTRATOR,
+      actorUser: { email: 'admin@example.com', firstName: 'Lumi', lastName: 'Admin' }, createdAt: new Date(),
+    }])
+    const prisma = { auditLog: { count: vi.fn().mockResolvedValue(21), findMany } }
+    const service = new AdminService(prisma as unknown as PrismaService)
+
+    const result = await service.auditLog({ page: 2, limit: 20, category: 'REFUNDS', search: 'customer' })
+
+    expect(result).toEqual(expect.objectContaining({ page: 2, limit: 20, total: 21, totalPages: 2 }))
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { AND: [{ resourceType: 'REFUND' }, { OR: expect.any(Array) }] },
+      skip: 20, take: 20,
+    }))
+  })
+
   it('returns a complete revenue series independent of the recent-order list', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z'))
