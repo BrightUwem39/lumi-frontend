@@ -50,3 +50,23 @@ export function jsonBody(value: unknown): Pick<RequestInit, 'body' | 'headers'> 
     headers: { 'Content-Type': 'application/json' },
   }
 }
+
+export async function downloadApiFile(path: string, filename: string) {
+  const response = await fetch(`/api/v1${path}`, {
+    credentials: 'include',
+    headers: { Accept: 'text/csv' },
+  })
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { message?: string | string[] } | null
+    const message = Array.isArray(body?.message) ? body.message.join(' ') : body?.message ?? 'The export could not be downloaded.'
+    throw new ApiError(message, response.status)
+  }
+  const url = URL.createObjectURL(await response.blob())
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+}

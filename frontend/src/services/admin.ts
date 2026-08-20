@@ -1,4 +1,4 @@
-import { apiRequest, csrfHeaders, jsonBody } from './api'
+import { apiRequest, csrfHeaders, downloadApiFile, jsonBody } from './api'
 
 export type AdminDashboard = {
   customers: { total: number; active: number }
@@ -318,6 +318,26 @@ export function fetchAdminAuditLog(input: {
   if (input.result) query.set('result', input.result)
   if (input.search) query.set('search', input.search)
   return apiRequest<Page<AdminAuditEvent>>(`/admin/audit-log?${query.toString()}`)
+}
+
+export function downloadAdminAuditLog(input: {
+  category?: AdminAuditCategory
+  result?: string
+  search?: string
+}) {
+  const query = new URLSearchParams()
+  if (input.category) query.set('category', input.category)
+  if (input.result) query.set('result', input.result)
+  if (input.search) query.set('search', input.search)
+  const suffix = query.size ? `?${query.toString()}` : ''
+  return downloadApiFile(`/admin/audit-log/export${suffix}`, `lumi-audit-log-${new Date().toISOString().slice(0, 10)}.csv`)
+}
+
+export function downloadAdminReport(type: 'ORDERS' | 'INVENTORY' | 'RETURNS' | 'REFUNDS', days: 7 | 30 | 90 | 365) {
+  return downloadApiFile(
+    `/admin/reports/export?type=${type}&days=${days}`,
+    `lumi-${type.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`,
+  )
 }
 
 export function fetchAdminRevenueAnalytics(days: 7 | 30 | 90 = 30) {

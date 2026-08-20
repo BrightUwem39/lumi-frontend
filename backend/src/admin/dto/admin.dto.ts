@@ -71,6 +71,19 @@ export class AdminAuditQueryDto extends AdminListQueryDto {
   result?: string
 }
 
+const reportTypes = ['ORDERS', 'INVENTORY', 'RETURNS', 'REFUNDS'] as const
+
+export class AdminReportQueryDto {
+  @IsIn(reportTypes)
+  type!: (typeof reportTypes)[number]
+
+  @Type(() => Number)
+  @IsInt()
+  @IsIn([7, 30, 90, 365])
+  @IsOptional()
+  days = 30
+}
+
 export class AdminProductParamsDto {
   @IsUUID()
   productId!: string

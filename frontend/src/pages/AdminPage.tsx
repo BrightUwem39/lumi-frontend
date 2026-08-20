@@ -39,6 +39,8 @@ import {
   createAdminReturn,
   completeAdminReturn,
   dismissAdminNotification,
+  downloadAdminAuditLog,
+  downloadAdminReport,
   deleteAdminProduct,
   fetchAdminCustomers,
   fetchAdminCoupons,
@@ -108,6 +110,7 @@ const primaryNavigation: NavigationItem[] = [
   { label: 'Discounts', to: '/admin/discounts', icon: <LuBadgePercent /> },
   { label: 'Notifications', to: '/admin/notifications', icon: <LuBell /> },
   { label: 'Audit log', to: '/admin/audit-log', icon: <LuClock3 /> },
+  { label: 'Reports', to: '/admin/reports', icon: <LuDownload /> },
 ]
 
 const pageContext: Record<string, { eyebrow: string; title: string }> = {
@@ -121,6 +124,7 @@ const pageContext: Record<string, { eyebrow: string; title: string }> = {
   '/admin/discounts': { eyebrow: 'Promotions', title: 'Discounts' },
   '/admin/notifications': { eyebrow: 'Operational alerts', title: 'Notifications' },
   '/admin/audit-log': { eyebrow: 'Accountability', title: 'Audit log' },
+  '/admin/reports': { eyebrow: 'Business exports', title: 'Reports' },
   '/admin/settings': { eyebrow: 'Workspace', title: 'Settings' },
 }
 
@@ -238,6 +242,7 @@ export function AdminPage() {
               <Route path="discounts" element={<DiscountsPage coupons={data.coupons} reload={load} />} />
               <Route path="notifications" element={<NotificationsPage notifications={data.notifications} reload={load} />} />
               <Route path="audit-log" element={<AuditLogPage />} />
+              <Route path="reports" element={<ReportsPage />} />
               <Route path="settings" element={<SettingsPage settings={data.settings} security={data.security} reload={load} />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
@@ -332,6 +337,25 @@ function NotificationsPage({ notifications, reload }: { notifications: AdminNoti
   </div>
 }
 
+function ReportsPage() {
+  const [days, setDays] = useState<7 | 30 | 90 | 365>(30)
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const reports = [
+    { type: 'ORDERS' as const, title: 'Orders report', detail: 'Customer, payment, fulfilment, totals, discounts, tax, shipping, and line-item counts.', icon: <LuShoppingBag /> },
+    { type: 'INVENTORY' as const, title: 'Inventory report', detail: 'Current on-hand, reserved, and genuinely available units for every catalog product.', icon: <LuBoxes /> },
+    { type: 'RETURNS' as const, title: 'Returns report', detail: 'Return lifecycle, customer reason, returned units, and quantities restored to sellable stock.', icon: <LuRefreshCw /> },
+    { type: 'REFUNDS' as const, title: 'Refunds report', detail: 'Provider-confirmed status, amount, reason, customer, and processing timestamps.', icon: <LuCircleDollarSign /> },
+  ]
+  const download = async (type: (typeof reports)[number]['type']) => {
+    setBusy(type); setError('')
+    try { await downloadAdminReport(type, days) }
+    catch (requestError) { setError(requestError instanceof ApiError ? requestError.message : 'The report could not be downloaded.') }
+    finally { setBusy('') }
+  }
+  return <div className="space-y-6"><PageHeader title="Business reports" description="Download authoritative operational data for analysis, reconciliation, and portfolio demonstrations." actions={<label><span className="sr-only">Report period</span><select value={days} onChange={(event) => setDays(Number(event.target.value) as typeof days)} className="admin-control h-11 px-3 text-sm"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option></select></label>} />{error && <p role="alert" className="border-l-2 border-red-600 bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">{error}</p>}<div className="grid gap-4 md:grid-cols-2">{reports.map((report) => <article key={report.type} className="flex min-w-0 flex-col border border-admin-line bg-admin-surface p-5 sm:p-6"><span className="grid size-10 place-items-center border border-admin-line text-admin-muted">{report.icon}</span><p className="mt-5 text-[9px] font-medium uppercase tracking-[0.18em] text-admin-muted">CSV export</p><h2 className="mt-2 font-display text-xl">{report.title}</h2><p className="mt-3 text-xs leading-6 text-admin-muted">{report.detail}</p><p className="mt-4 border-l border-admin-line pl-3 text-xs leading-5 text-admin-muted">{report.type === 'INVENTORY' ? 'Exports the current inventory snapshot; the selected period does not limit this report.' : `Includes records created during the last ${days} days.`}</p><button type="button" disabled={busy !== ''} onClick={() => void download(report.type)} className="admin-button primary mt-6 w-full justify-center sm:w-fit"><LuDownload size={16} /> {busy === report.type ? 'Preparing…' : 'Download CSV'}</button></article>)}</div><IntegrationNote text="Exports are generated from server-authoritative records, limited to 10,000 rows, protected against spreadsheet formula injection, and recorded in the audit log." /></div>
+}
+
 function AuditLogPage() {
   const [events, setEvents] = useState<AdminAuditEvent[]>([])
   const [page, setPage] = useState(1)
@@ -342,6 +366,7 @@ function AuditLogPage() {
   const [searchDraft, setSearchDraft] = useState('')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
   const [error, setError] = useState('')
   const load = useCallback(async () => {
     setLoading(true); setError('')
@@ -359,10 +384,22 @@ function AuditLogPage() {
   }, [page, category, result, search])
   useEffect(() => { void load() }, [load])
   const applySearch = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setPage(1); setSearch(searchDraft.trim()) }
+  const exportCsv = async () => {
+    setExporting(true); setError('')
+    try {
+      await downloadAdminAuditLog({
+        ...(category !== 'ALL' ? { category } : {}),
+        ...(result !== 'ALL' ? { result } : {}),
+        ...(search ? { search } : {}),
+      })
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'The audit export could not be downloaded.')
+    } finally { setExporting(false) }
+  }
   const categories: Array<'ALL' | AdminAuditCategory> = ['ALL', 'SECURITY', 'ORDERS', 'REFUNDS', 'RETURNS', 'INVENTORY', 'NOTIFICATIONS']
   const results = ['ALL', 'SUCCESS', 'FAILED', 'PENDING_PROVIDER', 'PROCESSED', 'UNKNOWN']
   return <div className="space-y-6">
-    <PageHeader title="Audit log" description="An immutable record of sensitive administrator and commerce actions." actions={<button type="button" onClick={() => void load()} className="admin-button secondary"><LuRefreshCw size={16} /> Refresh</button>} />
+    <PageHeader title="Audit log" description="An immutable record of sensitive administrator and commerce actions." actions={<><button type="button" disabled={exporting} onClick={() => void exportCsv()} className="admin-button primary"><LuDownload size={16} /> {exporting ? 'Preparing…' : 'Export filtered CSV'}</button><button type="button" onClick={() => void load()} className="admin-button secondary"><LuRefreshCw size={16} /> Refresh</button></>} />
     <form onSubmit={applySearch} className="grid gap-2 border-y border-admin-line py-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_180px_auto]"><label className="relative sm:col-span-2 xl:col-span-1"><span className="sr-only">Search audit log</span><LuSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-admin-muted" size={16} /><input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} minLength={2} maxLength={100} placeholder="Action, reason, resource, or actor…" className="admin-control h-11 w-full pl-10 pr-3" /></label><label><span className="sr-only">Audit category</span><select value={category} onChange={(event) => { setCategory(event.target.value as typeof category); setPage(1) }} className="admin-control h-11 w-full px-3">{categories.map((value) => <option key={value} value={value}>{value === 'ALL' ? 'All categories' : titleCase(value)}</option>)}</select></label><label><span className="sr-only">Audit result</span><select value={result} onChange={(event) => { setResult(event.target.value); setPage(1) }} className="admin-control h-11 w-full px-3">{results.map((value) => <option key={value} value={value}>{value === 'ALL' ? 'All results' : titleCase(value)}</option>)}</select></label><button className="admin-button primary min-h-11 justify-center">Search</button></form>
     <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-admin-muted">{total.toLocaleString()} recorded event{total === 1 ? '' : 's'}</p>{search && <button type="button" onClick={() => { setSearchDraft(''); setSearch(''); setPage(1) }} className="admin-text-link"><LuX /> Clear search</button>}</div>
     {error && <AdminError message={error} retry={load} />}

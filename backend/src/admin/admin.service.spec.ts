@@ -169,6 +169,48 @@ describe('AdminService dashboard', () => {
     }))
   })
 
+  it('exports filtered audit CSV safely and records the export', async () => {
+    const prisma = {
+      auditLog: {
+        findMany: vi.fn().mockResolvedValue([{
+          action: 'INVENTORY_SET', result: 'SUCCESS', reason: '=HYPERLINK("bad")',
+          resourceType: 'PRODUCT', resourceId: 'product-1', actorRole: UserRole.ADMINISTRATOR,
+          actorUser: { email: 'admin@example.com', firstName: 'Lumi', lastName: 'Admin' },
+          createdAt: new Date('2026-08-20T12:00:00Z'),
+        }]),
+        create: vi.fn().mockResolvedValue({}),
+      },
+    }
+    const service = new AdminService(prisma as unknown as PrismaService)
+    const actor = { id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null, role: UserRole.ADMINISTRATOR }
+
+    const csv = await service.exportAuditLog(actor, { page: 1, limit: 20, category: 'INVENTORY' })
+
+    expect(csv.startsWith('\uFEFF')).toBe(true)
+    expect(csv).toContain('"\'=HYPERLINK(""bad"")"')
+    expect(prisma.auditLog.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 10_000 }))
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({ action: 'AUDIT_LOG_EXPORTED' }) })
+  })
+
+  it('exports authoritative available inventory rather than raw on-hand stock', async () => {
+    const prisma = {
+      product: { findMany: vi.fn().mockResolvedValue([{
+        sku: 'TEE-1', name: 'Lumi Tee', category: 'Tops', status: ProductStatus.PUBLISHED,
+        inventory: { onHand: 10, reserved: 3, updatedAt: new Date('2026-08-20T12:00:00Z') },
+      }]) },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    }
+    const service = new AdminService(prisma as unknown as PrismaService)
+    const actor = { id: 'admin-1', email: 'admin@example.com', firstName: null, lastName: null, role: UserRole.ADMINISTRATOR }
+
+    const csv = await service.exportReport(actor, { type: 'INVENTORY', days: 30 })
+
+    expect(csv).toContain('"10","3","7"')
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      action: 'BUSINESS_REPORT_EXPORTED', metadata: { type: 'INVENTORY', days: 30, rows: 1 },
+    }) })
+  })
+
   it('returns a complete revenue series independent of the recent-order list', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z'))

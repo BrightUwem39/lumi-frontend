@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
   Patch,
   Post,
@@ -33,6 +34,7 @@ import {
 import {
   AdminListQueryDto,
   AdminAuditQueryDto,
+  AdminReportQueryDto,
   AdminOrderParamsDto,
   AdminOrderQueryDto,
   AdminProductParamsDto,
@@ -85,10 +87,32 @@ export class AdminController {
     return this.admin.notifications()
   }
 
+  @Get('audit-log/export')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="lumi-audit-log.csv"')
+  @ApiOperation({ summary: 'Exports the complete filtered administrator audit trail as CSV' })
+  exportAuditLog(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Query() query: AdminAuditQueryDto,
+  ) {
+    return this.admin.exportAuditLog(authentication.user, query)
+  }
+
   @Get('audit-log')
   @ApiOperation({ summary: 'Returns a paginated read-only administrator audit trail' })
   auditLog(@Query() query: AdminAuditQueryDto) {
     return this.admin.auditLog(query)
+  }
+
+  @Get('reports/export')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="lumi-business-report.csv"')
+  @ApiOperation({ summary: 'Exports an administrator business report as CSV' })
+  exportReport(
+    @CurrentAuthentication() authentication: RequestAuthentication,
+    @Query() query: AdminReportQueryDto,
+  ) {
+    return this.admin.exportReport(authentication.user, query)
   }
 
   @Post('notifications/dismiss')

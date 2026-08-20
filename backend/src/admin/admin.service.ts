@@ -20,6 +20,7 @@ import {
 import type {
   AdminListQueryDto,
   AdminAuditQueryDto,
+  AdminReportQueryDto,
   AdminOrderQueryDto,
   AdminProductQueryDto,
   UpdateFulfillmentStatusDto,
@@ -331,20 +332,7 @@ export class AdminService {
   }
 
   async auditLog(query: AdminAuditQueryDto) {
-    const filters: Prisma.AuditLogWhereInput[] = []
-    if (query.category) filters.push(auditCategoryWhere(query.category))
-    if (query.result) filters.push({ result: { equals: query.result, mode: 'insensitive' } })
-    if (query.search) {
-      filters.push({
-        OR: [
-          { action: { contains: query.search, mode: 'insensitive' } },
-          { reason: { contains: query.search, mode: 'insensitive' } },
-          { resourceId: { contains: query.search, mode: 'insensitive' } },
-          { actorUser: { is: { email: { contains: query.search, mode: 'insensitive' } } } },
-        ],
-      })
-    }
-    const where: Prisma.AuditLogWhereInput = filters.length ? { AND: filters } : {}
+    const where = auditWhere(query)
     const [total, items] = await Promise.all([
       this.prisma.auditLog.count({ where }),
       this.prisma.auditLog.findMany({
@@ -360,6 +348,115 @@ export class AdminService {
       }),
     ])
     return paginated(items, query, total)
+  }
+
+  async exportAuditLog(actor: AuthenticatedUser, query: AdminAuditQueryDto) {
+    const events = await this.prisma.auditLog.findMany({
+      where: auditWhere(query),
+      orderBy: { createdAt: 'desc' },
+      take: 10_000,
+      select: {
+        action: true, result: true, reason: true, resourceType: true, resourceId: true,
+        actorRole: true, createdAt: true,
+        actorUser: { select: { email: true, firstName: true, lastName: true } },
+      },
+    })
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId: actor.id, actorRole: actor.role, action: 'AUDIT_LOG_EXPORTED',
+        resourceType: 'ADMIN_AUDIT', result: 'SUCCESS',
+        metadata: { category: query.category ?? null, result: query.result ?? null, search: query.search ?? null, rows: events.length },
+      },
+    })
+    return csvDocument(
+      ['Time', 'Action', 'Result', 'Actor name', 'Actor email', 'Actor role', 'Resource type', 'Resource ID', 'Reason'],
+      events.map((event) => [
+        event.createdAt.toISOString(), event.action, event.result,
+        event.actorUser ? [event.actorUser.firstName, event.actorUser.lastName].filter(Boolean).join(' ') : 'System',
+        event.actorUser?.email ?? '', event.actorRole ?? '', event.resourceType,
+        event.resourceId ?? '', event.reason ?? '',
+      ]),
+    )
+  }
+
+  async exportReport(actor: AuthenticatedUser, query: AdminReportQueryDto) {
+    const from = new Date()
+    from.setUTCDate(from.getUTCDate() - query.days)
+    let csv: string
+    let rows: number
+    if (query.type === 'ORDERS') {
+      const orders = await this.prisma.order.findMany({
+        where: { createdAt: { gte: from } }, orderBy: { createdAt: 'desc' }, take: 10_000,
+        select: {
+          number: true, status: true, shippingName: true, email: true, currency: true,
+          subtotal: true, discountTotal: true, shippingTotal: true, taxTotal: true, total: true,
+          paidAt: true, createdAt: true, _count: { select: { items: true } },
+        },
+      })
+      rows = orders.length
+      csv = csvDocument(
+        ['Order', 'Status', 'Customer', 'Email', 'Currency', 'Subtotal', 'Discount', 'Shipping', 'Tax', 'Total', 'Line items', 'Paid at', 'Created at'],
+        orders.map((order) => [order.number, order.status, order.shippingName, order.email, order.currency,
+          order.subtotal.toFixed(2), order.discountTotal.toFixed(2), order.shippingTotal.toFixed(2),
+          order.taxTotal.toFixed(2), order.total.toFixed(2), order._count.items,
+          order.paidAt?.toISOString() ?? '', order.createdAt.toISOString()]),
+      )
+    } else if (query.type === 'INVENTORY') {
+      const products = await this.prisma.product.findMany({
+        orderBy: { name: 'asc' }, take: 10_000,
+        select: { sku: true, name: true, category: true, status: true, inventory: { select: { onHand: true, reserved: true, updatedAt: true } } },
+      })
+      rows = products.length
+      csv = csvDocument(
+        ['SKU', 'Product', 'Category', 'Status', 'On hand', 'Reserved', 'Available', 'Updated at'],
+        products.map((product) => [product.sku, product.name, product.category, product.status,
+          product.inventory?.onHand ?? 0, product.inventory?.reserved ?? 0,
+          Math.max(0, (product.inventory?.onHand ?? 0) - (product.inventory?.reserved ?? 0)),
+          product.inventory?.updatedAt.toISOString() ?? '']),
+      )
+    } else if (query.type === 'RETURNS') {
+      const returns = await this.prisma.productReturn.findMany({
+        where: { createdAt: { gte: from } }, orderBy: { createdAt: 'desc' }, take: 10_000,
+        select: {
+          id: true, status: true, reason: true, resolutionNote: true, createdAt: true, completedAt: true,
+          order: { select: { number: true, shippingName: true, email: true } },
+          items: { select: { quantity: true, restockedQuantity: true } },
+        },
+      })
+      rows = returns.length
+      csv = csvDocument(
+        ['Return ID', 'Order', 'Status', 'Customer', 'Email', 'Returned units', 'Restocked units', 'Reason', 'Resolution note', 'Created at', 'Completed at'],
+        returns.map((item) => [item.id, item.order.number, item.status, item.order.shippingName, item.order.email,
+          item.items.reduce((sum, line) => sum + line.quantity, 0),
+          item.items.reduce((sum, line) => sum + line.restockedQuantity, 0), item.reason,
+          item.resolutionNote ?? '', item.createdAt.toISOString(), item.completedAt?.toISOString() ?? '']),
+      )
+    } else {
+      const refunds = await this.prisma.refund.findMany({
+        where: { createdAt: { gte: from } }, orderBy: { createdAt: 'desc' }, take: 10_000,
+        select: {
+          id: true, status: true, amount: true, currency: true, reason: true,
+          createdAt: true, processedAt: true, failedAt: true,
+          payment: { select: { order: { select: { number: true, shippingName: true, email: true } } } },
+        },
+      })
+      rows = refunds.length
+      csv = csvDocument(
+        ['Refund ID', 'Order', 'Status', 'Customer', 'Email', 'Currency', 'Amount', 'Reason', 'Created at', 'Processed at', 'Failed at'],
+        refunds.map((refund) => [refund.id, refund.payment.order.number, refund.status,
+          refund.payment.order.shippingName, refund.payment.order.email, refund.currency,
+          refund.amount.toFixed(2), refund.reason, refund.createdAt.toISOString(),
+          refund.processedAt?.toISOString() ?? '', refund.failedAt?.toISOString() ?? '']),
+      )
+    }
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId: actor.id, actorRole: actor.role, action: 'BUSINESS_REPORT_EXPORTED',
+        resourceType: 'ADMIN_REPORT', result: 'SUCCESS',
+        metadata: { type: query.type, days: query.days, rows },
+      },
+    })
+    return csv
   }
 
   async retryNotificationEmail(actor: AuthenticatedUser, notificationKey: string) {
@@ -1495,4 +1592,30 @@ function auditCategoryWhere(category: AdminAuditQueryDto['category']): Prisma.Au
   if (category === 'RETURNS') return { resourceType: 'PRODUCT_RETURN' }
   if (category === 'INVENTORY') return { action: 'INVENTORY_SET' }
   return { OR: [{ resourceType: 'ADMIN_NOTIFICATION' }, { action: 'NOTIFICATION_SETTINGS_UPDATED' }] }
+}
+
+function auditWhere(query: AdminAuditQueryDto): Prisma.AuditLogWhereInput {
+  const filters: Prisma.AuditLogWhereInput[] = []
+  if (query.category) filters.push(auditCategoryWhere(query.category))
+  if (query.result) filters.push({ result: { equals: query.result, mode: 'insensitive' } })
+  if (query.search) {
+    filters.push({
+      OR: [
+        { action: { contains: query.search, mode: 'insensitive' } },
+        { reason: { contains: query.search, mode: 'insensitive' } },
+        { resourceId: { contains: query.search, mode: 'insensitive' } },
+        { actorUser: { is: { email: { contains: query.search, mode: 'insensitive' } } } },
+      ],
+    })
+  }
+  return filters.length ? { AND: filters } : {}
+}
+
+function csvDocument(headers: string[], rows: Array<Array<string | number>>) {
+  const cell = (value: string | number) => {
+    const normalized = String(value).replace(/[\r\n]+/g, ' ').trim()
+    const safe = /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized
+    return `"${safe.replaceAll('"', '""')}"`
+  }
+  return `\uFEFF${[headers, ...rows].map((row) => row.map(cell).join(',')).join('\r\n')}`
 }
