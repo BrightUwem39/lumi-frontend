@@ -17,6 +17,9 @@ import {
   LuEye,
   LuEyeOff,
   LuMail,
+  LuPencil,
+  LuPlus,
+  LuTrash2,
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { PageReveal } from '../components/PageReveal'
@@ -38,6 +41,14 @@ import {
   type CustomerReturnOrder,
   type OrderSummary,
 } from '../services/orders'
+import {
+  createAddress,
+  fetchAddresses,
+  removeAddress,
+  updateAddress,
+  type AddressInput,
+  type SavedAddress,
+} from '../services/addresses'
 
 type ProfileTab = 'profile' | 'orders' | 'addresses' | 'wishlist' | 'settings'
 
@@ -142,7 +153,7 @@ export function ProfilePage() {
               >
                 {activeTab === 'profile' && <UserInformation user={user} />}
                 {activeTab === 'orders' && <OrderHistory />}
-                {activeTab === 'addresses' && <SavedAddresses />}
+                {activeTab === 'addresses' && <SavedAddresses user={user} />}
                 {activeTab === 'wishlist' && <WishlistPreview />}
                 {activeTab === 'settings' && <AccountSettings />}
               </motion.div>
@@ -720,19 +731,28 @@ function customerReturnMessage(status: string) {
   return 'The return has been inspected and completed.'
 }
 
-function SavedAddresses() {
-  const addresses = [
-    {
-      title: 'Home',
-      lines: ['Amara Okafor', '18 Kingsway, Ikoyi', 'Lagos 106104, Nigeria'],
-      primary: true,
-    },
-    {
-      title: 'Work',
-      lines: ['Amara Okafor', '42 Marina Road', 'Lagos Island, Nigeria'],
-      primary: false,
-    },
-  ]
+function SavedAddresses({ user }: { user: AuthUser }) {
+  const [addresses, setAddresses] = useState<SavedAddress[]>([])
+  const [editing, setEditing] = useState<SavedAddress | 'new' | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [removing, setRemoving] = useState('')
+  const [error, setError] = useState('')
+
+  const load = async () => {
+    setLoading(true); setError('')
+    try { setAddresses((await fetchAddresses()).items) }
+    catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Your saved addresses could not be loaded.') }
+    finally { setLoading(false) }
+  }
+  useEffect(() => { void load() }, [])
+
+  const remove = async (address: SavedAddress) => {
+    if (!window.confirm(`Remove ${address.label || 'this address'} from your account?`)) return
+    setRemoving(address.id); setError('')
+    try { await removeAddress(address.id); await load() }
+    catch (caught) { setError(caught instanceof ApiError ? caught.message : 'The address could not be removed.') }
+    finally { setRemoving('') }
+  }
 
   return (
     <AccountSection
@@ -740,55 +760,107 @@ function SavedAddresses() {
       title="Saved addresses"
       description="Choose where you would like your orders delivered."
     >
-      <div className="mt-7 grid gap-4 sm:grid-cols-2">
+      {error && <p role="alert" className="mt-6 border-l-2 border-red-600 bg-red-50 p-4 text-xs leading-5 text-red-800 dark:bg-red-950 dark:text-red-200">{error}</p>}
+      {editing && <AddressEditor
+        address={editing === 'new' ? null : editing}
+        user={user}
+        firstAddress={addresses.length === 0}
+        close={() => setEditing(null)}
+        saved={async () => { setEditing(null); await load() }}
+      />}
+      {loading && addresses.length === 0 ? <p className="mt-7 text-xs text-ink/50">Loading saved addresses…</p> : null}
+      {!loading && addresses.length === 0 && !editing ? <div className="mt-7 border border-dashed border-line px-5 py-10 text-center"><FiMapPin size={22} className="mx-auto text-ink/55" /><h3 className="mt-4 text-xl">No saved addresses yet</h3><p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-ink/50">Add an address once and reuse it for future deliveries.</p><button type="button" onClick={() => setEditing('new')} className="mt-5 inline-flex min-h-11 items-center gap-2 bg-ink px-5 text-[8px] uppercase tracking-[0.14em] text-canvas"><LuPlus /> Add your first address</button></div> : null}
+      {addresses.length > 0 && <div className="mt-7 grid gap-4 sm:grid-cols-2">
         {addresses.map((address) => (
-          <article key={address.title} className="border border-line p-5">
+          <article key={address.id} className="flex min-w-0 flex-col border border-line p-5">
             <div className="flex items-start justify-between gap-3">
               <span className="grid size-10 place-items-center rounded-full border border-line">
-                {address.title === 'Home' ? <FiHome /> : <FiShoppingBag />}
+                {(address.label || '').toLowerCase() === 'home' ? <FiHome /> : <FiShoppingBag />}
               </span>
-              {address.primary && (
+              {address.isDefault && (
                 <span className="bg-ink px-2.5 py-1 text-[8px] uppercase tracking-[0.13em] text-canvas">
                   Default
                 </span>
               )}
             </div>
-            <h3 className="mt-5 text-xl">{address.title}</h3>
-            <address className="mt-3 space-y-1 text-xs not-italic leading-5 text-ink/55">
-              {address.lines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
+            <h3 className="mt-5 break-words text-xl">{address.label || 'Delivery address'}</h3>
+            <address className="mt-3 space-y-1 break-words text-xs not-italic leading-5 text-ink/55">
+              <p>{address.firstName} {address.lastName}</p>
+              <p>{address.line1}{address.line2 ? `, ${address.line2}` : ''}</p>
+              <p>{[address.city, address.region, address.postalCode].filter(Boolean).join(', ')}</p>
+              <p>{address.country}</p>
+              <p>{address.phone}</p>
             </address>
-            <div className="mt-5 flex gap-4">
+            <div className="mt-auto flex flex-wrap gap-4 pt-5">
               <button
                 type="button"
-                className="border-b border-ink pb-1 text-[8px] uppercase tracking-[0.13em]"
+                onClick={() => setEditing(address)}
+                className="inline-flex items-center gap-1.5 border-b border-ink pb-1 text-[8px] uppercase tracking-[0.13em]"
               >
-                Edit
+                <LuPencil /> Edit
               </button>
               <button
                 type="button"
-                className="text-[8px] uppercase tracking-[0.13em] text-ink/45 hover:text-ink"
+                disabled={removing === address.id}
+                onClick={() => void remove(address)}
+                className="inline-flex items-center gap-1.5 text-[8px] uppercase tracking-[0.13em] text-ink/45 hover:text-ink disabled:opacity-50"
               >
-                Remove
+                <LuTrash2 /> {removing === address.id ? 'Removing…' : 'Remove'}
               </button>
             </div>
           </article>
         ))}
         <button
           type="button"
+          onClick={() => setEditing('new')}
           className="grid min-h-48 place-items-center border border-dashed border-line p-5 text-center hover:border-ink"
         >
           <span>
-            <FiMapPin size={20} className="mx-auto" />
+            <LuPlus size={20} className="mx-auto" />
             <span className="mt-3 block text-[9px] uppercase tracking-[0.15em]">
               Add a new address
             </span>
           </span>
         </button>
-      </div>
+      </div>}
     </AccountSection>
   )
+}
+
+function AddressEditor({ address, user, firstAddress, close, saved }: {
+  address: SavedAddress | null
+  user: AuthUser
+  firstAddress: boolean
+  close: () => void
+  saved: () => Promise<void>
+}) {
+  const [values, setValues] = useState<AddressInput>(() => address ? {
+    label: address.label ?? '', firstName: address.firstName, lastName: address.lastName,
+    phone: address.phone, line1: address.line1, line2: address.line2 ?? '', city: address.city,
+    region: address.region, postalCode: address.postalCode ?? '', country: address.country,
+    isDefault: address.isDefault,
+  } : {
+    label: 'Home', firstName: user.firstName ?? '', lastName: user.lastName ?? '', phone: '',
+    line1: '', line2: '', city: '', region: '', postalCode: '', country: 'NG', isDefault: firstAddress,
+  })
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const setValue = (key: keyof AddressInput, value: string | boolean) => setValues((current) => ({ ...current, [key]: value }))
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setBusy(true); setError('')
+    try {
+      if (address) await updateAddress(address.id, values)
+      else await createAddress(values)
+      await saved()
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'The address could not be saved.')
+    } finally { setBusy(false) }
+  }
+  return <form onSubmit={submit} className="mt-7 border-y border-line py-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[8px] font-medium uppercase tracking-[0.15em] text-ink/45">Delivery details</p><h3 className="mt-2 text-2xl">{address ? 'Edit address' : 'Add a new address'}</h3></div><button type="button" disabled={busy} onClick={close} className="text-[8px] uppercase tracking-[0.14em] text-ink/55 hover:text-ink">Cancel</button></div><div className="mt-6 grid gap-4 sm:grid-cols-2"><AddressField label="Label"><input required maxLength={50} value={values.label} onChange={(event) => setValue('label', event.target.value)} placeholder="Home or Work" /></AddressField><AddressField label="Phone"><input required minLength={5} maxLength={32} type="tel" autoComplete="tel" value={values.phone} onChange={(event) => setValue('phone', event.target.value)} /></AddressField><AddressField label="First name"><input required maxLength={100} autoComplete="given-name" value={values.firstName} onChange={(event) => setValue('firstName', event.target.value)} /></AddressField><AddressField label="Last name"><input required maxLength={100} autoComplete="family-name" value={values.lastName} onChange={(event) => setValue('lastName', event.target.value)} /></AddressField><div className="sm:col-span-2"><AddressField label="Street address"><input required maxLength={200} autoComplete="address-line1" value={values.line1} onChange={(event) => setValue('line1', event.target.value)} /></AddressField></div><div className="sm:col-span-2"><AddressField label="Apartment, suite, etc. (optional)"><input maxLength={200} autoComplete="address-line2" value={values.line2} onChange={(event) => setValue('line2', event.target.value)} /></AddressField></div><AddressField label="City"><input required maxLength={100} autoComplete="address-level2" value={values.city} onChange={(event) => setValue('city', event.target.value)} /></AddressField><AddressField label="State / region"><input required maxLength={100} autoComplete="address-level1" value={values.region} onChange={(event) => setValue('region', event.target.value)} /></AddressField><AddressField label="Postal code (optional)"><input maxLength={32} autoComplete="postal-code" value={values.postalCode} onChange={(event) => setValue('postalCode', event.target.value)} /></AddressField><AddressField label="Country code"><input required minLength={2} maxLength={2} pattern="[A-Za-z]{2}" autoComplete="country" value={values.country} onChange={(event) => setValue('country', event.target.value.toUpperCase())} /></AddressField></div><label className="mt-5 flex min-h-11 items-center gap-3 text-xs"><input type="checkbox" checked={values.isDefault} disabled={firstAddress || address?.isDefault} onChange={(event) => setValue('isDefault', event.target.checked)} className="size-4 accent-current" /> Use as my default delivery address</label>{error && <p role="alert" className="mt-4 text-xs text-red-700">{error}</p>}<button disabled={busy} className="mt-5 min-h-11 w-full bg-ink px-6 text-[8px] uppercase tracking-[0.15em] text-canvas disabled:opacity-50 sm:w-auto">{busy ? 'Saving…' : address ? 'Save changes' : 'Save address'}</button></form>
+}
+
+function AddressField({ label, children }: { label: string; children: ReactNode }) {
+  return <label className="block"><span className="mb-2 block text-[8px] font-medium uppercase tracking-[0.14em] text-ink/50">{label}</span><span className="[&_input]:min-h-12 [&_input]:w-full [&_input]:border [&_input]:border-line [&_input]:bg-canvas [&_input]:px-3 [&_input]:text-sm [&_input]:outline-none [&_input]:focus:border-ink">{children}</span></label>
 }
 
 function WishlistPreview() {

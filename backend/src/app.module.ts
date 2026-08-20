@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller.js'
 import { AdminModule } from './admin/admin.module.js'
+import { AddressesModule } from './addresses/addresses.module.js'
 import { AuthModule } from './auth/auth.module.js'
 import { CatalogModule } from './catalog/catalog.module.js'
 import { CartModule } from './cart/cart.module.js'
@@ -58,6 +59,7 @@ import { WishlistModule } from './wishlist/wishlist.module.js'
     ]),
     DatabaseModule,
     AuthModule,
+    AddressesModule,
     AdminModule,
     CatalogModule,
     CartModule,
