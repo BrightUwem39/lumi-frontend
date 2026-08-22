@@ -166,7 +166,7 @@ export function Navbar() {
               to="/"
               aria-label="Lumi home"
               onClick={() => setMobileOpen(false)}
-              className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-opacity hover:opacity-60"
+              className="absolute left-1/2 top-1/2 z-10 inline-flex min-h-11 -translate-x-1/2 -translate-y-1/2 items-center px-2 transition-opacity hover:opacity-60"
             >
               <LumiLogo />
             </Link>

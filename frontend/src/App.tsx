@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   Navigate,
@@ -7,52 +7,28 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom'
-import { CategorySection } from './components/CategorySection'
 import { CartExperience } from './components/CartExperience'
 import { CommerceTools } from './components/CommerceTools'
-import { FeaturedProducts } from './components/FeaturedProducts'
 import { Footer } from './components/Footer'
-import { Hero } from './components/Hero'
 import { Navbar } from './components/Navbar'
-import { NewsletterSection } from './components/NewsletterSection'
-import { ScrollFadeSection } from './components/ScrollFadeSection'
-import { TestimonialsSection } from './components/TestimonialsSection'
-import { CartPage } from './pages/CartPage'
-import { CheckoutPage } from './pages/CheckoutPage'
-import { OrderConfirmationPage } from './pages/OrderConfirmationPage'
-import { PaymentReturnPage } from './pages/PaymentReturnPage'
-import { JournalPage } from './pages/JournalPage'
-import { PolicyPage } from './pages/PolicyPage'
-import { ProductDetailsPage } from './pages/ProductDetailsPage'
-import { ProfilePage } from './pages/ProfilePage'
-import { ShopPage } from './pages/ShopPage'
-import { WishlistPage } from './pages/WishlistPage'
-import { AdminPage } from './pages/AdminPage'
 import { useWishlistSync } from './hooks/useWishlistSync'
 import { useCartSync } from './hooks/useCartSync'
 import { useAuthStore } from './store/useAuthStore'
 
-function HomePage() {
-  return (
-    <main aria-label="Store content">
-      <ScrollFadeSection>
-        <Hero />
-      </ScrollFadeSection>
-      <ScrollFadeSection>
-        <FeaturedProducts />
-      </ScrollFadeSection>
-      <ScrollFadeSection>
-        <CategorySection />
-      </ScrollFadeSection>
-      <ScrollFadeSection>
-        <TestimonialsSection />
-      </ScrollFadeSection>
-      <ScrollFadeSection>
-        <NewsletterSection />
-      </ScrollFadeSection>
-    </main>
-  )
-}
+// Route-level chunks keep the storefront entry small and avoid loading the
+// administrator workspace until an administrator actually opens it.
+const CartPage = lazy(async () => ({ default: (await import('./pages/CartPage')).CartPage }))
+const HomePage = lazy(async () => ({ default: (await import('./pages/HomePage')).HomePage }))
+const CheckoutPage = lazy(async () => ({ default: (await import('./pages/CheckoutPage')).CheckoutPage }))
+const OrderConfirmationPage = lazy(async () => ({ default: (await import('./pages/OrderConfirmationPage')).OrderConfirmationPage }))
+const PaymentReturnPage = lazy(async () => ({ default: (await import('./pages/PaymentReturnPage')).PaymentReturnPage }))
+const JournalPage = lazy(async () => ({ default: (await import('./pages/JournalPage')).JournalPage }))
+const PolicyPage = lazy(async () => ({ default: (await import('./pages/PolicyPage')).PolicyPage }))
+const ProductDetailsPage = lazy(async () => ({ default: (await import('./pages/ProductDetailsPage')).ProductDetailsPage }))
+const ProfilePage = lazy(async () => ({ default: (await import('./pages/ProfilePage')).ProfilePage }))
+const ShopPage = lazy(async () => ({ default: (await import('./pages/ShopPage')).ShopPage }))
+const WishlistPage = lazy(async () => ({ default: (await import('./pages/WishlistPage')).WishlistPage }))
+const AdminPage = lazy(async () => ({ default: (await import('./pages/AdminPage')).AdminPage }))
 
 // Route parameters keep every product detail URL bookmarkable and shareable.
 function ProductRoute() {
@@ -145,24 +121,26 @@ function App() {
             ease: [0.22, 1, 0.36, 1],
           }}
         >
-          <Routes location={location}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/shop" element={<ShopPage />} />
-            <Route path="/product/:productId" element={<ProductRoute />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route
-              path="/order-confirmation/:orderNumber"
-              element={<OrderConfirmationPage />}
-            />
-            <Route path="/payment-return" element={<PaymentReturnPage />} />
-            <Route path="/wishlist" element={<WishlistPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/admin/*" element={<AdminPage />} />
-            <Route path="/journal" element={<JournalPage />} />
-            <Route path="/policies/:policyId" element={<PolicyPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<RouteLoading />}>
+            <Routes location={location}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/shop" element={<ShopPage />} />
+              <Route path="/product/:productId" element={<ProductRoute />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route
+                path="/order-confirmation/:orderNumber"
+                element={<OrderConfirmationPage />}
+              />
+              <Route path="/payment-return" element={<PaymentReturnPage />} />
+              <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/admin/*" element={<AdminPage />} />
+              <Route path="/journal" element={<JournalPage />} />
+              <Route path="/policies/:policyId" element={<PolicyPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </motion.div>
       </AnimatePresence>
 
@@ -170,6 +148,10 @@ function App() {
       {!isGuestAccountRoute && !isAdminRoute && <Footer />}
     </div>
   )
+}
+
+function RouteLoading() {
+  return <main role="status" className="grid min-h-[65svh] place-items-center bg-canvas px-4 text-center text-ink"><p className="text-[9px] font-medium uppercase tracking-[0.18em]">Loading Lumi…</p></main>
 }
 
 export default App

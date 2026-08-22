@@ -368,6 +368,13 @@ input:focus-visible {
   outline-offset: 0;
 }
 
+/* A high-contrast outer ring remains visible even when component borders are
+   subtle, while preserving the existing mouse-focus appearance. */
+:where(input, select, textarea):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 /* iOS zooms pages when a focused control is smaller than 16px. Keeping phone
    controls at this size preserves the viewport while customers type. */
 @media (max-width: 639px) {
