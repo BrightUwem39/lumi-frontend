@@ -7,6 +7,9 @@ order, and complete a sandbox payment through Paystack.
 
 **[Open the live storefront](https://lumi-frontend-git-main-brightuwem39gmailcoms-projects.vercel.app)**
 
+For a concise reviewer walkthrough, verified feature matrix, and demonstration
+notes, see the **[showcase handoff guide](docs/SHOWCASE_HANDOFF.md)**.
+
 > The public demo uses Paystack **test mode**. It never accepts or charges real
 > payment cards. The Render free service can take about a minute to wake after
 > a period of inactivity.
@@ -16,7 +19,8 @@ order, and complete a sandbox payment through Paystack.
 - A polished React storefront with responsive navigation, product discovery,
   filtering, detail pages, wishlist, cart, checkout, and account screens.
 - A protected responsive administrator workspace for operational metrics,
-  inventory control, customer lookup, and forward-only order fulfilment.
+  catalog management, inventory control, customer lookup, order fulfilment,
+  returns, refunds, discounts, notifications, reporting, and store settings.
 - Server-owned catalog prices, inventory, carts, orders, and payment state.
 - Registration, Brevo email verification, login, logout, forgotten-password,
   and reset-password flows.
@@ -29,6 +33,22 @@ order, and complete a sandbox payment through Paystack.
 - Atomic inventory reservation, settlement, release, and scheduled payment
   reconciliation for ambiguous provider responses.
 - Containerized builds plus a deployed free-tier hosting architecture.
+
+## Implemented product scope
+
+| Customer experience | Administration |
+| --- | --- |
+| Responsive navigation, search, filters, product comparison, wishlist, and cart | Revenue dashboard, live charts, low-stock alerts, and recent orders |
+| Product galleries, size selection, related-product rails, and quick views | Product creation/editing, publishing controls, imagery, and stock adjustment |
+| Six-digit email verification, login, logout, and password recovery | Customer directory and forward-only order fulfilment transitions |
+| Saved delivery addresses and server-calculated checkout | Return review, inventory restoration, Paystack refunds, and reconciliation |
+| Paystack sandbox payment, signed webhook confirmation, and order history | Discount campaigns, notification centre, immutable audit log, and CSV reports |
+| Customer return requests and account preferences | Store profile, shipping, tax, email, and session-security settings |
+
+All storefront and administration layouts use the same Lumi design system and
+were verified at mobile, tablet, and desktop breakpoints. Mobile product,
+category, and related-product collections preserve two visible cards while
+supporting horizontal discovery where appropriate.
 
 ## Live architecture
 
@@ -107,6 +127,7 @@ E-COMMERCE_APP/
 ├── frontend/              React storefront, routes, state, services, and assets
 ├── backend/               Nest API, Prisma schema/migrations, tests, and Dockerfile
 ├── docs/security/         Threat model, data classification, authorization matrix
+├── docs/SHOWCASE_HANDOFF.md
 ├── docs/deployment.md     Container-based production deployment
 ├── docs/free-tier-deployment.md
 ├── render.yaml            Free Render API Blueprint
@@ -170,9 +191,15 @@ npm run build
 npm run prisma:validate
 ```
 
-The backend currently contains 49 passing tests across authentication, email,
-authorization, administration, catalog, cart, checkout, orders, wishlist,
-payments, environment validation, and application dependency wiring.
+The backend currently contains 98 passing tests across 16 test files covering
+authentication, email, authorization, administration, catalog, cart, checkout,
+orders, wishlist, addresses, returns, refunds, payments, environment validation,
+and application dependency wiring.
+
+The production-readiness review completed on 25 August 2026 also verified all
+public and authenticated routes, every administrator workspace, the Render
+readiness endpoint, Neon connectivity, eight live catalog products, responsive
+page geometry, broken-image detection, and application console output.
 
 ## Deployment
 
@@ -191,8 +218,9 @@ committed or placed in `VITE_*` variables.
 
 ## Current scope
 
-Lumi is an e-commerce application currently operating in a pre-production test
-environment. Paystack stays in sandbox mode, fulfillment is not yet connected
-to a carrier, and the free hosting services have development-tier availability
-limits. The architecture keeps a future custom domain or paid infrastructure
-upgrade separate from the application itself.
+Lumi is a complete e-commerce application deployed as a public demonstration
+environment. Paystack intentionally stays in sandbox mode, fulfilment is not
+connected to a shipping carrier, and free hosting can introduce cold-start
+latency. Those are deployment constraints rather than missing core commerce
+flows. A future custom domain, carrier integration, or paid infrastructure
+upgrade can be added without redesigning the application architecture.

@@ -14,22 +14,22 @@
 
 | Data | Classification | Current location | Production owner/location | Rules |
 | --- | --- | --- | --- | --- |
-| Catalog names, descriptions, images, prices | Public | Local assets plus DummyJSON response | PostgreSQL/object CDN | Server becomes the authoritative source; validate imported data |
-| Cart, wishlist, comparison, recently viewed | Public to Confidential depending on linkage | `localStorage` key `lumi-shop` | Guest cart may remain local; authenticated records in PostgreSQL | Never trust local quantities/prices; server recalculates checkout |
+| Catalog names, descriptions, images, prices | Public | PostgreSQL plus committed storefront imagery | PostgreSQL and deployed static assets | API is authoritative for catalog data and availability; validate all administrator changes |
+| Cart, wishlist, comparison, recently viewed | Public to Confidential depending on linkage | Guest/customer cart and wishlist in PostgreSQL; comparison convenience state in the browser | PostgreSQL plus non-authoritative browser preferences | Never trust browser quantities/prices; server recalculates checkout |
 | Theme preference | Public | `localStorage` key `lumi-theme` | Browser | No special restriction |
 | Newsletter email | Confidential | `localStorage` key `lumi-newsletter-email` | PostgreSQL or email provider with consent record | Remove local persistence when API exists; record consent time/source; unsubscribe support |
-| Shipping identity and address | Confidential | Form state and demo receipt in `sessionStorage` | PostgreSQL | Minimize fields, authorize ownership, redact logs, retention/deletion policy |
-| Demo order and totals | Confidential when linked to a person | `sessionStorage` key `lumi-last-order` | PostgreSQL | Browser copy is display-only; server is authoritative |
-| Password hash | Restricted | Not implemented | PostgreSQL | Argon2id only; never return or log |
-| Session identifier | Restricted | Not implemented | Random cookie identifier plus Redis/server session | `HttpOnly`, `Secure`, `SameSite`; hash server-side if appropriate; rotate/revoke |
-| Email verification/reset token | Restricted | Not implemented | Short-lived hashed token record | Single use, expiry, purpose-bound; never log full token |
-| Roles and permissions | Restricted | Not implemented | PostgreSQL | Server-owned; changes require authorization and audit event |
-| Payment card details | Prohibited | Demo inputs are displayed but not read or stored | Payment provider only | Replace with hosted/provider-controlled UI before production |
-| Payment reference/status | Confidential | Simulated label only | PostgreSQL plus Paystack | Verify server-side; unique references; retention for accounting/disputes |
-| Paystack secret/webhook secret | Restricted | Not implemented | Deployment secret manager | Server-only, scoped access, rotation procedure |
-| Application/database/Redis/email credentials | Restricted | Not implemented | Deployment secret manager | Separate by environment; least privilege; never in `VITE_*` or Git |
-| Audit logs | Confidential | Not implemented | Append-oriented protected log storage | Record actor/action/result, not secrets or prohibited data; controlled retention |
-| Backups | Same as contained data | Not implemented | Encrypted restricted backup storage | Separate credentials; restore testing; deletion follows retention rules |
+| Shipping identity and address | Confidential | Checkout form state; owned addresses and order snapshots in PostgreSQL | PostgreSQL | Minimize fields, authorize ownership, redact logs, define retention/deletion policy |
+| Order and totals | Confidential when linked to a person | PostgreSQL plus a display-only `sessionStorage` receipt | PostgreSQL | Browser copy is non-authoritative; API calculates and stores totals |
+| Password hash | Restricted | Argon2id hash in PostgreSQL | PostgreSQL | Never return or log; rehash when parameters change |
+| Session identifier | Restricted | Opaque `HttpOnly` cookie; only its hash is stored in PostgreSQL | Browser cookie plus PostgreSQL session record | `HttpOnly`, `Secure`, `SameSite`; expire and revoke server-side |
+| Email verification/reset token | Restricted | Short-lived token hash in PostgreSQL; code delivered by Brevo | PostgreSQL plus transient Brevo delivery | Single use, expiry, purpose-bound; never store or log the full token |
+| Roles and permissions | Restricted | Server-owned PostgreSQL user role | PostgreSQL | Deny by default; privileged operations require role guards and audit events |
+| Payment card details | Prohibited | Never handled by Lumi; Paystack-hosted test checkout only | Payment provider only | Continue using provider-controlled checkout for any future real payments |
+| Payment reference/status | Confidential | PostgreSQL payment and provider-event records | PostgreSQL plus Paystack | Verify signatures and provider data; enforce unique references and idempotency |
+| Paystack secret/webhook secret | Restricted | Render environment settings | Deployment secret manager | Server-only, scoped access, rotation procedure |
+| Application/database/email credentials | Restricted | Render, Neon, Brevo, and Vercel environment settings | Provider secret/configuration stores | Separate by environment; least privilege; never in `VITE_*` or Git |
+| Audit logs | Confidential | Append-oriented PostgreSQL audit records | PostgreSQL | Record actor/action/result, not secrets or prohibited data; controlled retention |
+| Backups | Same as contained data | Neon-managed database recovery facilities, subject to service plan | Managed encrypted database storage | Review retention, access, restore testing, and deletion before real customer use |
 
 ## Browser-storage rule
 
@@ -39,8 +39,10 @@ untrusted guest-cart convenience copy. It must not hold authentication tokens,
 passwords, reset tokens, authoritative orders, payment state, or long-lived
 personal data.
 
-The current demo receipt and newsletter storage are migration items. They must
-be removed or reduced before production.
+The session receipt is a display-only convenience and never establishes order
+or payment state. Newsletter email persistence remains a migration item until a
+consent-aware subscription API is connected; it must be removed or replaced
+before enabling production marketing.
 
 ## Collection and minimization
 
@@ -76,4 +78,3 @@ deleted personal data into logs.
   routing.
 - Screenshots, bug reports, fixtures, and test logs must not contain real
   restricted, prohibited, or unnecessary confidential data.
-

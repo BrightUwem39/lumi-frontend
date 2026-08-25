@@ -20,6 +20,11 @@ registration, email verification, sign-in, and sign-out flows. Guest wishlist
 items are merged into the authenticated wishlist at sign-in; subsequent
 mutations use the readable CSRF cookie and remain server-owned.
 
+Authenticated customers can manage saved delivery addresses, review orders,
+and submit eligible return requests. The protected responsive administrator
+workspace covers products, inventory, orders, customers, analytics, discounts,
+notifications, audit events, reports, returns/refunds, and store settings.
+
 The local cart is reconciled with `GET /api/v1/cart` after session bootstrap.
 Cart changes are optimistic, validated by the API against published products,
 sizes, and inventory, and rolled back when the server rejects a mutation.

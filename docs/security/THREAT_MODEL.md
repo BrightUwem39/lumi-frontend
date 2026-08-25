@@ -2,13 +2,15 @@
 
 ## Status and scope
 
-This is the initial threat model for the planned Lumi ecommerce platform. It
-covers the React storefront, the future API, PostgreSQL, Redis/background jobs,
-object storage, email delivery, payment providers, administrator tools, and the
-deployment pipeline.
+This is the living threat model for the deployed Lumi demonstration environment.
+It covers the React storefront, NestJS API, PostgreSQL, background payment
+reconciliation, Brevo email delivery, Paystack test payments, administrator
+tools, and the Vercel/Render/Neon deployment path. Redis and object storage are
+not part of the current architecture.
 
-The current repository is frontend-only. Controls marked as required below are
-backend acceptance criteria, not claims about the present implementation.
+The repository contains both frontend and backend implementations. Controls
+marked as required include current safeguards as well as explicit hardening
+criteria for any future move from public demonstration to real-money commerce.
 
 Review this model whenever authentication, payments, administration, uploads,
 third-party integrations, or deployment architecture changes, and at least
@@ -33,13 +35,14 @@ before every production release.
 - Product, price, discount, coupon, inventory, and order records
 - Payment references, provider customer IDs, webhook events, and refund records
 - Administrator accounts, roles, permissions, and audit logs
-- Database, Redis, email, storage, payment, CI/CD, and deployment credentials
+- Database, email, payment, CI/CD, and deployment credentials
 - Source code, build artifacts, backups, logs, analytics, and monitoring data
 - Store availability and Lumi's customer trust
 
 ## Actors
 
-- Guest: browses products and may maintain a local cart
+- Guest: browses products and may maintain a server-backed cart through an
+  opaque signed cart cookie
 - Customer: manages their account and their own commerce records
 - Staff: fulfills orders and performs limited catalog/customer-support actions
 - Administrator: manages staff, permissions, catalog, and sensitive operations
@@ -51,8 +54,8 @@ before every production release.
 
 1. **Browser to API:** all browser input is untrusted, including identifiers,
    totals, roles, headers, workflow steps, and files.
-2. **API to PostgreSQL/Redis:** only validated, authorized server operations may
-   cross this private boundary; service accounts use least privilege.
+2. **API to PostgreSQL:** only validated, authorized server operations may cross
+   this private boundary; database credentials remain server-side.
 3. **API to payment provider:** secret credentials remain server-side. Payment
    confirmation returns through authenticated provider webhooks.
 4. **API to email/storage/monitoring:** exported data is minimized, redacted,
@@ -117,4 +120,3 @@ Security reduces risk but cannot eliminate it. Accepted risks must have an
 owner, rationale, compensating controls, review date, and explicit approval.
 Critical or high risks involving authentication, authorization, personal data,
 payments, secrets, or remote code execution cannot be silently accepted.
-

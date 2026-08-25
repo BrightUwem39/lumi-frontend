@@ -52,6 +52,12 @@ never be used in production.
 - `GET /api/v1/orders` — authenticated customer's order history
 - `GET /api/v1/orders/:orderNumber` — owner-authorized order detail
 - `POST /api/v1/orders/:orderNumber/cancel` — cancel an unpaid draft
+- `GET /api/v1/addresses` — list authenticated customer's saved addresses
+- `POST /api/v1/addresses` — create a validated saved address
+- `PATCH /api/v1/addresses/:addressId` — update an owned saved address
+- `DELETE /api/v1/addresses/:addressId` — delete an owned saved address
+- `GET /api/v1/orders/:orderNumber/returns` — list owner-authorized returns
+- `POST /api/v1/orders/:orderNumber/returns` — request a return for delivered items
 - `POST /api/v1/payments/paystack/initialize/:orderNumber` — reserve stock and initialize payment
 - `GET /api/v1/payments/paystack/availability` — public provider availability without secrets
 - `GET /api/v1/payments/paystack/status/:reference` — owner-authorized return status
@@ -62,6 +68,15 @@ never be used in production.
 - `GET /api/v1/admin/customers` — minimized administrator customer listing
 - `GET /api/v1/admin/orders` — administrator order and fulfilment listing
 - `PATCH /api/v1/admin/orders/:orderNumber/status` — audited forward-only fulfilment transition
+- `POST /api/v1/admin/orders/:orderNumber/refunds` — queue an audited full or partial Paystack refund
+- `POST /api/v1/admin/orders/:orderNumber/returns` — open an audited return for eligible order items
+- `PATCH /api/v1/admin/returns/:returnId/status` — audited return review transition
+- `POST /api/v1/admin/returns/:returnId/complete` — complete a return and restore accepted stock
+- `GET /api/v1/admin/discounts` — list discount campaigns
+- `GET /api/v1/admin/notifications` — unresolved operational alerts
+- `GET /api/v1/admin/audit-log` — filtered immutable audit events
+- `GET /api/v1/admin/reports/export` — protected filtered CSV business report
+- `GET /api/v1/admin/settings` — store, shipping, tax, notification, and security settings
 - `GET /api/docs-json` — OpenAPI schema when `API_DOCS_ENABLED=true`
 
 Catalog queries accept bounded `page` and `limit` values plus optional
@@ -131,8 +146,9 @@ Authenticated mutations require the readable CSRF cookie value to be sent in
 the `X-CSRF-Token` header. The session cookie remains `HttpOnly`. Local
 development may expose verification/reset tokens in response bodies only when
 `AUTH_DEV_TOKENS_ENABLED=true`; environment validation forbids that setting in
-production. A real email provider must replace this development aid before
-deployment.
+production. The deployed demonstration uses Brevo for six-digit verification
+codes and password-reset delivery; development response tokens remain a local
+testing aid only.
 
 ## Verification
 
@@ -142,6 +158,8 @@ npm run test
 npm run build
 npm run prisma:validate
 ```
+
+The current backend suite contains 98 passing tests across 16 test files.
 
 Read the repository-level [`SECURITY.md`](../SECURITY.md) and
 [`docs/security`](../docs/security) requirements before adding authentication,
